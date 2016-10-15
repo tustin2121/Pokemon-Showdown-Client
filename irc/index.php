@@ -159,8 +159,91 @@ function color_nick($nick) {
 
 function parse_message($message) {
     $regex = '{\bhttps?://(?:[-A-Za-z0-9+@#/%?=~_()|!:,.;]|&amp;)*(?:[-A-Za-z0-9+@#/%=~_()|]|&amp;)}';
+    $message = htmlspecialchars($message);
+    
+    //*
+    $marray = str_split($message);
+    $msg = "";
+    $len = count($marray);
+    
+    $format = array(false, false, false, false); //b,u,i,color
+    for ($i = 0; $i < $len; $i++) {
+        $byte = $marray[$i];
+        switch ($byte) {
+            case "\x02": //BOLD
+                $msg .= build_metastring($format, "b");
+                continue;
+            case "\x1F": //Underline
+                $msg .= build_metastring($format, "u");
+                continue;
+            case "\x1D": //Italics
+                $msg .= build_metastring($format, "i");
+                continue;
+            case "\x03": //Color Code
+                // Account for 1 or 2 character color codes
+                $color = "";
+                if ($i+1 < $len && preg_match("/[0-9]/", $marray[$i+1])) {
+                    $color .= $marray[$i+1];
+                    $i++;
+                }
+                if ($i+1 < $len && preg_match("/[0-9]/", $marray[$i+1])) {
+                    $color .= $marray[$i+1];
+                    $i++;
+                }
+                if ($color) {
+                    $msg .= build_metastring($format, "c", $color);
+                } else { //without a number, things reset
+                    $msg .= build_metastring($format, "c");
+                }
+                continue;
+            case "\x0F": //Reset
+                $msg .= build_metastring($format, "r");
+                continue;
+        }
+        
+        $msg .= $byte;
+    }
+    $msg .= build_metastring($format, "r"); //close any potentially open formatting
+    $message = preg_replace($regex, '<a href="$0">$0</a>', $msg);
+    
+    /*/
+    $message = preg_replace($regex, '<a href="$0">$0</a>', htmlspecialchars($message));
+    //*/
+    return $message;
+}
 
-    return preg_replace($regex, '<a href="$0">$0</a>', htmlspecialchars($message));
+function build_metastring(&$format, $enable, $color = false) {
+    $ret = "";
+    if (in_array(true, $format)) {
+        $ret .= "</span>";
+    }
+    switch ($enable) {
+        case "b": $format[0] = !$format[0]; break;
+        case "u": $format[1] = !$format[1]; break;
+        case "i": $format[2] = !$format[2]; break;
+        case "c": 
+            if ($color === false || $color > 31) {
+                $format[3] = false;
+            } else {
+                $format[3] = "c".($color % 16);
+            }
+            break;
+        case "r": 
+            $format[0] = false;
+            $format[1] = false;
+            $format[2] = false;
+            $format[3] = false;
+            break;
+    }
+    if (in_array(true, $format)) {
+        $ret .= "<span class='";
+        if ($format[0]) $ret .= "bold ";
+        if ($format[1]) $ret .= "under ";
+        if ($format[2]) $ret .= "em ";
+        if ($format[3]) $ret .= $format[3];
+        $ret .= "'>";
+    }
+    return $ret;
 }
 
 if (isset($_GET['q']) && isset($_GET['date'])) {

@@ -55,6 +55,26 @@ p {
     float: right;
 }
 
+.bold { font-weight: bold; }
+.em   { font-style: italic; }
+.under{ text-decoration: underline; }
+.c0, .c00 { color: #D3D7CF; } /* white */ 
+.c1, .c01 { color: #2E3436; } /* black */
+.c2, .c02 { color: #3465A4; } /* blue */
+.c3, .c03 { color: #4E9A06; } /* green */
+.c4, .c04 { color: #CC0000; } /* red */
+.c5, .c05 { color: #8F3902; } /* brown */
+.c6, .c06 { color: #5C3566; } /* purple */
+.c7, .c07 { color: #CE5C00; } /* orange */
+.c8, .c08 { color: #C4A000; } /* yellow */
+.c9, .c09 { color: #73D216; } /* lime green */
+.c10 { color: #11A879; } /* turqoise */
+.c11 { color: #58A19D; } /* ocean cyan */
+.c12 { color: #57799E; } /* light blue  */
+.c13 { color: #A04365; } /* magenta */
+.c14 { color: #555753; } /* grey */
+.c15 { color: #888A85; } /* light grey */
+
 @media all and (min-width: 801px) {
     html {
         background: #EE2428;
