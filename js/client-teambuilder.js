@@ -1265,7 +1265,7 @@
 				var pokemon = Tools.getTemplate(res.species);
 
 				buf += '<div class="result" data-id="' + i + '">';
-				buf += '<div class="section"><span class="icon" style="' + Tools.getIcon(res.species) + '"></span>';
+				buf += '<div class="section"><span class="icon" style="' + Tools.getPokemonIcon(res.species) + '"></span>';
 				buf += '<span class="species">' + (pokemon.species === pokemon.baseSpecies ? pokemon.species : (pokemon.baseSpecies + '-<small>' + pokemon.species.substr(pokemon.baseSpecies.length + 1) + '</small>')) + '</span></div>';
 				buf += '<div class="section"><span class="ability-item">' + (res.ability || '<i>No ability</i>') + '<br />' + (res.item || '<i>No item</i>') + '</span></div>';
 				buf += '<div class="section no-border">';
@@ -1292,7 +1292,7 @@
 		clipboardExpanded: false,
 		clipboardExpand: function () {
 			var $clipboard = $('.teambuilder-clipboard-data');
-			$clipboard.animate({height: this.clipboardCount() * 28}, 500, function () {
+			$clipboard.animate({height: this.clipboardCount() * 34}, 500, function () {
 				setTimeout(function () { $clipboard.focus(); }, 100);
 			});
 
@@ -1302,7 +1302,7 @@
 		},
 		clipboardShrink: function () {
 			var $clipboard = $('.teambuilder-clipboard-data');
-			$clipboard.animate({height: 26}, 500);
+			$clipboard.animate({height: 32}, 500);
 
 			setTimeout(function () {
 				this.clipboardExpanded = false;
@@ -1757,7 +1757,7 @@
 				guessedMinus = guessedEVs.minusStat;
 				delete guessedEVs.minusStat;
 				buf += ' </small><button name="setStatFormGuesses">' + role + ': ';
-				for (var i in guessedEVs) {
+				for (var i in BattleStatNames) {
 					if (guessedEVs[i]) {
 						var statName = this.curTeam.gen === 1 && i === 'spa' ? 'Spc' : BattleStatNames[i];
 						buf += '' + guessedEVs[i] + ' ' + statName + ' / ';
@@ -2407,6 +2407,7 @@
 			var modifier = (e.shiftKey || e.ctrlKey || e.altKey || e.metaKey || e.cmdKey);
 			if (e.keyCode === 13 || (e.keyCode === 9 && !modifier)) { // enter/tab
 				if (!(this.curChartType in this.searchChartTypes)) return;
+				this.updateChart();
 				var $firstResult = this.$chart.find('a.hover');
 				e.stopPropagation();
 				e.preventDefault();
@@ -2523,10 +2524,37 @@
 			}
 			this.chartSet(val, selectNext);
 		},
+		chartSetCustom: function (val) {
+			val = toId(val);
+			if (val === 'cathy') {
+				var set = this.curSet;
+				set.name = "Cathy";
+				set.species = 'Trevenant';
+				delete set.level;
+				if (this.curTeam && this.curTeam.format) {
+					if (this.curTeam.format.substr(0, 10) === 'battlespot' || this.curTeam.format.substr(0, 3) === 'vgc') set.level = 50;
+					if (this.curTeam.format.substr(0, 2) === 'lc' || this.curTeam.format === 'gen5lc' || this.curTeam.format === 'gen4lc') set.level = 5;
+				}
+				set.gender = 'F';
+				if (set.happiness) delete set.happiness;
+				if (set.shiny) delete set.shiny;
+				set.item = 'Starf Berry';
+				set.ability = 'Harvest';
+				set.moves = ['Substitute', 'Horn Leech', 'Earthquake', 'Phantom Force'];
+				set.evs = {hp: 36, atk: 252, def: 0, spa: 0, spd: 0, spe: 220};
+				set.ivs = {};
+				set.nature = 'Jolly';
+				this.updateSetTop();
+				this.$(!this.$('input[name=item]').length ? (this.$('input[name=ability]').length ? 'input[name=ability]' : 'input[name=move1]') : 'input[name=item]').select();
+				return true;
+			}
+		},
 		chartSet: function (val, selectNext) {
 			var inputName = this.curChartName;
 			var id = toId(val);
-			this.$('input[name=' + inputName + ']').val(val).removeClass('incomplete');
+			var input = this.$('input[name=' + inputName + ']');
+			if (this.chartSetCustom(input.val())) return;
+			input.val(val).removeClass('incomplete');
 			switch (inputName) {
 			case 'pokemon':
 				this.setPokemon(val, selectNext);
@@ -2869,6 +2897,7 @@
 
 			var bulk = physicalBulk + specialBulk;
 			if (bulk < 46000 && stats.spe >= 70) isFast = true;
+			if (hasMove['trickroom']) isFast = false;
 			moveCount['bulk'] = bulk;
 			moveCount['physicalBulk'] = physicalBulk;
 			moveCount['specialBulk'] = specialBulk;
@@ -3049,18 +3078,21 @@
 				var SRweaknesses = ['Fire', 'Flying', 'Bug', 'Ice'];
 				var SRresistances = ['Ground', 'Steel', 'Fighting'];
 				var SRweak = 0;
-				if (SRweaknesses.indexOf(template.types[0]) >= 0) {
-					SRweak++;
-				} else if (SRresistances.indexOf(template.types[0]) >= 0) {
-					SRweak--;
-				}
-				if (SRweaknesses.indexOf(template.types[1]) >= 0) {
-					SRweak++;
-				} else if (SRresistances.indexOf(template.types[1]) >= 0) {
-					SRweak--;
+				if (set.ability !== 'Magic Guard' && set.ability !== 'Mountaineer') {
+					if (SRweaknesses.indexOf(template.types[0]) >= 0) {
+						SRweak++;
+					} else if (SRresistances.indexOf(template.types[0]) >= 0) {
+						SRweak--;
+					}
+					if (SRweaknesses.indexOf(template.types[1]) >= 0) {
+						SRweak++;
+					} else if (SRresistances.indexOf(template.types[1]) >= 0) {
+						SRweak--;
+					}
 				}
 				var hpDivisibility = 0;
 				var hpShouldBeDivisible = false;
+				var hp = evs['hp'] || 0;
 				stat = this.getStat('hp', null, hp, 1);
 				if ((set.item === 'Leftovers' || set.item === 'Black Sludge') && hasMove['substitute'] && stat !== 404) {
 					hpDivisibility = 4;
@@ -3076,12 +3108,11 @@
 					hpDivisibility = 2;
 				} else if (SRweak >= 1 || hasMove['substitute'] || hasMove['transform']) {
 					hpDivisibility = 4;
-				} else {
+				} else if (set.ability !== 'Magic Guard') {
 					hpDivisibility = 8;
 				}
 
 				if (hpDivisibility) {
-					var hp = evs['hp'] || 0;
 					while (hp < 252 && evTotal < 508 && !(stat % hpDivisibility) !== hpShouldBeDivisible) {
 						hp += 4;
 						stat = this.getStat('hp', null, hp, 1);
@@ -3233,7 +3264,7 @@
 				if (i !== data.i && i !== data.i + 1) {
 					buf += '<li><button name="moveHere" value="' + i + '"><i class="fa fa-arrow-right"></i> Move here</button></li>';
 				}
-				buf += '<li' + (i === data.i ? ' style="opacity:.3"' : ' style="opacity:.6"') + '><span class="pokemonicon" style="display:inline-block;vertical-align:middle;' + Tools.getIcon(set) + '"></span> ' + Tools.escapeHTML(set.name) + '</li>';
+				buf += '<li' + (i === data.i ? ' style="opacity:.3"' : ' style="opacity:.6"') + '><span class="pokemonicon" style="display:inline-block;vertical-align:middle;' + Tools.getPokemonIcon(set) + '"></span> ' + Tools.escapeHTML(set.name) + '</li>';
 			}
 			if (i !== data.i && i !== data.i + 1) {
 				buf += '<li><button name="moveHere" value="' + i + '"><i class="fa fa-arrow-right"></i> Move here</button></li>';
