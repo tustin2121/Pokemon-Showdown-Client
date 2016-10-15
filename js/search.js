@@ -295,6 +295,9 @@
 				}
 			}
 
+			// show types above Arceus formes
+			if (topbufIndex < 0 && qTypeIndex < 2 && passType === 2 && !bufs[1].length && bufs[2].length) topbufIndex = 2;
+
 			if (this.legalityFilter && typeIndex === qTypeIndex) {
 				// Always show illegal results under legal results.
 				// This is done by putting legal results (and the type header)
@@ -307,6 +310,10 @@
 				if (!bufs[typeIndex].length) bufs[typeIndex] = [['header', typeName[type]]];
 			}
 
+			// don't match duplicate aliases
+			var curBufLength = (passType === 2 && bufs[typeIndex].length);
+			if (curBufLength && bufs[typeIndex][curBufLength - 1][1] === id) continue;
+
 			bufs[typeIndex].push([type, id, matchStart, matchLength]);
 
 			count++;
@@ -317,22 +324,19 @@
 		if (this.filters) {
 			topbuf.push(['html', this.getFilterText(1)]);
 		}
+		if (topbufIndex >= 0) {
+			topbuf = topbuf.concat(bufs[topbufIndex]);
+			bufs[topbufIndex] = [];
+		}
 		if (qTypeIndex >= 0) {
 			topbuf = topbuf.concat(bufs[0]);
 			topbuf = topbuf.concat(bufs[qTypeIndex]);
 			bufs[qTypeIndex] = [];
 			bufs[0] = [];
-		} else if (topbufIndex >= 0) {
-			topbuf = topbuf.concat(bufs[topbufIndex]);
-			bufs[topbufIndex] = [];
-		}
-		if (query === 'grass' || query === 'flying') {
-			topbuf = topbuf.concat(bufs[5]);
-			bufs[5] = [];
 		}
 
 		if (instafilter && count < 20) {
-			// There's exactly one filter matched and count is less than 20, instafilter
+			// Result count is less than 20, so we can instafilter
 			bufs.push(this.instafilter(qType, instafilter[0], instafilter[1]));
 		}
 
@@ -410,6 +414,7 @@
 			this.filters.push(entry);
 			return true;
 		} else if (this.qType === 'move') {
+			if (entry[0] === this.sortCol) this.sortCol = null;
 			if (entry[0] !== 'type' && entry[0] !== 'category' && entry[0] !== 'pokemon') return;
 			if (entry[0] === 'pokemon') entry[1] = toId(entry[1]);
 			if (!this.filters) this.filters = [];
@@ -465,8 +470,8 @@
 		this.updateScroll();
 	};
 	Search.prototype.allMoves = function () {
-		if (this.filters) return this.filteredMoves();
-		var resultSet = [];
+		if (this.filters || this.sortCol) return this.filteredMoves();
+		var resultSet = [['sortmove', '']];
 		resultSet.push(['header', "Moves"]);
 		for (var id in BattleMovedex) {
 			switch (id) {
@@ -498,6 +503,16 @@
 		for (var id in BattleAbilities) {
 			resultSet.push(['ability', id]);
 		}
+		this.resultSet = resultSet;
+		this.renderedIndex = 0;
+		this.renderingDone = false;
+		this.updateScroll();
+	};
+	Search.prototype.allCategories = function (resultSet) {
+		if (!resultSet) resultSet = [];
+		resultSet.push(['category', 'physical']);
+		resultSet.push(['category', 'special']);
+		resultSet.push(['category', 'status']);
 		this.resultSet = resultSet;
 		this.renderedIndex = 0;
 		this.renderingDone = false;
@@ -599,10 +614,19 @@
 		this.updateScroll();
 	};
 	Search.prototype.filteredMoves = function () {
-		var resultSet = [['html', this.getFilterText()]];
-		resultSet.push(['header', "Filtered results"]);
+		var resultSet = [];
+		var filters = this.filters || [];
+		var sortCol = this.sortCol;
+
+		this.resultSet = [['sortmove', '']];
+		if (filters.length) this.resultSet.push(['html', this.getFilterText()], ['header', "Filtered results"]);
+		if (sortCol === 'type') {
+			return this.allTypes(this.resultSet);
+		} else if (sortCol === 'category') {
+			return this.allCategories(this.resultSet);
+		}
+
 		var illegalResultSet = [];
-		var filters = this.filters;
 		for (var id in BattleMovedex) {
 			var move = BattleMovedex[id];
 			if (move.exists === false) continue;
@@ -632,12 +656,36 @@
 			}
 			if (i < filters.length) continue;
 			if (this.legalityFilter && !(id in this.legalityFilter)) {
-				illegalResultSet.push(['move', id]);
+				if (!sortCol) illegalResultSet.push(['move', id]);
 			} else {
 				resultSet.push(['move', id]);
 			}
 		}
-		this.resultSet = resultSet.concat(illegalResultSet);
+		if (sortCol === 'power') {
+			var powerTable = {"return": 102, frustration: 102, spitup: 300, trumpcard: 200, naturalgift: 80, grassknot: 120, lowkick: 120, gyroball: 150, electroball: 150, flail: 200, reversal: 200, present: 120, wringout: 120, crushgrip: 120, heatcrash: 120, heavyslam: 120, fling: 130, magnitude: 150, beatup: 24, punishment: 1020, psywave: 1250, nightshade: 1200, seismictoss: 1200, dragonrage: 1140, sonicboom: 1120, superfang: 1350, endeavor: 1399, sheercold: 1501, fissure: 1500, horndrill: 1500, guillotine: 1500};
+			resultSet = resultSet.sort(function (row1, row2) {
+				var move1 = BattleMovedex[row1[1]];
+				var move2 = BattleMovedex[row2[1]];
+				var pow1 = move1.basePower || powerTable[row1[1]] || (move1.category === 'Status' ? -1 : 1400);
+				var pow2 = move2.basePower || powerTable[row2[1]] || (move2.category === 'Status' ? -1 : 1400);
+				return pow2 - pow1;
+			});
+		} else if (sortCol === 'accuracy') {
+			resultSet = resultSet.sort(function (row1, row2) {
+				var accuracy1 = BattleMovedex[row1[1]].accuracy || 0;
+				var accuracy2 = BattleMovedex[row2[1]].accuracy || 0;
+				if (accuracy1 === true) accuracy1 = 101;
+				if (accuracy2 === true) accuracy2 = 101;
+				return accuracy2 - accuracy1;
+			});
+		} else if (sortCol === 'pp') {
+			resultSet = resultSet.sort(function (row1, row2) {
+				var pp1 = BattleMovedex[row1[1]].pp || 0;
+				var pp2 = BattleMovedex[row2[1]].pp || 0;
+				return pp2 - pp1;
+			});
+		}
+		this.resultSet = this.resultSet.concat(resultSet, illegalResultSet);
 		this.renderedIndex = 0;
 		this.renderingDone = false;
 		this.updateScroll();
@@ -733,16 +781,16 @@
 			var slices = table.formatSlices;
 			var agTierSet = [];
 			if (this.gen >= 6) agTierSet = [['header', "AG"], ['pokemon', 'rayquazamega']];
-			if (format === 'uber' || format === 'ubers') tierSet = tierSet.slice(slices.Uber);
+			if (format === 'ubers' || format === 'uber') tierSet = tierSet.slice(slices.Uber);
 			else if (format === 'ou') tierSet = tierSet.slice(slices.OU);
 			else if (format === 'uu') tierSet = tierSet.slice(slices.UU);
 			else if (format === 'ru') tierSet = tierSet.slice(slices.RU);
 			else if (format === 'nu') tierSet = tierSet.slice(slices.NU);
 			else if (format === 'pu') tierSet = tierSet.slice(slices.PU);
-			else if (format === 'fu') tierSet = tierSet.slice(slices.PU);
 			else if (format === 'lc' || format === 'lcuu') tierSet = tierSet.slice(slices.LC);
 			else if (format === 'cap') tierSet = tierSet.slice(0, slices.Uber).concat(tierSet.slice(slices.OU));
-			else if (format === 'ag' || format === 'anythinggoes') tierSet = agTierSet.concat(tierSet.slice(slices.Uber));
+			else if (format === 'anythinggoes' || format === 'ag') tierSet = agTierSet.concat(tierSet.slice(slices.Uber));
+			else if (format === 'balancedhackmons' || format === 'bh') tierSet = agTierSet.concat(tierSet.slice(slices.Uber));
 			else if (format === 'doublesou') tierSet = tierSet.slice(slices.DOU);
 			else if (format === 'doublesuu') tierSet = tierSet.slice(slices.DUU);
 			else if (format === 'doublesnu') tierSet = tierSet.slice(slices.DNU);
@@ -876,6 +924,7 @@
 			break;
 		}
 		if (qType === 'pokemon') this.defaultResultSet = [['sortpokemon', '']].concat(this.defaultResultSet);
+		if (qType === 'move') this.defaultResultSet = [['sortmove', '']].concat(this.defaultResultSet);
 
 		if (this.legalityFilter) {
 			for (var i = 0; i < this.defaultResultSet.length; i++) {
@@ -926,6 +975,8 @@
 			return '<li class="result"><h3>' + id + '</h3></li>';
 		case 'sortpokemon':
 			return this.renderPokemonSortRow();
+		case 'sortmove':
+			return this.renderMoveSortRow();
 		case 'pokemon':
 			var pokemon = BattlePokedex[id];
 			if (!pokemon) pokemon = BattlePokedex[toId(Tools.getTemplate(id).baseSpecies)];
@@ -995,6 +1046,17 @@
 		buf += '<button class="sortcol statsortcol' + (this.sortCol === 'spd' ? ' cur' : '') + '" data-sort="spd">SpD</button>';
 		buf += '<button class="sortcol statsortcol' + (this.sortCol === 'spe' ? ' cur' : '') + '" data-sort="spe">Spe</button>';
 		buf += '<button class="sortcol statsortcol' + (this.sortCol === 'bst' ? ' cur' : '') + '" data-sort="bst">BST</button>';
+		buf += '</div></li>';
+		return buf;
+	};
+	Search.prototype.renderMoveSortRow = function () {
+		var buf = '<li class="result"><div class="sortrow">';
+		buf += '<button class="sortcol movenamesortcol' + (this.sortCol === 'name' ? ' cur' : '') + '" data-sort="name">Name</button>';
+		buf += '<button class="sortcol movetypesortcol' + (this.sortCol === 'type' ? ' cur' : '') + '" data-sort="type">Type</button>';
+		buf += '<button class="sortcol movetypesortcol' + (this.sortCol === 'category' ? ' cur' : '') + '" data-sort="category">Cat</button>';
+		buf += '<button class="sortcol powersortcol' + (this.sortCol === 'power' ? ' cur' : '') + '" data-sort="power">Pow</button>';
+		buf += '<button class="sortcol accuracysortcol' + (this.sortCol === 'accuracy' ? ' cur' : '') + '" data-sort="accuracy">Acc</button>';
+		buf += '<button class="sortcol ppsortcol' + (this.sortCol === 'pp' ? ' cur' : '') + '" data-sort="pp">PP</button>';
 		buf += '</div></li>';
 		return buf;
 	};
