@@ -1422,11 +1422,11 @@ var Side = (function () {
 		for (var i = 0; i < 6; i++) {
 			var poke = this.pokemon[i];
 			if (i >= this.totalPokemon) {
-				pokemonhtml += '<span class="pokemonicon" style="' + Tools.getIcon('pokeball-none') + '"></span>';
+				pokemonhtml += '<span class="pokemonicon" style="' + Tools.getPokemonIcon('pokeball-none') + '"></span>';
 			} else if (!poke) {
-				pokemonhtml += '<span class="pokemonicon" style="' + Tools.getIcon('pokeball') + '" title="Not revealed"></span>';
+				pokemonhtml += '<span class="pokemonicon" style="' + Tools.getPokemonIcon('pokeball') + '" title="Not revealed"></span>';
 			} else {
-				pokemonhtml += '<span class="pokemonicon" style="' + Tools.getIcon(poke) + '" title="' + poke.getFullName(true) + '"></span>';
+				pokemonhtml += '<span class="pokemonicon" style="' + Tools.getPokemonIcon(poke, !this.n) + '" title="' + poke.getFullName(true) + '"></span>';
 			}
 			if (i % 3 === 2) pokemonhtml += '</div><div class="teamicons">';
 		}
@@ -2271,6 +2271,7 @@ var Side = (function () {
 			electrify: '<span class="bad">Electrify</span>',
 			ragepowder: '<span class="good">Rage&nbsp;Powder</span>',
 			followme: '<span class="good">Follow&nbsp;Me</span>',
+			instruct: '<span class="neutral">Instruct</span>',
 			itemremoved: '',
 			// Gen 1
 			lightscreen: '<span class="good">Light&nbsp;Screen</span>',
@@ -3598,6 +3599,11 @@ var Battle = (function () {
 					case 'highjumpkick':
 						actions += "" + poke.getName() + " kept going and crashed!";
 						break;
+					case 'bind':
+					case 'wrap':
+						if (!this.fastForward) BattleOtherAnims.bound.anim(this, [poke.sprite]);
+						actions += "" + poke.getName() + ' is hurt by ' + effect.name + '!';
+						break;
 					default:
 						if (ofpoke) {
 							actions += "" + poke.getName() + " is hurt by " + ofpoke.getLowerName() + "'s " + effect.name + "!";
@@ -4177,14 +4183,17 @@ var Battle = (function () {
 				switch (args[2]) {
 				case 'brn':
 					this.resultAnim(poke, 'Burned', 'brn');
+					if (!this.fastForward) BattleStatusAnims['brn'].anim(this, [poke.sprite]);
 					actions += "" + poke.getName() + " was burned" + effectMessage + "!";
 					break;
 				case 'tox':
 					this.resultAnim(poke, 'Toxic poison', 'psn');
+					if (!this.fastForward) BattleStatusAnims['psn'].anim(this, [poke.sprite]);
 					actions += "" + poke.getName() + " was badly poisoned" + effectMessage + "!";
 					break;
 				case 'psn':
 					this.resultAnim(poke, 'Poisoned', 'psn');
+					if (!this.fastForward) BattleStatusAnims['psn'].anim(this, [poke.sprite]);
 					actions += "" + poke.getName() + " was poisoned!";
 					break;
 				case 'slp':
@@ -4197,10 +4206,12 @@ var Battle = (function () {
 					break;
 				case 'par':
 					this.resultAnim(poke, 'Paralyzed', 'par');
+					if (!this.fastForward) BattleStatusAnims['par'].anim(this, [poke.sprite]);
 					actions += "" + poke.getName() + " is paralyzed! It may be unable to move!";
 					break;
 				case 'frz':
 					this.resultAnim(poke, 'Frozen', 'frz');
+					if (!this.fastForward) BattleStatusAnims['frz'].anim(this, [poke.sprite]);
 					actions += "" + poke.getName() + " was frozen solid!";
 					break;
 				default:
@@ -4233,6 +4244,7 @@ var Battle = (function () {
 					break;
 				case 'naturalcure':
 					actions += "(" + poke.getName() + "'s Natural Cure activated!)";
+					poke.markAbility('Natural Cure');
 					break;
 				default:
 					this.resultAnim(poke, 'Cured', 'good');
@@ -4408,9 +4420,11 @@ var Battle = (function () {
 					// do nothing
 				} else if (kwargs.eat) {
 					poke.prevItemEffect = 'eaten';
+					if (!this.fastForward) BattleOtherAnims.consume.anim(this, [poke.sprite]);
 					actions += '' + poke.getName() + ' ate its ' + item.name + '!';
 					this.lastmove = item.id;
 				} else if (kwargs.weaken) {
+					poke.prevItemEffect = 'eaten';
 					actions += 'The ' + item.name + ' weakened the damage to ' + poke.getLowerName() + '!';
 					this.lastmove = item.id;
 				} else if (effect.id) switch (effect.id) {
@@ -4493,12 +4507,21 @@ var Battle = (function () {
 					this.animationDelay = 500;
 					this.resultAnim(poke, ability.name, 'ability');
 					this.message('', "<small>[" + poke.getName(true) + "'s Trace!]</small>");
+					if (!poke.baseAbility) poke.baseAbility = effect.name;
 					ofpoke.markAbility(ability.name);
 					actions += '' + poke.getName() + ' traced ' + ofpoke.getLowerName() + '\'s ' + ability.name + '!';
+					break;
+				case 'receiver':
+					this.resultAnim(poke, "Receiver", 'ability');
+					this.animationDelay = 500;
+					this.resultAnim(poke, ability.name, 'ability');
+					this.message('', "<small>[" + poke.getName(true) + "'s Receiver!]</small>");
+					actions += '' + ofpoke.getName() + '\'s ' + ability.name + ' was taken over!';
 					break;
 				case 'roleplay':
 					this.resultAnim(poke, ability.name, 'ability');
 					actions += '' + poke.getName() + ' copied ' + ofpoke.getLowerName() + '\'s ' + ability.name + ' Ability!';
+					ofpoke.markAbility(ability.name);
 					break;
 				case 'desolateland':
 					if (kwargs.fail) {
@@ -5120,6 +5143,9 @@ var Battle = (function () {
 					break;
 				case 'powder':
 					actions += '' + poke.getName() + ' is covered in powder!';
+					break;
+				case 'instruct':
+					actions += '' + poke.getName() + ' used the move instructed by ' + ofpoke.getLowerName() + '!';
 					break;
 				}
 				poke.side.updateStatbar();
@@ -5829,7 +5855,8 @@ var Battle = (function () {
 	};
 	Battle.prototype.getPokemon = function (pokemonid, details) {
 		var isNew = false; // if true, don't match any pokemon that already exists (for Team Preview)
-		var isInactive = false; // if true, don't match an active pokemon (for switching)
+		var isSwitch = false; // if true, don't match an active, fainted, or immediately-previously switched-out pokemon
+		var isInactive = false; // if true, don't match an active pokemon
 		var createIfNotFound = false; // if true, create the pokemon if a match wasn't found
 
 		if (pokemonid === undefined || pokemonid === '??') return null;
@@ -5838,9 +5865,9 @@ var Battle = (function () {
 			isNew = true;
 			createIfNotFound = true; // obviously
 		}
-		if (pokemonid.substr(0, 10) === 'inactive: ') {
+		if (pokemonid.substr(0, 10) === 'switchin: ') {
 			pokemonid = pokemonid.substr(10);
-			isInactive = true;
+			isSwitch = true;
 			createIfNotFound = true;
 		}
 
@@ -5870,6 +5897,7 @@ var Battle = (function () {
 		if (!details) {
 			if (siden < 0) return null;
 			if (this.sides[siden].active[slot]) return this.sides[siden].active[slot];
+			if (slot >= 0) isInactive = true;
 		}
 
 		var searchid = '';
@@ -5877,17 +5905,17 @@ var Battle = (function () {
 
 		// search p1's pokemon
 		if (siden !== this.p2.n && !isNew) {
-			if (this.p1.active[slot] && this.p1.active[slot].searchid === searchid && !isInactive) {
+			if (this.p1.active[slot] && this.p1.active[slot].searchid === searchid && !isSwitch) {
 				this.p1.active[slot].slot = slot;
 				return this.p1.active[slot];
 			}
 			for (var i = 0; i < this.p1.pokemon.length; i++) {
 				var pokemon = this.p1.pokemon[i];
-				if (pokemon.fainted && (isNew || isInactive)) continue;
-				if (isInactive) {
+				if (pokemon.fainted && (isNew || isSwitch)) continue;
+				if (isSwitch || isInactive) {
 					if (this.p1.active.indexOf(pokemon) >= 0) continue;
-					if (pokemon == this.p1.lastPokemon && !this.p1.active[slot]) continue;
 				}
+				if (isSwitch && pokemon == this.p1.lastPokemon && !this.p1.active[slot]) continue;
 				if ((searchid && pokemon.searchid === searchid) || // exact match
 					(!pokemon.searchid && pokemon.checkDetails(details)) || // switch-in matches Team Preview entry
 					(!searchid && pokemon.ident === pokemonid)) { // name matched, good enough
@@ -5907,17 +5935,17 @@ var Battle = (function () {
 
 		// search p2's pokemon
 		if (siden !== this.p1.n && !isNew) {
-			if (this.p2.active[slot] && this.p2.active[slot].searchid === searchid && !isInactive) {
+			if (this.p2.active[slot] && this.p2.active[slot].searchid === searchid && !isSwitch) {
 				if (slot >= 0) this.p2.active[slot].slot = slot;
 				return this.p2.active[slot];
 			}
 			for (var i = 0; i < this.p2.pokemon.length; i++) {
 				var pokemon = this.p2.pokemon[i];
-				if (pokemon.fainted && (isNew || isInactive)) continue;
-				if (isInactive) {
+				if (pokemon.fainted && (isNew || isSwitch)) continue;
+				if (isSwitch || isInactive) {
 					if (this.p2.active.indexOf(pokemon) >= 0) continue;
-					if (pokemon == this.p2.lastPokemon && !this.p2.active[slot]) continue;
 				}
+				if (isSwitch && pokemon == this.p2.lastPokemon && !this.p2.active[slot]) continue;
 				if ((searchid && pokemon.searchid === searchid) || // exact match
 					(!pokemon.searchid && pokemon.checkDetails(details)) || // switch-in matches Team Preview entry
 					(!searchid && pokemon.ident === pokemonid)) { // name matched, good enough
@@ -6145,6 +6173,10 @@ var Battle = (function () {
 			args.shift();
 			this.log('<div class="chat">' + Tools.sanitizeHTML(args.join('|')) + '</div>', preempt);
 			break;
+		case 'error':
+			args.shift();
+			this.log('<div class="chat message-error">' + Tools.escapeHTML(args.join('|')) + '</div>', preempt);
+			break;
 		case 'pm':
 			this.log('<div class="chat"><strong>' + Tools.escapeHTML(args[1]) + ':</strong> <span class="message-pm"><i style="cursor:pointer" onclick="selectTab(\'lobby\');rooms.lobby.popupOpen(\'' + Tools.escapeHTML(args[2], true) + '\')">(Private to ' + Tools.escapeHTML(args[3]) + ')</i> ' + Tools.parseMessage(args[4], args[1]) + '</span>');
 			break;
@@ -6260,7 +6292,7 @@ var Battle = (function () {
 		case 'replace':
 			this.endLastTurn();
 			if (this.waitForResult()) return;
-			var poke = this.getPokemon('inactive: ' + args[1], args[2]);
+			var poke = this.getPokemon('switchin: ' + args[1], args[2]);
 			var slot = poke.slot;
 			poke.healthParse(args[3]);
 			poke.removeVolatile('itemremoved');
@@ -6315,11 +6347,6 @@ var Battle = (function () {
 		case 'done':
 		case '':
 			if (this.ended || this.endPrevAction()) return;
-			break;
-		case 'error':
-			args.shift();
-			this.message('<strong>Error:</strong> ' + Tools.escapeHTML(args.join('|')));
-			this.message('Bug? Report it to <a href="http://www.smogon.com/forums/showthread.php?t=3453192">the replay viewer\'s Smogon thread</a>');
 			break;
 		case 'warning':
 			args.shift();

@@ -946,9 +946,15 @@
 				break;
 
 			case 'pm':
-				var message = parts.slice(3).join('|');
-
-				this.rooms[''].addPM(parts[1], message, parts[2]);
+				var dataLines = data.split('\n');
+				for (var i = 0; i < dataLines.length; i++) {
+					parts = dataLines[i].slice(1).split('|');
+					var message = parts.slice(3).join('|');
+					this.rooms[''].addPM(parts[1], message, parts[2]);
+					if (toUserid(parts[1]) !== app.user.get('userid')) {
+						app.user.lastPM = toUserid(parts[1]);
+					}
+				}
 				break;
 
 			case 'roomerror':

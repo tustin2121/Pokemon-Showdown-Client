@@ -148,6 +148,12 @@
 					e.preventDefault();
 					e.stopPropagation();
 				}
+			} else if (app.user.lastPM && (textbox.value === '/reply' || textbox.value === '/r') && e.keyCode === 32) { // '/reply ' is being written
+				e.preventDefault();
+				e.stopPropagation();
+				var val = '/pm ' + app.user.lastPM + ', ';
+				textbox.value = val;
+				e.setSelectionRange(val.length, val.length);
 			}
 		},
 		clickUsername: function (e) {
@@ -1113,6 +1119,9 @@
 			if (autoscroll) {
 				this.$chatFrame.scrollTop(this.$chat.height());
 			}
+			if (!app.focused && !Tools.prefs('mute') && Tools.prefs('notifvolume')) {
+				soundManager.getSoundById('notif').setVolume(Tools.prefs('notifvolume')).play();
+			}
 		},
 		addRow: function (line) {
 			var name, name2, room, action, silent, oldid;
@@ -1213,6 +1222,10 @@
 				case 'raw':
 				case 'html':
 					this.$chat.append('<div class="notice">' + Tools.sanitizeHTML(row.slice(1).join('|')) + '</div>');
+					break;
+
+				case 'error':
+					this.$chat.append('<div class="notice message-error">' + Tools.escapeHTML(row.slice(1).join('|')) + '</div>');
 					break;
 
 				case 'uhtml':
@@ -1475,7 +1488,7 @@
 			var lastMessageDates = Tools.prefs('logtimes') || (Tools.prefs('logtimes', {}), Tools.prefs('logtimes'));
 			if (!lastMessageDates[Config.server.id]) lastMessageDates[Config.server.id] = {};
 			var lastMessageDate = lastMessageDates[Config.server.id][this.id] || 0;
-			var mayNotify = msgTime > lastMessageDate;
+			var mayNotify = msgTime > lastMessageDate && userid !== app.user.get('userid');
 
 			if (app.focused && (this === app.curSideRoom || this === app.curRoom)) {
 				this.lastMessageDate = 0;
@@ -1495,6 +1508,9 @@
 			}
 
 			if (mayNotify && isHighlighted) {
+				if (!Tools.prefs('mute') && Tools.prefs('notifvolume')) {
+					soundManager.getSoundById('notif').setVolume(Tools.prefs('notifvolume')).play();
+				}
 				var $lastMessage = this.$chat.children().last();
 				var notifyTitle = "Mentioned by " + name + (this.id === 'lobby' ? '' : " in " + this.title);
 				var notifyText = $lastMessage.html().indexOf('<span class="spoiler">') >= 0 ? '(spoiler)' : $lastMessage.children().last().text();
