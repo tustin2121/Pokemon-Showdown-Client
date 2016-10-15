@@ -50,7 +50,7 @@ function requireNoCache(pathSpec) {
 	index = index.concat(Object.keys(Tools.data.TypeChart).map(x => toId(x) + ' type'));
 	index = index.concat(['physical', 'special', 'status'].map(x => toId(x) + ' category'));
 	index = index.concat(['monster', 'water1', 'bug', 'flying', 'field', 'fairy', 'grass', 'humanlike', 'water3', 'mineral', 'amorphous', 'water2', 'ditto', 'dragon', 'undiscovered'].map(x => toId(x) + ' egggroup'));
-	index = index.concat(['ou', 'uu', 'ru', 'nu', 'pu', 'lc', 'nfe', 'uber', 'bl', 'bl2', 'bl3', 'bl4', 'cap'].map(x => toId(x) + ' tier'));
+	index = index.concat(['ou', 'uu', 'ru', 'nu', 'pu', 'fu', 'lc', 'nfe', 'uber', 'bl', 'bl2', 'bl3', 'bl4', 'cap'].map(x => toId(x) + ' tier'));
 
 	// generate aliases
 	function generateAlias(id, name, type) {
@@ -336,11 +336,11 @@ process.stdout.write("Building `data/teambuilder-tables.js`... ");
 			if (isDoubles) {
 				return ["DUber", "DOU", "DUU", "DNU", "NFE"];
 			}
-			return ["CAP", "Uber", "OU", "BL", "(OU)", "UU", "BL2", "RU", "BL3", "NU", "BL4", "PU", "NFE", "LC Uber", "LC"];
+			return ["CAP", "Uber", "OU", "BL", "(OU)", "UU", "BL2", "RU", "BL3", "NU", "BL4", "PU", "FU", "NFE", "LC Uber", "LC"];
 		})();
 
 		for (const tier of tierOrder) {
-			if (tier === "OU" || tier === "Uber" || tier === "UU" || tier === "RU" || tier === "NU" || tier === "PU" || tier === "LC" || tier === "DOU" || tier === "DUU" || tier === "DNU" || tier === "(PU)") {
+			if (tier === "OU" || tier === "Uber" || tier === "UU" || tier === "RU" || tier === "NU" || tier === "PU" || tier === "FU" | tier === "LC" || tier === "DOU" || tier === "DUU" || tier === "DNU" || tier === "(PU)") {
 				formatSlices[tier === "(PU)" ? "FU" : tier] = tiers.length;
 			}
 			if (!tierTable[tier]) continue;
