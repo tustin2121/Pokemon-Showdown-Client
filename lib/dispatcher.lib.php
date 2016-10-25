@@ -316,37 +316,65 @@ class DefaultActionHandler {
 	public function prepreplay($dispatcher, &$reqData, &$out) {
 		global $psdb, $users;
 		// include_once dirname(__FILE__) . '/ntbb-ladder.lib.php'; // not clear if this is needed
-
+		error_log("CALL: prepreplay");
+		// foreach($reqData as $r_n=>$r_v) {
+		// 	error_log("REQ: $r_n => $r_v");
+		// }
+		
 		$server = $dispatcher->findServer();
 		if (!$server) {
 			$out['errorip'] = $dispatcher->getIp();
+			error_log("CALL: No server for dispatcher! ".$out['errorip']);
 			return;
 		}
-		if (
-				// the server must be registered
-				!$server ||
-				// the server must send all the required values
-				!isset($reqData['id']) ||
-				!isset($reqData['format']) ||
-				!isset($reqData['log']) ||
-				!isset($reqData['p1']) ||
-				!isset($reqData['p2']) ||
-				// player usernames cannot be longer than 18 characters
-				(mb_strlen($reqData['p1']) > 18) ||
-				(mb_strlen($reqData['p2']) > 18) ||
-				// the battle ID must be valid
-				!preg_match('/^([a-z0-9]+)-[0-9]+$/', $reqData['id'], $m1) ||
-				// the format ID must be valid
-				!preg_match('/^([a-z0-9]+)$/', $reqData['format'], $m2) ||
-				// the format from the battle ID must match the format ID
-				($m1[1] !== $m2[1])) {
-			$out = 0;
-			return;
+		
+		// the server must be registered
+		if (!$server) { error_log("CALL: Server not registered!"); $out = 0; return; }
+		
+		// the server must send all the required values
+		if (!isset($reqData['id']) || 
+			!isset($reqData['format']) || 
+			!isset($reqData['log']) ||
+			!isset($reqData['p1']) || 
+			!isset($reqData['p2'])) 
+		{
+			error_log("CALL: Server did not send all data! ".isset($reqData['id']).",".isset($reqData['format']).",".isset($reqData['log']).",".isset($reqData['p1']).",".isset($reqData['p2'])); 
+			$out = 0; return; 
+		}
+		
+		// player usernames cannot be longer than 18 characters
+		if ((mb_strlen($reqData['p1']) > 18) || (mb_strlen($reqData['p2']) > 18))
+		{
+			error_log("CALL: A player's username longer than 18 characters!");
+			$out = 0; return; 
+		}
+		
+		// the battle ID must be valid
+		if (!preg_match('/^([a-z0-9]+)-[0-9]+$/', $reqData['id'], $m1))
+		{
+			error_log("CALL: Battle ID is invalid!");
+			$out = 0; return; 
+		}
+		
+		// the format ID must be valid
+		if (!preg_match('/^([a-z0-9]+)$/', $reqData['format'], $m2))
+		{
+			error_log("CALL: Format ID is invalid!");
+			$out = 0; return; 
+		}
+		
+		// the format from the battle ID must match the format ID
+		if ($m1[1] !== $m2[1])
+		{
+			error_log("CALL: Battle ID and formatID do not match!");
+			$out = 0; return;
 		}
 
 		if ($server['id'] !== 'showdown') {
 			$reqData['id'] = $server['id'].'-'.$reqData['id'];
 		}
+		
+		error_log("CALL: Saving match replay...");
 
 		include_once 'ntbb-replays.lib.php';
 		$out = $GLOBALS['Replays']->prepUpload($reqData);

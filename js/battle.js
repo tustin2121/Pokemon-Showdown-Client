@@ -5538,7 +5538,11 @@ var Battle = (function () {
 					actions += "A swamp enveloped " + side.getLowerTeamName() + "!";
 					break;
 				default:
-					actions += "" + effect.name + " started!";
+					if (typeof kwargs.msg == "string") {
+						actions += kwargs.msg;
+					} else {
+						actions += "" + effect.name + " started!";
+					}
 					break;
 				}
 				break;
@@ -5590,7 +5594,11 @@ var Battle = (function () {
 					actions += "The swamp around " + side.getLowerTeamName() + " disappeared!";
 					break;
 				default:
-					actions += "" + effect.name + " ended!";
+					if (typeof kwargs.msg == "string") {
+						actions += kwargs.msg;
+					} else {
+						actions += "" + effect.name + " ended!";
+					}
 					break;
 				}
 				break;
@@ -6142,6 +6150,9 @@ var Battle = (function () {
 			this.rated = true;
 			this.log('<div class="rated"><strong>Rated battle</strong></div>');
 			break;
+		case 'bchat': //battle chat: used in stpplb
+			preempt = false;
+			// Fallthrough
 		case 'chat':
 		case 'c':
 			var pipeIndex = args[1].indexOf('|');
@@ -6405,7 +6416,7 @@ var Battle = (function () {
 			if (str !== '|') {
 				args = str.substr(1).split('|');
 			}
-			if (args[0] === 'c' || args[0] === 'chat') {
+			if (args[0] === 'c' || args[0] === 'chat' || args[0] === 'bchat') {
 				// chat is preserved untouched
 				args = [args[0], str.slice(args[0].length + 2)];
 			} else while (args[args.length - 1] && args[args.length - 1].substr(0, 1) === '[') {
