@@ -810,7 +810,7 @@
 						if (data === 'nonexistent' && Config.server.id && roomid.slice(0, 7) === 'battle-') {
 							var replayid = roomid.slice(7);
 							if (Config.server.id !== 'showdown') replayid = Config.server.id + '-' + replayid;
-							var replayLink = 'http://replay.pokemonshowdown.com/' + replayid;
+							var replayLink = 'http://tppleague.me/replay/' + replayid;
 							errormessage += '\n\nYou might want to try the replay: ' + replayLink;
 						}
 						this.addPopupMessage(errormessage);
@@ -2357,7 +2357,7 @@
 			this.close();
 		},
 		submit: function (i) {
-			app.openInNewWindow('http://replay.pokemonshowdown.com/' + this.id);
+			app.openInNewWindow('https://tppleague.me/replay/' + this.id);
 			this.close();
 		}
 	});

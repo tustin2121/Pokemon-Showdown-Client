@@ -112,6 +112,7 @@
 		<script src="data/moves.js"></script>
 		<script src="data/items.js"></script>
 		<script src="data/abilities.js"></script>
+		<script src="data/statuses.js"></script>
 		<script src="data/tpp.js"></script>
 
 		<script src="data/search-index.js"></script>

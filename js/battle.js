@@ -2277,6 +2277,11 @@ var Side = (function () {
 			lightscreen: '<span class="good">Light&nbsp;Screen</span>',
 			reflect: '<span class="good">Reflect</span>'
 		};
+		if (window.BattleStatusTags) {
+			for (var i in window.BattleStatusTags) {
+				statusTable[i] = window.BattleStatusTags[i];
+			}
+		}
 		for (var i in pokemon.volatiles) {
 			if (typeof statusTable[i] === 'undefined') status += '<span class="neutral">[[' + i + ']]</span>';
 			else status += statusTable[i];
@@ -4948,7 +4953,11 @@ var Battle = (function () {
 					break;
 
 				default:
-					actions += "" + poke.getName() + "'s " + effect.name + " started!";
+					if (typeof kwargs.msg == "string") {
+						actions += kwargs.msg;
+					} else {
+						actions += "" + poke.getName() + "'s " + effect.name + " started!";
+					}
 				}
 				poke.side.updateStatbar();
 				break;
@@ -5078,7 +5087,11 @@ var Battle = (function () {
 						}
 						actions += '' + poke.getName() + " took the " + effect.name + " attack!";
 					} else {
-						actions += "" + poke.getName() + "'s " + effect.name + " ended!";
+						if (typeof kwargs.msg == "string") {
+							actions += kwargs.msg;
+						} else {
+							actions += "" + poke.getName() + "'s " + effect.name + " ended!";
+						}
 					}
 				}
 				poke.side.updateStatbar();

@@ -69,4 +69,4 @@ function h($text) {
 <h1 style="font-weight:normal;text-align:center"><strong><?=h($format)?></strong><br /><?=h($joined_users)?></h1>
 <script type="text/plain" class="battle-log-data"><?=$log?></script>
 </div>
-<script src="https://play.pokemonshowdown.com/js/replay-embed.js"></script>
+<script src="https://tppleague.me/js/replay-embed.js"></script>

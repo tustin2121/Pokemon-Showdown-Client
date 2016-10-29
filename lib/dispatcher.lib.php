@@ -374,7 +374,7 @@ class DefaultActionHandler {
 			$reqData['id'] = $server['id'].'-'.$reqData['id'];
 		}
 		
-		error_log("CALL: Saving match replay...");
+		error_log("CALL: Saving match replay... [".$reqData['id']."]");
 
 		include_once 'ntbb-replays.lib.php';
 		$out = $GLOBALS['Replays']->prepUpload($reqData);
