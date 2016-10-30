@@ -545,8 +545,7 @@ var Tools = {
 		var options = Tools.prefs('chatformatting') || {};
 
 		// Twitch emotes
-		str = str.replace(emoteRegExp, '<img src="/fx/emotes/$&.png" alt="$&" title="$&" class="emote">');
-		str = str.replace(/&lt;3\b/g, '<img src="/fx/emotes/heart.png" alt="&lt;3" title="&lt;3" class="emote">');
+		str = window.processEmoteRegExp(str);
 		// ``code``
 		str = str.replace(/\`\`([^< ](?:[^<`]*?[^< ])??)\`\`/g,
 			options.hidemonospace ? '$1' : '<code>$1</code>');
