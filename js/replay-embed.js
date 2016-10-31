@@ -12,7 +12,7 @@ document.write('<script src="/data/pokedex-mini.js?a6"></script>');
 document.write('<script src="/data/pokedex-mini-bw.js?a6"></script>');
 document.write('<script src="/data/graphics.js?a6"></script>');
 document.write('<script src="/js/battle.js?a6"></script>');
-document.write('<script src="/data/emoteregex.js"></script>');
+document.write('<script src="/emotes/emoteregex.js"></script>');
 
 var Replays = {
 	init: function (log) {

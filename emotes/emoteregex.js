@@ -29,7 +29,7 @@ var processEmoteRegExp = function(str) {
 	str = str.replace(/\b(tbSriracha|tbSpicy|tbQuesarito|tbBaconBiscuit|tbSausageBiscuit|tbChickenBiscuit)\b/g,
 		'<img src="/emotes/-ffz/$&.png" alt="$&" title="$&" class="emote"/>');
 	// Extra emotes
-	str = str.replace(/\b(Ackbar|AtGL|AtIvy|AtWW|BionicBunion|CougarHunt|DOOMGuy|DatHass|Demon|EvilFetus|Evo2013|Fraud|FuzzyOtterOO|GasJoker|GoCanada|GoChina|GoEU|GoFrance|GoJapan|GoKorea|GoMexico|GoTaiwan|GoUK|GoUSA|ItsATrap|KZskull|MechaSupes|NightBat|OSbeaver|OSbury|OSdeo|OSrob|PJHarley|PackItUp|PazPazowitz|SMSkull|Shazam|ShibeZ|Soulfist|SriHead|Stormtrooper|Sullustan|TheKing|VaultBoy|Volcania|WinWaker|deExcite|evo2015|evoKapow|evoKappaOno|evoMcRib|heart|kappaRyu|kappaSagat|punRNG|shazamicon|tgaTrophy)\b/g,
+	str = str.replace(/\b(Ackbar|AtGL|AtIvy|AtWW|BionicBunion|CougarHunt|DOOMGuy|DatHass|Demon|EvilFetus|Evo2013|Fraud|FuzzyOtterOO|GasJoker|GoCanada|GoChina|GoEU|GoFrance|GoJapan|GoKorea|GoMexico|GoTaiwan|GoUK|GoUSA|ItsATrap|KZskull|MechaSupes|NightBat|OSbeaver|OSbury|OSdeo|OSrob|PJHarley|PackItUp|PazPazowitz|SMSkull|Shazam|ShibeZ|Soulfist|SriHead|Stormtrooper|Sullustan|TheKing|TriZard|VaultBoy|Volcania|WinWaker|deExcite|evo2015|evoKapow|evoKappaOno|evoMcRib|kappaRyu|kappaSagat|punRNG|shazamicon|tgaTrophy)\b/g,
 		'<img src="/emotes/-x/$&.png" alt="$&" title="$&" class="emote"/>');
 	return str;
 };
