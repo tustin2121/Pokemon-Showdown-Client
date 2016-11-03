@@ -2365,7 +2365,7 @@ var Battle = (function () {
 		// 5 = seeking
 		this.playbackState = 0;
 
-		this.backdropImage = 'sprites/gen6bgs/' + BattleBackdrops[Math.floor(Math.random() * BattleBackdrops.length)];
+		this.backdropImage = null;
 
 		this.bgm = null;
 		this.activeQueue = this.queue1;
@@ -2454,14 +2454,16 @@ var Battle = (function () {
 		var gen = this.gen;
 		if (Tools.prefs('nopastgens')) gen = 6;
 		if (Tools.prefs('bwgfx') && gen > 5) gen = 5;
-		if (gen <= 5) {
-			if (gen <= 1) this.backdropImage = 'fx/bg-gen1.png';
-			else if (gen <= 2) this.backdropImage = 'fx/bg-gen2.png';
-			else if (gen <= 3) this.backdropImage = 'fx/' + BattleBackdropsThree[Math.floor(Math.random() * BattleBackdropsThree.length)];
-			else if (gen <= 4) this.backdropImage = 'fx/' + BattleBackdropsFour[Math.floor(Math.random() * BattleBackdropsFour.length)];
-			else this.backdropImage = 'fx/' + BattleBackdropsFive[Math.floor(Math.random() * BattleBackdropsFive.length)];
+		if (typeof gen === 'number') {
+			gen = Math.max(gen, 1);
+			gen = Math.min(gen, 6);
 		}
-		if (this.bgElem) this.bgElem.css('background-image', 'url(' + Tools.resourcePrefix + '' + this.backdropImage + ')');
+		if (this.backdropImage === null) { //spcifically null, choose randomly
+			var bgs = BattleBackdrops[gen];
+			this.backdropImage = bgs[Math.floor(Math.random() * bgs.length)];
+		}
+		
+		if (this.bgElem) this.bgElem.css('background-image', 'url(' + Tools.resourcePrefix + 'sprites/bgs/' + this.backdropImage + ')');
 	};
 	Battle.prototype.reset = function (dontResetSound) {
 		// battle state
@@ -2491,7 +2493,7 @@ var Battle = (function () {
 		}
 
 		this.updateGen();
-		this.elem.append('<div class="backdrop" style="background-image:url(' + Tools.resourcePrefix + '' + this.backdropImage + ');display:block;opacity:0"></div>');
+		this.elem.append('<div class="backdrop" style="background-image:url(' + Tools.resourcePrefix + 'sprites/bgs/' + this.backdropImage + ');display:block;opacity:0"></div>');
 		this.bgElem = this.elem.children().last();
 		this.bgElem.animate({
 			opacity: 0.8
@@ -3985,8 +3987,10 @@ var Battle = (function () {
 				}
 				if (effect.id == 'confusion') {
 					actions += "" + poke.getName() + " doesn't become confused! ";
-				} else if (kwargs.msg) {
+				} else if (kwargs.msg === '.') {
 					actions += "It doesn't affect " + poke.getLowerName() + "... ";
+				} else if (kwargs.msg) {
+					actions += kwargs.msg;
 				} else if (kwargs.ohko) {
 					actions += "" + poke.getName() + " is unaffected! ";
 				} else {
@@ -5760,6 +5764,15 @@ var Battle = (function () {
 			case '-hint':
 				this.message('', '<small>(' + Tools.escapeHTML(args[1]) + ')</small>');
 				break;
+			
+			case '-clientmeta':
+				if (kwargs.bg && kwargs.bg !== '.') {
+					this.backdropImage = kwargs.bg;
+				}
+				if (kwargs.music && kwargs.music !== '.') {
+					window.forceBgm = kwargs.music;
+				}
+				break;
 
 			default:
 				this.logConsole('Unknown minor: ' + args[0]);
@@ -6307,10 +6320,6 @@ var Battle = (function () {
 			this.teamPreviewCount = args[1];
 			this.battleState = 5;
 			break;
-		case 'bg': // forcing the background image
-			break;
-		case 'music': // forcing the music
-			break;
 		case 'switch':
 		case 'drag':
 		case 'replace':
@@ -6755,7 +6764,7 @@ var Battle = (function () {
 	// |music|dynamic|gym     - To set the music to change when the last pokemon on the opposing side is left (a la Black/White)
 	
 	Battle.prototype.preloadVictory = function() {
-		console.debug("preloadVictory");
+		// console.debug("preloadVictory");
 		var id = musicTable.randVictory();
 		if (window.bgmId && musicTable.meta[window.bgmId+"-win"]) {
 			id = window.bgmId+"-win"; //if there's a matching win music, load that up
@@ -6768,7 +6777,7 @@ var Battle = (function () {
 		this.winm = bgmInfo.url;
 	};
 	Battle.prototype.preloadBgm = function () {
-		console.debug("preloadBgm");
+		// console.debug("preloadBgm");
 		var id = musicTable.randBattle();
 		if (window.forceBgm) {
 			id = window.forceBgm;
@@ -6779,27 +6788,27 @@ var Battle = (function () {
 		this.bgm = bgmInfo.url;
 	};
 	Battle.prototype.setMute = function (mute) {
-		console.debug("setMute");
+		// console.debug("setMute");
 		BattleSound.setMute(mute);
 	};
 	Battle.prototype.soundStart = function () {
-		console.debug("soundStart");
+		// console.debug("soundStart");
 		if (!this.bgm) this.preloadBgm();
 		if (!this.winm) this.preloadVictory();
 		if (this.battleState < 10 || this.battleState >= 20) return; //don't play music until battle begins
 		BattleSound.playBgm(this.bgm, this.turn);
 	};
 	Battle.prototype.soundStop = function () {
-		console.debug("soundStop");
+		// console.debug("soundStop");
 		BattleSound.stopBgm();
 	};
 	Battle.prototype.soundPause = function () {
-		console.debug("soundPause");
+		// console.debug("soundPause");
 		BattleSound.pauseBgm();
 		BattleSound.stopWinMusic();
 	};
 	Battle.prototype.playVictoryTheme = function() {
-		console.debug("playVictoryTheme");
+		// console.debug("playVictoryTheme");
 		if (!this.winm) this.preloadVictory();
 		BattleSound.playWinMusic(this.winm);
 	};

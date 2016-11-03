@@ -35,7 +35,7 @@ var Replays = {
 
 		this.battle.reset();
 		this.battle.fastForwardTo(0);
-		this.$('.battle').append('<div class="playbutton"><button data-action="start"><i class="fa fa-play"></i> Play</button><br /><br /><button data-action="startMuted" class="startsoundchooser" style="font-size:10pt;display:none">Play (music off)</button></div>');
+		this.$('.battle').append('<div class="playbutton"><button data-action="start"><i class="fa fa-play"></i> Play</button><br /><br /><button data-action="startMuted" class="startsoundchooser" style="font-size:10pt">Play (music off)</button></div>');
 
 		this.$('.replay-controls-2').html('<div class="chooser leftchooser speedchooser"> <em>Speed:</em> <div><button class="sel" value="fast">Fast</button><button value="normal">Normal</button><button value="slow">Slow</button><button value="reallyslow">Really Slow</button></div> </div> <div class="chooser colorchooser"> <em>Color&nbsp;scheme:</em> <div><button class="sel" value="light">Light</button><button value="dark">Dark</button></div> </div> <div class="chooser soundchooser" style="display:none"> <em>Music:</em> <div><button class="sel" value="on">On</button><button value="off">Off</button></div> </div>');
 
@@ -43,7 +43,7 @@ var Replays = {
 		var rc2 = this.$('.replay-controls-2')[0];
 		if (rc2) rc2.innerHTML = rc2.innerHTML;
 
-		if (window.soundManager && soundManager.ready) this.soundReady();
+		if (window.soundManager) this.soundReady();
 		this.reset();
 	},
 	"$": function (sel) {
@@ -133,7 +133,7 @@ var Replays = {
 	reset: function () {
 		this.battle.reset();
 		this.battle.fastForwardTo(0);
-		this.$('.battle').append('<div class="playbutton"><button data-action="start"><i class="fa fa-play"></i> Play</button><br /><br /><button data-action="startMuted" class="startsoundchooser" style="font-size:10pt;display:none">Play (music off)</button></div>');
+		this.$('.battle').append('<div class="playbutton"><button data-action="start"><i class="fa fa-play"></i> Play</button><br /><br /><button data-action="startMuted" class="startsoundchooser" style="font-size:10pt">Play (music off)</button></div>');
 		// this.$('.battle-log').html('');
 		this.$('.replay-controls').html('<button data-action="start"><i class="fa fa-play"></i> Play</button><button data-action="reset" disabled="disabled"><i class="fa fa-undo"></i> Reset</button>');
 	},
