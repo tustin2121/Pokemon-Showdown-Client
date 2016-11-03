@@ -27,7 +27,7 @@
 
 			this.$chat = this.$chatFrame.find('.inner');
 
-			this.$options = this.battle.optionsElem.html('<div style="padding-top: 3px; text-align: right"><label style="font-size: 8pt; padding: 3px 5px"><input type="checkbox" name="ignorespects" /> Ignore Spectators</label> <label style="font-size: 8pt; padding: 3px 5px"><input type="checkbox" name="ignoreopp" /> Ignore Players</label></div>');
+			this.$options = this.battle.optionsElem.html('<div style="padding-top: 3px; padding-right: 3px; text-align: right"><button class="icon button" name="openBattleOptions" title="Options">Battle Options</button></div>');
 
 			this.battle.customCallback = _.bind(this.updateControls, this);
 			this.battle.endCallback = _.bind(this.updateControls, this);
@@ -37,8 +37,6 @@
 			this.battle.play();
 		},
 		events: {
-			'change input[name=ignorespects]': 'toggleIgnoreSpects',
-			'change input[name=ignoreopp]': 'toggleIgnoreOpponent',
 			'click .replayDownloadButton': 'clickReplayDownloadButton'
 		},
 		battleEnded: false,
@@ -94,7 +92,10 @@
 		},
 		focus: function () {
 			this.tooltips.hideTooltip();
-			if (this.battle.playbackState === 3) this.battle.play();
+			if (this.battle.playbackState === 3) {
+				this.battle.play();
+				if (Tools.prefs('noanim')) this.battle.fastForwardTo(-1);
+			}
 			ConsoleRoom.prototype.focus.call(this);
 		},
 		blur: function () {
@@ -803,19 +804,14 @@
 		setTimer: function (setting) {
 			this.send('/timer ' + setting);
 		},
-		toggleIgnoreSpects: function (e) {
-			this.battle.ignoreSpects = !!e.currentTarget.checked;
-			this.battle.add('Spectators ' + (this.battle.ignoreSpects ? '' : 'no longer ') + 'ignored.');
-		},
-		toggleIgnoreOpponent: function (e) {
-			this.battle.ignoreOpponent = !!e.currentTarget.checked;
-			this.battle.add('Opponent ' + (this.battle.ignoreOpponent ? '' : 'no longer ') + 'ignored.');
-		},
 		forfeit: function () {
 			this.send('/forfeit');
 		},
 		saveReplay: function () {
 			this.send('/savereplay');
+		},
+		openBattleOptions: function () {
+			app.addPopup(BattleOptionsPopup, {battle: this.battle});
 		},
 		clickReplayDownloadButton: function (e) {
 			var filename = (this.battle.tier || 'Battle').replace(/[^A-Za-z0-9]/g, '');
@@ -1103,6 +1099,72 @@
 			}
 			this.close();
 		}
+	});
+
+	var BattleOptionsPopup = this.BattleOptionsPopup = Popup.extend({
+		initialize: function (data) {
+			this.battle = data.battle;
+			var buf = '<p><strong>In this battle</strong></p>';
+			buf += '<p><label class="optlabel"><input type="checkbox" name="ignorespects" /> Ignore Spectators</label></p>';
+			buf += '<p><label class="optlabel"><input type="checkbox" name="ignoreopp" /> Ignore Opponent</label></p>';
+			buf += '<p><strong>All battles</strong></p>';
+			buf += '<p><label class="optlabel"><input type="checkbox" name="ignorenicks"' + (Tools.prefs('ignorenicks') ? ' checked' : '') + ' /> Ignore nicknames</label></p>';
+			buf += '<p><button name="close">Close</button></p>';
+			this.$el.html(buf);
+		},
+		events: {
+			'change input[name=ignorespects]': 'toggleIgnoreSpects',
+			'change input[name=ignorenicks]': 'toggleIgnoreNicks',
+			'change input[name=ignoreopp]': 'toggleIgnoreOpponent',
+		},
+		toggleIgnoreSpects: function (e) {
+			this.battle.ignoreSpects = !!e.currentTarget.checked;
+			this.battle.add('Spectators ' + (this.battle.ignoreSpects ? '' : 'no longer ') + 'ignored.');
+			var $messages = $('.battle-log').find('.chat').not('small:contains(\u2605)');
+			if (!$messages.length) return;
+			if (this.battle.ignoreSpects) {
+				$messages.hide();
+			} else {
+				$messages.show();
+			}
+		},
+		toggleIgnoreNicks: function (e) {
+			this.battle.ignoreNicks = !!e.currentTarget.checked;
+			Tools.prefs('ignorenicks', this.battle.ignoreNicks);
+			this.battle.add('Nicknames ' + (this.battle.ignoreNicks ? '' : 'no longer ') + 'ignored.');
+			this.toggleNicknames(this.battle.mySide);
+			this.toggleNicknames(this.battle.yourSide);
+
+			var $log = $('.battle-log .inner');
+			if (!$log.length) return;
+			if (this.battle.ignoreNicks) {
+				$log.addClass('hidenicks');
+			} else {
+				$log.removeClass('hidenicks');
+			}
+		},
+		toggleIgnoreOpponent: function (e) {
+			this.battle.ignoreOpponent = !!e.currentTarget.checked;
+			this.battle.add('Opponent ' + (this.battle.ignoreOpponent ? '' : 'no longer ') + 'ignored.');
+			var $log = $('.battle-log .inner');
+			var $messages = $log.find('.chatmessage-' + this.battle.yourSide.id);
+			if (!$messages.length) return;
+			if (this.battle.ignoreOpponent) {
+				$messages.hide();
+				$log.addClass('hidenicks');
+			} else {
+				$messages.show();
+				$log.removeClass('hidenicks');
+			}
+		},
+		toggleNicknames: function (side) {
+			for (var i = 0; i < side.active.length; i++) {
+				if (!side.active[i]) continue;
+				side.active[i].statbarElem.html(side.getStatbarHTML(side.active[i], true));
+				side.updateStatbar(side.active[i], true, true);
+			}
+			side.updateSidebar();
+		},
 	});
 
 }).call(this, jQuery);
