@@ -52,7 +52,9 @@
 			<div class="rightmenu">
 			</div>
 			<div class="mainmenufooter">
-				<small><a href="//pokemonshowdown.com/" target="_blank"><strong>Pok&eacute;mon Showdown</strong></a> | <a href="http://smogon.com/" target="_blank"><strong>Smogon</strong></a><br><a href="//pokemonshowdown.com/dex/" target="_blank">Pokédex</a> | <a href="//pokemonshowdown.com/replay/" target="_blank">Replays</a> | <a href="//pokemonshowdown.com/rules" target="_blank">Rules</a></small> | <small><a href="//pokemonshowdown.com/forums/" target="_blank">Forum</a></small>
+				<small>
+					<a href="https://www.reddit.com/r/TPPLeague" target="_blank"><strong>TPPLeague</strong></a><br/>
+					<a href="//pokemonshowdown.com/dex/" target="_blank">Pokédex</a> | <a href="https://tppleague.me/replay/" target="_blank">Replays</a> | <small><a href="https://www.reddit.com/r/TPPLeague" target="_blank">Subreddit</a></small>
 			</div>
 		</div></div>
 		<script>
