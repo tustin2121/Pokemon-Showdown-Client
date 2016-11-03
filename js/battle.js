@@ -582,18 +582,21 @@ var Pokemon = (function () {
 			this.baseAbility = ability;
 		}
 	};
+	Pokemon.prototype.htmlName = function () {
+		return '<span class="battle-nickname' + (this.side.n === 0 ? '' : '-foe') + '" title="' + this.species + '">' + Tools.escapeHTML(this.name) + '</span>';
+	};
 	Pokemon.prototype.getName = function (shortName) {
 		if (this.side.n === 0) {
-			return Tools.escapeHTML(this.name);
+			return this.htmlName();
 		} else {
-			return (shortName ? "Opposing " : "The opposing ") + (this.side.battle.ignoreOpponent ? this.species : Tools.escapeHTML(this.name));
+			return (shortName ? "Opposing " : "The opposing ") + this.htmlName();
 		}
 	};
 	Pokemon.prototype.getLowerName = function (shortName) {
 		if (this.side.n === 0) {
-			return Tools.escapeHTML(this.name);
+			return this.htmlName();
 		} else {
-			return (shortName ? "opposing " : "the opposing ") + (this.side.battle.ignoreOpponent ? this.species : Tools.escapeHTML(this.name));
+			return (shortName ? "opposing " : "the opposing ") + this.htmlName();
 		}
 	};
 	Pokemon.prototype.getTitle = function () {
@@ -606,12 +609,12 @@ var Pokemon = (function () {
 		return titlestring;
 	};
 	Pokemon.prototype.getFullName = function (plaintext) {
-		var name = this.side && this.side.n && this.side.battle.ignoreOpponent ? this.species : Tools.escapeHTML(this.name);
+		var name = this.side && this.side.n && (this.side.battle.ignoreOpponent || this.side.battle.ignoreNicks) ? this.species : Tools.escapeHTML(this.name);
 		if (name !== this.species) {
 			if (plaintext) {
 				name += ' (' + this.species + ')';
 			} else {
-				name += ' <small>(' + this.species + ')</small>';
+				name = '<span class="battle-nickname' + (this.side && this.side.n === 0 ? '' : '-foe') + '" title="' + this.species + '">' + name + ' <small>(' + this.species + ')</small>' + '</span>';
 			}
 		}
 		if (plaintext) {
@@ -1721,15 +1724,12 @@ var Side = (function () {
 		} else {
 			this.pokemon.push(poke);
 		}
-		if (this.pokemon.length == 7) {
-			// something's wrong
-			this.battle.logConsole('corruption');
-
-			// the other possibility is Illusion, which we'll assume
+		if (this.pokemon.length == 7 || this.battle.speciesClause) {
+			// check for Illusion
 			var existingTable = {};
-			for (var i = 0; i < 6; i++) {
+			for (var i = 0; i < this.pokemon.length; i++) {
 				var poke1 = this.pokemon[i];
-				if (existingTable[poke1.searchid]) {
+				if (poke1.searchid in existingTable) {
 					var j = existingTable[poke1.searchid];
 					var poke2 = this.pokemon[j];
 					if (this.active.indexOf(poke1) >= 0) {
@@ -1754,7 +1754,7 @@ var Side = (function () {
 	Side.prototype.getStatbarHTML = function (pokemon, inner) {
 		var buf = '';
 		if (!inner) buf += '<div class="statbar' + (this.n ? ' lstatbar' : ' rstatbar') + '">';
-		buf += '<strong>' + (this.n && this.battle.ignoreOpponent ? pokemon.species : Tools.escapeHTML(pokemon.name));
+		buf += '<strong>' + (this.n && (this.battle.ignoreOpponent || this.battle.ignoreNicks) ? pokemon.species : Tools.escapeHTML(pokemon.name));
 		var gender = pokemon.gender;
 		if (gender) gender = ' <img src="' + Tools.resourcePrefix + 'fx/gender-' + gender.toLowerCase() + '.png" alt="' + gender + '" />';
 		buf += gender + (pokemon.level === 100 ? '' : ' <small>L' + pokemon.level + '</small>');
@@ -2337,6 +2337,7 @@ var Battle = (function () {
 		this.sides = [];
 		this.lastMove = '';
 		this.gen = 6;
+		this.speciesClause = false;
 
 		this.frameElem = frame;
 		this.logFrameElem = logFrame;
@@ -2355,6 +2356,7 @@ var Battle = (function () {
 		this.messagebarElem = null;
 		this.delayElem = null;
 		this.hiddenMessageElem = null;
+		this.ignoreNicks = Tools.prefs('ignorenicks');
 
 		this.paused = true;
 		// 0 = uninitialized
@@ -2543,6 +2545,11 @@ var Battle = (function () {
 
 		if (this.mySide) this.mySide.reset();
 		if (this.yourSide) this.yourSide.reset();
+
+		if (this.ignoreNicks) {
+			var $log = $('.battle-log .inner');
+			if ($log.length) $log.addClass('hidenicks');
+		}
 
 		// activity queue state
 		this.animationDelay = 0;
@@ -2971,8 +2978,8 @@ var Battle = (function () {
 			},
 			deltastream: {
 				name: 'Strong Winds',
-				startMessage: 'A mysterious air current is protecting Flying-type Pok&eacute;mon!',
-				endMessage: 'The mysterious air current has dissipated!'
+				startMessage: 'Mysterious strong winds are protecting Flying-type Pok&eacute;mon!',
+				endMessage: 'The mysterious strong winds have dissipated!'
 			}
 		};
 		if (!weather || weather === 'none') {
@@ -3432,6 +3439,7 @@ var Battle = (function () {
 			break;
 		case 'damp':
 		case 'dazzling':
+		case 'queenlymajesty':
 			var ofpoke = this.getPokemon(kwargs.of);
 			this.message(ofpoke.getName() + ' cannot use ' + move.name + '!');
 			break;
@@ -3662,7 +3670,7 @@ var Battle = (function () {
 						actions += "" + poke.getName() + " absorbed nutrients with its roots!";
 						break;
 					case 'aquaring':
-						actions += "Aqua Ring restored " + poke.getLowerName() + "'s HP!";
+						actions += "A veil of water restored " + poke.getLowerName() + "'s HP!";
 						break;
 					case 'healingwish':
 						actions += "The healing wish came true for " + poke.getLowerName() + "!";
@@ -4026,7 +4034,7 @@ var Battle = (function () {
 				switch (effect.id) {
 				case 'brn':
 					this.resultAnim(poke, 'Already burned', 'neutral');
-					actions += "" + poke.getName() + " is already burned.";
+					actions += "" + poke.getName() + " already has a burn.";
 					break;
 				case 'tox':
 				case 'psn':
@@ -4043,7 +4051,7 @@ var Battle = (function () {
 						}
 					} else {
 						this.resultAnim(poke, 'Already asleep', 'neutral');
-						actions += "" + poke.getName() + " is already asleep.";
+						actions += "" + poke.getName() + " is already asleep!";
 					}
 					break;
 				case 'par':
@@ -4052,7 +4060,7 @@ var Battle = (function () {
 					break;
 				case 'frz':
 					this.resultAnim(poke, 'Already frozen', 'neutral');
-					actions += "" + poke.getName() + " is already frozen.";
+					actions += "" + poke.getName() + " is already frozen solid!";
 					break;
 				case 'hyperspacefury':
 					if (kwargs.forme) {
@@ -4087,10 +4095,10 @@ var Battle = (function () {
 						actions += "The extremely harsh sunlight was not lessened at all!";
 						break;
 					case 'primordialsea':
-						actions += "There's no relief from this heavy rain!";
+						actions += "There is no relief from this heavy rain!";
 						break;
 					case 'deltastream':
-						actions += "The mysterious air current blows on regardless!";
+						actions += "The mysterious strong winds blow on regardless!";
 						break;
 					default:
 						actions += "But it failed!";
@@ -4693,7 +4701,7 @@ var Battle = (function () {
 				break;
 			case '-primal':
 				var poke = this.getPokemon(args[1]);
-				actions += "" + poke.getName() + "'s Primal Reversion! It reverted to its primal form!";
+				actions += "" + poke.getName() + "'s Primal Reversion! It reverted to its primal state!";
 				break;
 
 			case '-start':
@@ -5207,6 +5215,7 @@ var Battle = (function () {
 					break;
 				case 'grudge':
 					actions += "" + poke.getName() + "'s " + Tools.escapeHTML(args[3]) + " lost all of its PP due to the grudge!";
+					poke.markMove(args[3], Infinity);
 					break;
 				case 'quickguard':
 					poke.addTurnstatus('quickguard');
@@ -5359,7 +5368,7 @@ var Battle = (function () {
 					actions += '' + poke.getName() + ' was wrapped by ' + ofpoke.getLowerName() + '!';
 					break;
 				case 'clamp':
-					actions += '' + ofpoke.getName() + ' clamped ' + poke.getLowerName() + '!';
+					actions += '' + ofpoke.getName() + ' clamped down on ' + poke.getLowerName() + '!';
 					break;
 				case 'whirlpool':
 					actions += '' + poke.getName() + ' became trapped in the vortex!';
@@ -5371,7 +5380,7 @@ var Battle = (function () {
 					actions += '' + poke.getName() + ' became trapped by swirling magma!';
 					break;
 				case 'sandtomb':
-					actions += '' + poke.getName() + ' became trapped by Sand Tomb!';
+					actions += '' + poke.getName() + ' became trapped by the quicksand!';
 					break;
 				case 'infestation':
 					actions += '' + poke.getName() + ' has been afflicted with an infestation by ' + ofpoke.getLowerName() + '!';
@@ -5412,6 +5421,9 @@ var Battle = (function () {
 					break;
 				case 'mistyterrain':
 					actions += '' + poke.getName() + ' surrounds itself with a protective mist!';
+					break;
+				case 'psychicterrain':
+					actions += '' + poke.getName() + ' surrounds itself with psychic terrain!';
 					break;
 
 				// ability activations
@@ -5456,7 +5468,7 @@ var Battle = (function () {
 					actions += "" + poke.getName() + " avoids attacks by its ally Pok&#xE9;mon!";
 					break;
 				case 'stickyhold':
-					actions += "" + poke.getName() + "'s item cannot be stolen!";
+					actions += "" + poke.getName() + "'s item cannot be removed!";
 					break;
 				case 'suctioncups':
 					actions += '' + poke.getName() + ' anchors itself!';
@@ -5465,7 +5477,7 @@ var Battle = (function () {
 					actions += '' + poke.getName() + ' shared its ' + Tools.getItem(args[3]).name + ' with ' + ofpoke.getLowerName() + '!';
 					break;
 				case 'aromaveil':
-					actions += '' + ofpoke.getName() + ' is protected by Aroma Veil!';
+					actions += '' + ofpoke.getName() + ' is protected by an aromatic veil!';
 					break;
 				case 'flowerveil':
 					actions += '' + ofpoke.getName() + ' surrounded itself with a veil of petals!';
@@ -5474,7 +5486,7 @@ var Battle = (function () {
 					actions += '' + ofpoke.getName() + ' surrounded itself with a veil of sweetness!';
 					break;
 				case 'deltastream':
-					actions += "The mysterious air current weakened the attack!";
+					actions += "The mysterious strong winds weakened the attack!";
 					break;
 
 				// item activations
@@ -5514,28 +5526,28 @@ var Battle = (function () {
 					actions += "Pointed stones float in the air around " + side.getLowerTeamName() + "!";
 					break;
 				case 'spikes':
-					actions += "Spikes were scattered all around the feet of " + side.getLowerTeamName() + "!";
+					actions += "Spikes were scattered on the ground all around " + side.getLowerTeamName() + "!";
 					break;
 				case 'toxicspikes':
-					actions += "Poison spikes were scattered all around the feet of " + side.getLowerTeamName() + "!";
+					actions += "Poison spikes were scattered on the ground all around " + side.getLowerTeamName() + "!";
 					break;
 				case 'stickyweb':
-					actions += "A sticky web spreads out beneath " + side.getLowerTeamName() + "'s feet!";
+					actions += "A sticky web spreads out on the ground around " + side.getLowerTeamName() + "!";
 					break;
 				case 'tailwind':
 					actions += "The Tailwind blew from behind " + side.getLowerTeamName() + "!";
 					this.updateWeather();
 					break;
 				case 'reflect':
-					actions += "Reflect raised " + side.getLowerTeamName() + "'s Defense!";
+					actions += "Reflect made " + side.getLowerTeamName() + " stronger against physical moves!";
 					this.updateWeather();
 					break;
 				case 'lightscreen':
-					actions += "Light Screen raised " + side.getLowerTeamName() + "'s Special Defense!";
+					actions += "Light Screen made " + side.getLowerTeamName() + " stronger against special moves!";
 					this.updateWeather();
 					break;
 				case 'safeguard':
-					actions += "" + side.getTeamName() + " became cloaked in a mystical veil!";
+					actions += "" + side.getTeamName() + " cloaked itself in a mystical veil!";
 					this.updateWeather();
 					break;
 				case 'mist':
@@ -5575,13 +5587,13 @@ var Battle = (function () {
 					actions += "The pointed stones disappeared from around " + side.getLowerTeamName() + "!";
 					break;
 				case 'spikes':
-					actions += "The spikes disappeared from around " + side.getLowerTeamName() + "'s feet!";
+					actions += "The spikes disappeared from the ground around " + side.getLowerTeamName() + "!";
 					break;
 				case 'toxicspikes':
-					actions += "The poison spikes disappeared from around " + side.getLowerTeamName() + "'s feet!";
+					actions += "The poison spikes disappeared from the ground around " + side.getLowerTeamName() + "!";
 					break;
 				case 'stickyweb':
-					actions += "The sticky web has disappeared from beneath " + side.getLowerTeamName() + "'s feet!";
+					actions += "The sticky web has disappeared from the ground around " + side.getLowerTeamName() + "!";
 					break;
 				case 'tailwind':
 					actions += "" + side.getTeamName() + "'s Tailwind petered out!";
@@ -5636,10 +5648,11 @@ var Battle = (function () {
 					this.message('', "<small>[" + poke.getName(true) + "'s " + fromeffect.name + "!]</small>");
 					poke.markAbility(fromeffect.name);
 				}
-				if (effect.id in {'electricterrain': 1, 'grassyterrain': 1, 'mistyterrain': 1}) {
+				if (effect.id in {'electricterrain': 1, 'grassyterrain': 1, 'mistyterrain': 1, 'psychicterrain': 1}) {
 					this.removePseudoWeather('Electric Terrain');
 					this.removePseudoWeather('Grassy Terrain');
 					this.removePseudoWeather('Misty Terrain');
+					this.removePseudoWeather('Psychic Terrain');
 				}
 				this.addPseudoWeather(effect.name, poke);
 
@@ -5676,10 +5689,13 @@ var Battle = (function () {
 					actions += "Grass grew to cover the battlefield!";
 					break;
 				case 'mistyterrain':
-					actions += "Mist swirled about the battlefield!";
+					actions += "Mist swirls around the battlefield!";
 					break;
 				case 'electricterrain':
 					actions += "An electric current runs across the battlefield!";
+					break;
+				case 'psychicterrain':
+					actions += "The battlefield got weird!";
 					break;
 				default:
 					actions += effect.name + " started!";
@@ -5720,6 +5736,9 @@ var Battle = (function () {
 				case 'electricterrain':
 					actions += "The electricity disappeared from the battlefield.";
 					break;
+				case 'psychicterrain':
+					actions += "The weirdness disappeared from the battlefield!";
+					break;
 				default:
 					actions += effect.name + " ended!";
 					break;
@@ -5730,7 +5749,7 @@ var Battle = (function () {
 				var effect = Tools.getEffect(args[1]);
 				switch (effect.id) {
 				case 'perishsong':
-					actions += 'All Pok&#xE9;mon that hear the song will faint in three turns!';
+					actions += 'All Pok&#xE9;mon that heard the song will faint in three turns!';
 					this.mySide.updateStatbar();
 					this.yourSide.updateStatbar();
 					break;
@@ -6146,6 +6165,9 @@ var Battle = (function () {
 			for (var i in kwargs) args[1] += '[' + i + '] ' + kwargs[i];
 			this.log('<div style="padding:5px 0"><small>Format:</small> <br /><strong>' + Tools.escapeHTML(args[1]) + '</strong></div>');
 			this.tier = args[1];
+			if (this.tier === 'Random Battle') {
+				this.speciesClause = true;
+			}
 			break;
 		case 'gametype':
 			this.gameType = args[1];

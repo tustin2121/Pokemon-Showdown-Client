@@ -1,6 +1,9 @@
 /sprites/
 /audio/
 /data/Pokemon-Showdown/
+/config/
+/index.php
+/index.html
 /data/*
 !/data/tpp.js
 !/data/emoteregex.js
