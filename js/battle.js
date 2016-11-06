@@ -124,12 +124,12 @@ var BattleSoundLibrary = (function () {
 	BattleSoundLibrary.prototype.loadBgm = function (url, loopstart, loopend) {
 		if (this.bgmCache[url]) {
 			if (this.bgmCache[url] !== this.soundPlaceholder || loopstart === undefined) {
-				console.debug("loadBgm : memoized bgm");
+				// console.debug("loadBgm : memoized bgm");
 				return this.bgmCache[url];
 			}
 		}
 		try {
-			console.debug("loadBgm : creating");
+			// console.debug("loadBgm : creating");
 			this.bgmCache[url] = soundManager.createSound({
 				id: url,
 				url: Tools.resourcePrefix + url,
@@ -139,7 +139,7 @@ var BattleSoundLibrary = (function () {
 			});
 		} catch (e) { console.error("BattleSoundLibrary::loadBgm: ", e); }
 		if (!this.bgmCache[url]) {
-			console.debug("loadBgm : has errored");
+			// console.debug("loadBgm : has errored");
 			// couldn't load
 			// suppress crash
 			return (this.bgmCache[url] = this.soundPlaceholder);
@@ -147,22 +147,22 @@ var BattleSoundLibrary = (function () {
 		// this.bgmCache[url].onposition(loopend, function () {
 		// 	this.setPosition(loopstart);
 		// });
-		console.debug("loadBgm : returning: ", this.bgmCache[url]);
+		// console.debug("loadBgm : returning: ", this.bgmCache[url]);
 		return this.bgmCache[url];
 	};
 	BattleSoundLibrary.prototype.playBgm = function (url, turnCount) {
 		if (this.bgm === this.loadBgm(url)) {
 			if (!this.bgm.paused && this.bgm.playState) {
-				console.debug("playBgm : Early Return");
+				// console.debug("playBgm : Early Return");
 				return;
 			}
 		} else {
-			console.debug("playBgm : stopbgm call");
+			// console.debug("playBgm : stopbgm call");
 			this.stopBgm();
 		}
-		console.debug("playBgm : previous bgm:", this.bgm);
+		// console.debug("playBgm : previous bgm:", this.bgm);
 		this.bgm = this.loadBgm(url).setVolume(this.bgmVolume);
-		console.debug("playBgm : loaded bgm: ", this.bgm);
+		// console.debug("playBgm : loaded bgm: ", this.bgm);
 		if (!this.muted && this.bgm) {
 			if (this.bgm.paused) {
 				this.bgm.resume();
@@ -3394,6 +3394,46 @@ var Battle = (function () {
 			pokemon.side.wisher = pokemon;
 		}
 	};
+	Battle.prototype.showCustomAnimation = function(pokemon, target, animlist, kwargs){
+		if (this.fastForward || kwargs.still) return;
+		if (kwargs.miss && target.side) {
+			target = target.side.missedPokemon;
+		}
+		if (kwargs.notarget || !target || !target.sprite.elem) {
+			target = pokemon.side.foe.missedPokemon;
+		}
+		while(animlist.length) {
+			var anim = animlist.shift().trim();
+			var res = /^(?:\{([a-zA-Z:]+)\}\s*)?([\w -]+)$/.exec(anim); //{kind:swap} Move Name
+			if (!res) res = [];
+			var kind = (res[1] || "move").split(":");
+			var swap = kind[1] || "st";
+			var id = toId(res[2]);
+			var animFn;
+			switch (kind[0]) {
+				default:
+				case "move":
+					animFn = BattleMoveAnims[id] || BattleOtherAnims.attack;
+					animFn = animFn.anim;
+					break;
+				case "prepare":
+					animFn = BattleMoveAnims[id] || BattleOtherAnims.attack;
+					animFn = animFn.prepareAnim;
+					break;
+				case "status":
+					animFn = BattleStatusAnims[id] || BattleOtherAnims.attack;
+					animFn = animFn.anim;
+					break;
+				case "other":
+					animFn = BattleOtherAnims[id] || BattleOtherAnims.attack;
+					animFn = animFn.anim;
+					break;
+			}
+			var src_sprite = swap.charAt(0)==='t'? target.sprite : pokemon.sprite;
+			var tar_sprite = swap.charAt(1)==='s'? pokemon.sprite : target.sprite;
+			animFn(this, [src_sprite, tar_sprite]);
+		}
+	};
 	Battle.prototype.cantUseMove = function (pokemon, effect, move, kwargs) {
 		pokemon.clearMovestatuses();
 		pokemon.side.updateStatbar(pokemon);
@@ -5779,6 +5819,25 @@ var Battle = (function () {
 				this.useMove(poke, move, poke2, kwargs);
 				poke.sprite.afterMove();
 				break;
+			
+			case '-animcustom': {
+				var poke = this.getPokemon(args[1]);
+				var poke2 = this.getPokemon(args[2]);
+				var animlist = args.slice(3);
+				if (this.checkActive(poke)) return;
+				poke.sprite.beforeMove();
+				this.showCustomAnimation(poke, poke2, animlist, kwargs);
+				poke.sprite.afterMove();
+			}	break;
+			
+			case '-next': //Clear most of the messages, but not the first
+				if (this.messageActive) {
+					if (!this.fastForward) {
+						this.messagebarElem.children().not(":first").slideUp();
+						this.activityWait(this.messagebarElem);
+					}
+				}
+				break;
 
 			case '-hint':
 				this.message('', '<small>(' + Tools.escapeHTML(args[1]) + ')</small>');
@@ -6788,6 +6847,7 @@ var Battle = (function () {
 	Battle.prototype.preloadVictory = function() {
 		// console.debug("preloadVictory");
 		var id = musicTable.randVictory();
+		if (!id) return;
 		if (window.bgmId && musicTable.meta[window.bgmId+"-win"]) {
 			id = window.bgmId+"-win"; //if there's a matching win music, load that up
 		}
@@ -6801,6 +6861,7 @@ var Battle = (function () {
 	Battle.prototype.preloadBgm = function () {
 		// console.debug("preloadBgm");
 		var id = musicTable.randBattle();
+		if (!id) return;
 		if (window.forceBgm) {
 			id = window.forceBgm;
 		}

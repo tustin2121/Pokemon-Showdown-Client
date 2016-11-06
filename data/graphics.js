@@ -25760,3 +25760,77 @@ BattleMoveAnims['secretpower'] = {anim:BattleMoveAnims['technoblast'].anim};
 BattleMoveAnims['naturalgift'] = {anim:BattleMoveAnims['technoblast'].anim};
 
 BattleMoveAnims['fleurcannon'] = {anim:BattleMoveAnims['lightofruin'].anim};
+
+////////////////////////////////////////////////////////////////////////////////
+// Custom Move Animations
+
+BattleMoveAnims['ganonssword'] = {
+	anim: BattleMoveAnims['sacredsword'].anim,
+	prepareMessage: function(pokemon){ return pokemon.getName() + " is preparing to strike!"; },
+	prepareAnim: function(battle, args) {
+		var attacker = args[0];
+		
+		var xt = 200;
+		battle.showEffect('bluefireball', {
+			x: attacker.x + 30,
+			y: attacker.y,
+			z: attacker.z,
+			scale: 1,
+			opacity: 0.5,
+			time: 0+xt
+		}, {
+			y: attacker.y + 60,
+			opacity: 0.2,
+			time: 400+xt
+		}, 'linear', 'fade');
+		battle.showEffect('bluefireball', {
+			x: attacker.x - 30,
+			y: attacker.y,
+			z: attacker.z,
+			scale: 1,
+			opacity: 0.5,
+			time: 100+xt
+		}, {
+			y: attacker.y + 60,
+			opacity: 0.2,
+			time: 500
+		}, 'linear', 'fade');
+		battle.showEffect('bluefireball', {
+			x: attacker.x + 15,
+			y: attacker.y,
+			z: attacker.z,
+			scale: 1,
+			opacity: 0.5,
+			time: 200+xt
+		}, {
+			y: attacker.y + 60,
+			opacity: 0.2,
+			time: 600+xt
+		}, 'linear', 'fade');
+		battle.showEffect('bluefireball', {
+			x: attacker.x - 15,
+			y: attacker.y,
+			z: attacker.z,
+			scale: 1,
+			opacity: 0.5,
+			time: 300+xt
+		}, {
+			y: attacker.y + 60,
+			opacity: 0.2,
+			time: 700+xt
+		}, 'linear', 'fade');
+
+		battle.showEffect('sword', {
+			x: attacker.leftof(-10),
+			y: attacker.y - 10,
+			z: attacker.z,
+			scale: 0.5,
+			opacity: 1
+		}, {
+			y: attacker.y + 10,
+			scale: 1,
+			opacity: 0.4,
+			time: 500
+		}, 'decel', 'fade');
+	},
+};
