@@ -3418,7 +3418,11 @@ var Battle = (function () {
 					break;
 				case "prepare":
 					animFn = BattleMoveAnims[id] || BattleOtherAnims.attack;
-					animFn = animFn.prepareAnim;
+					animFn = animFn.prepareAnim || BattleOtherAnims.attack.anim;
+					break;
+				case "residual":
+					animFn = BattleMoveAnims[id] || BattleOtherAnims.attack;
+					animFn = animFn.residualAnim || BattleOtherAnims.attack.anim;
 					break;
 				case "status":
 					animFn = BattleStatusAnims[id] || BattleOtherAnims.attack;
@@ -3428,6 +3432,9 @@ var Battle = (function () {
 					animFn = BattleOtherAnims[id] || BattleOtherAnims.attack;
 					animFn = animFn.anim;
 					break;
+				case "delay":
+					this.animationDelay += parseInt(id, 10);
+					continue; //skip the bottom
 			}
 			var src_sprite = swap.charAt(0)==='t'? target.sprite : pokemon.sprite;
 			var tar_sprite = swap.charAt(1)==='s'? pokemon.sprite : target.sprite;

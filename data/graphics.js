@@ -25834,3 +25834,110 @@ BattleMoveAnims['ganonssword'] = {
 		}, 'decel', 'fade');
 	},
 };
+
+BattleMoveAnims['operationlovebomb'] = {
+	anim: function (battle, args) {
+		var attacker = args[0];
+		var defender = args[1];
+		
+		battle.showEffect('mistball', {
+			y: -30,
+			z: 100,
+			xscale: 4,
+			yscale: 0.6,
+			opacity: 0.0,
+			time: 0,
+		}, {
+			xscale: 1.5,
+			yscale: 0.2,
+			opacity: 1,
+			time: 1000,
+		}, 'linear', 'explode');
+		
+		battle.showEffect('heart', {
+			y: 210,
+			z: 100,
+			scale: 5,
+			opacity: 1,
+			time: 0,
+		}, {
+			y: 0,
+			opacity: 1,
+			time: 1000,
+		}, 'linear', 'fade');
+		
+		battle.showEffect('heart', {
+			y: 0,
+			z: 100,
+			scale: 5,
+			opacity: 1,
+			time: 1000,
+		}, {
+			scale: 25,
+			opacity: 0,
+			time: 2000,
+		}, 'linear', 'fade');
+		
+		battle.backgroundEffect('#FF99FF', 500, 0.8, 1000);
+		
+		for (var i = 0; i < 20; i++) {
+			var rx = rand(-200, 200);
+			var rz = rand(-100, 200);
+			battle.showEffect('heart', {
+				x: rx,
+				z: rz,
+				scale: 1,
+				opacity: 0.8,
+				time: 1000+(i*50),
+			}, {
+				y: 0 + rand(45, 110),
+				opacity: 1,
+				time: 1400+(i*50),
+			}, 'ballistic2Under', 'fade');
+		}
+		battle.activityWait(2000)
+		return;
+		
+		function rand(low, hi) { return Math.floor(Math.random() * (hi - low))+low; }
+	},
+};
+
+/*
+battle.showEffect('mistball', {
+    y: attacker.y - 26,
+    xscale: 1.5,
+    yscale: 0.2,
+    opacity: 0.2,
+    time: 0,
+}, {
+    xscale: 4,
+    yscale: 0.6,
+    opacity: 0.8,
+    time: 600,
+}, 'linear', 'explode');
+
+for (var a = 0; a < args.length; a++){
+var rx = [-20,5,26,-39,35,-6,18,-45,50,-2]; //rand(-60, 60);
+var ri = rand(0,rx.length);
+for (var i = 0; i < 8; i++) {
+var ry = -20; //rand(-10, 40);
+battle.showEffect('heart', {
+				x: args[a].x + rx[(i+ri)%8],
+				y: args[a].y + ry,
+				z: args[a].z,
+				scale: 0.5,
+				opacity: 0.5,
+				time: 0 + (100 * i)
+			}, {
+				y: args[a].y + ry + rand(25, 60),
+				scale: 1,
+				opacity: 1,
+				time: 300 + (100*i)
+			}, 'ballistic2Under', 'fade');
+}
+}
+return;
+function rand(low, hi) {
+	return Math.floor(Math.random() * (hi - low))+low;
+}
+*/

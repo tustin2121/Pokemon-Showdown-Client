@@ -154,7 +154,7 @@ Promise.resolve()
 var processEmoteRegExp = function(str) {
 	// Robot emotes
 	str = str.replace(/&lt;3\\b/g, 
-		'<img src="/emotes/_robot/heart.png" alt="&lt;3" title="&lt;3" class="emote">');
+		'<img src="/emotes/-robot/heart.png" alt="&lt;3" title="&lt;3" class="emote">');
 `;
 	for (let i in emoteRegexes) {
 		let name = i;

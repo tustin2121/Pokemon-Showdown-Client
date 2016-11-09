@@ -32,10 +32,11 @@
 				float: right;
 				margin: 18px;
 			}
-			.moveAnims, .statusAnims, .otherAnims {
+			.premade {
 				margin-bottom: 10px !important;
 			}
 			input[type="number"] { width: 50px; }
+			.combineAnims p { font-size: smaller; }
 		</style>
 	</head>
 	<body>
@@ -54,26 +55,47 @@
 					<label><input type="radio" name="target" value="p2" checked>Opponent</input></label>
 				</div>
 				<div class="aim options">
-					<span>Target:</span>
+					<span>Flags:</span>
 					<label><input type="checkbox" name="missed">Miss</input></label>
 					<!--<label><input type="checkbox" name="spread">Spread</input></label>-->
 				</div>
 				<h2>Premade Animations</h2>
-				<div class="moveAnims">
+				<div class="premade moveAnims">
 					<button class="playBtn">Play</button>
 					<span>Move Animations:</span>
 					<select class="animList"></select>
 					<div class="usedIn">Used in:</div>
 				</div>
-				<div class="statusAnims">
+				<div class="premade prepareAnim">
+					<button class="playBtn">Play</button>
+					<span>Prepare Animations:</span>
+					<select class="animList"></select>
+				</div>
+				<div class="premade statusAnims">
 					<button class="playBtn">Play</button>
 					<span>Status Animations:</span>
 					<select class="animList"></select>
 				</div>
-				<div class="otherAnims">
+				<div class="premade otherAnims">
 					<button class="playBtn">Play</button>
 					<span>Other Animations:</span>
 					<select class="animList"></select>
+				</div>
+				<h2>Combine Animations</h2>
+				<div class="combineAnims">
+					<p>
+						Type into the text box below a list of animations to play all at once, 
+						separated by commas, semicolons, or vertical bars.
+						Use the format "animName" or "{move} animName" for move animations, 
+						"{prepare} animName" for prepare animations, "{status} animName" for status animations,
+						and "{other} animName" for other animations. To change target/source for one animation,
+						append a ":ts" to the type, where t = target, and s = source, and position matters.
+					</p>
+					<p>
+						Example: "shadowball, {move:ts}flamethrower, {other:tt}anger, {prepare}ganonssword"
+					</p>
+					<button class="playBtn">Play</button>
+					<input name="combineList" type="text" style="width:86%"></input>
 				</div>
 				<h2>Battle Effects Preview
 					<label style="float:right;"><input type="checkbox" name="showpreview">Show</input></label>
@@ -186,8 +208,10 @@ var AnimHelper = {
 		// Premade Animations
 		
 		let anims = {};
+		let prepAnims = [];
 		moveAnimsLoop:
 		for(let id in BattleMoveAnims) {
+			if (BattleMoveAnims[id].prepareAnim) prepAnims.push(id);
 			for (let name in anims) {
 				if (BattleMoveAnims[name].anim === BattleMoveAnims[id].anim) {
 					anims[name].moves.push(id);
@@ -198,6 +222,9 @@ var AnimHelper = {
 		}
 		Object.keys(anims).forEach((id)=>{
 			$(".moveAnims .animList").append(`<option value="${id}">${id}</option>`);
+		});
+		prepAnims.forEach((id)=>{
+			$(".prepareAnim .animList").append(`<option value="${id}">${id}</option>`);
 		});
 		Object.keys(BattleStatusAnims).forEach((id)=>{
 			$(".statusAnims .animList").append(`<option value="${id}">${id}</option>`);
@@ -220,6 +247,22 @@ var AnimHelper = {
 			
 			this.battle.add(`|-anim|${source.ident}|${$(".moveAnims .animList").val()}|${target.ident}${extras}`);
 			this.battle.play();
+		});
+		$(".prepareAnim .playBtn").on("click", (e)=>{
+			let source = this.battle[$("input[name=source]:checked").val()].active[0];
+			let target = this.battle[$("input[name=target]:checked").val()].active[0];
+			let extras = "";
+			// if ($("input[name=missed]").prop("checked")) extras += "|[miss]";
+			// if ($("input[name=spread]").prop("checked")) extras += "|[spread] "+target.side.active[1].ident;
+			
+			this.battle.add(`|-prepare|${source.ident}|${$(".prepareAnim .animList").val()}|${target.ident}${extras}`);
+			this.battle.play();
+			setTimeout(()=>{
+				this.battle.add("|");
+				source.sprite.animReset();
+				target.sprite.animReset();
+				this.battle.play();
+			}, 2000);
 		});
 		$(".statusAnims .playBtn").on("click", (e)=>{
 			let source = this.battle[$("input[name=source]:checked").val()].active[0];
@@ -250,6 +293,18 @@ var AnimHelper = {
 			source.sprite.afterMove();
 			target.sprite.afterMove();
 			this.battle.activityAnimations.promise().done(()=>this.battle.fxElem.empty());
+		});
+		$(".combineAnims .playBtn").on("click", (e)=>{
+			let source = this.battle[$("input[name=source]:checked").val()].active[0];
+			let target = this.battle[$("input[name=target]:checked").val()].active[0];
+			if ($("input[name=missed]").prop("checked")) {
+				target = target.side.missedPokemon;
+			}
+			let extras = "";
+			
+			let list = $("input[name=combineList]").val().split(/[,;|]/).join("|");
+			this.battle.add(`|-animcustom|${source.ident}|${target.ident}|${list}${extras}`);
+			this.battle.play();
 		});
 		
 		//////////////////////////////////////////////////////////////////////////
@@ -282,8 +337,8 @@ var AnimHelper = {
 			if ($("input[name=scaleuniform]").prop("checked")) {
 				pos.scale = $("input[name=scalex]").val();
 			} else {
-				pos.scalex = $("input[name=scalex]").val();
-				pos.scaley = $("input[name=scaley]").val();
+				pos.yscale = $("input[name=scalex]").val();
+				pos.xscale = $("input[name=scaley]").val();
 			}
 			previewEffect.css(this.battle.pos(pos, eff));
 		};
@@ -338,7 +393,7 @@ ${fn}`);
 					this.battle.fxElem.empty()
 				});
 			} catch (e) {
-				this.battle.log('<div class="chat message-error">' + e.message + '</div>', preempt);
+				this.battle.log('<div class="chat message-error">' + e.message + '</div>');
 			}
 		});
 		
