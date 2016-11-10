@@ -149,6 +149,7 @@ anim: function (battle, args) {
 		<script src="/data/pokedex-mini.js?a6"></script>
 		<script src="/data/pokedex-mini-bw.js?a6"></script>
 		<script src="/data/graphics.js?a6"></script>
+		<script src="/sprites/bgs/bg-index.js"></script>
 		<script src="/js/battle.js?a6"></script>
 		
 <script>

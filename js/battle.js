@@ -2461,11 +2461,10 @@ var Battle = (function () {
 			gen = Math.min(gen, 6);
 		}
 		if (this.backdropImage === null) { //spcifically null, choose randomly
-			var bgs = BattleBackdrops[gen];
-			this.backdropImage = bgs[Math.floor(Math.random() * bgs.length)];
+			this.backdropImage = BattleBackdrops.getRandomBG(gen);
 		}
 		
-		if (this.bgElem) this.bgElem.css('background-image', 'url(' + Tools.resourcePrefix + 'sprites/bgs/' + this.backdropImage + ')');
+		if (this.bgElem) this.bgElem.css('background-image', 'url(' + Tools.resourcePrefix + this.backdropImage + ')');
 	};
 	Battle.prototype.reset = function (dontResetSound) {
 		// battle state
@@ -2495,7 +2494,7 @@ var Battle = (function () {
 		}
 
 		this.updateGen();
-		this.elem.append('<div class="backdrop" style="background-image:url(' + Tools.resourcePrefix + 'sprites/bgs/' + this.backdropImage + ');display:block;opacity:0"></div>');
+		this.elem.append('<div class="backdrop" style="background-image:url(' + Tools.resourcePrefix + this.backdropImage + ');display:block;opacity:0"></div>');
 		this.bgElem = this.elem.children().last();
 		this.bgElem.animate({
 			opacity: 0.8
@@ -5850,12 +5849,28 @@ var Battle = (function () {
 				this.message('', '<small>(' + Tools.escapeHTML(args[1]) + ')</small>');
 				break;
 			
-			case '-clientmeta':
+			case '-stadium':
+				if (kwargs.request) {
+					this.stadiumRequest = true;
+				}
+				if (kwargs.norequest) {
+					this.stadiumRequest = false;
+				}
 				if (kwargs.bg && kwargs.bg !== '.') {
-					this.backdropImage = kwargs.bg;
+					this.backdropImage = BattleBackdrops.convertToPath(this.gen, kwargs.bg);
+					this.updateGen();
 				}
 				if (kwargs.music && kwargs.music !== '.') {
 					window.forceBgm = kwargs.music;
+					this.preloadBgm();
+					if (!kwargs.vmusic) this.preloadVictory();
+				}
+				if (kwargs.premusic && kwargs.premusic !== '.') {
+					
+				}
+				if (kwargs.vmusic && kwargs.vmusic !== '.') {
+					window.forceWinm = kwargs.vmusic;
+					this.preloadVictory();
 				}
 				break;
 

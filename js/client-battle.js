@@ -811,7 +811,7 @@
 			this.send('/savereplay');
 		},
 		openBattleOptions: function () {
-			app.addPopup(BattleOptionsPopup, {battle: this.battle});
+			app.addPopup(BattleOptionsPopup, {battle: this.battle, room: this});
 		},
 		clickReplayDownloadButton: function (e) {
 			var filename = (this.battle.tier || 'Battle').replace(/[^A-Za-z0-9]/g, '');
@@ -1104,9 +1104,27 @@
 	var BattleOptionsPopup = this.BattleOptionsPopup = Popup.extend({
 		initialize: function (data) {
 			this.battle = data.battle;
+			this.room = data.room;
 			var buf = '<p><strong>In this battle</strong></p>';
 			buf += '<p><label class="optlabel"><input type="checkbox" name="ignorespects" /> Ignore Spectators</label></p>';
 			buf += '<p><label class="optlabel"><input type="checkbox" name="ignoreopp" /> Ignore Opponent</label></p>';
+			if (this.battle.stadiumRequest && this.room.side) {
+				//stadium request is available, and we're a player
+				buf += '<p><label class="optlabel">Battle Field: <select name="battlefield">';
+				var curr = BattleBackdrops.convertToId(this.battle.backdropImage);
+				var bgs = BattleBackdrops.getSelectionList(this.battle.gen || 6);
+				for (var i = 0; i < bgs.length; i++) {
+					buf += "<option value='"+bgs[i]+"'"+(curr==bgs[i]?"selected":"")+">"+bgs[i]+"</option>";
+				}
+				buf += '</select></label></p>';
+				
+				buf += '<p><label class="optlabel">Battle Music: <select name="battlemusic">';
+				var music = Object.keys(musicTable.meta);
+				for (var i = 0; i < music.length; i++) {
+					buf += "<option value='"+music[i]+"'"+(window.forceBgm==music[i]?"selected":"")+">"+music[i]+"</option>";
+				}
+				buf += '</select></label></p>';
+			}
 			buf += '<p><strong>All battles</strong></p>';
 			buf += '<p><label class="optlabel"><input type="checkbox" name="ignorenicks"' + (Tools.prefs('ignorenicks') ? ' checked' : '') + ' /> Ignore nicknames</label></p>';
 			buf += '<p><button name="close">Close</button></p>';
@@ -1116,6 +1134,14 @@
 			'change input[name=ignorespects]': 'toggleIgnoreSpects',
 			'change input[name=ignorenicks]': 'toggleIgnoreNicks',
 			'change input[name=ignoreopp]': 'toggleIgnoreOpponent',
+			'change select[name=battlefield]': 'selectBattleField',
+			'change select[name=battlemusic]': 'selectBattleMusic',
+		},
+		selectBattleField: function(e) {
+			this.room.send("/stadium field|"+$(e.currentTarget).val());
+		},
+		selectBattleMusic: function(e) {
+			this.room.send("/stadium music|"+$(e.currentTarget).val());
 		},
 		toggleIgnoreSpects: function (e) {
 			this.battle.ignoreSpects = !!e.currentTarget.checked;

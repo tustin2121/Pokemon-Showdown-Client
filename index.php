@@ -102,6 +102,7 @@
 		<script src="js/client-rooms.js"></script>
 		<script src="js/storage.js"></script>
 		<script src="data/graphics.js"></script>
+		<script src="sprites/bgs/bg-index.js"></script>
 		<script src="emotes/emoteregex.js"></script>
 
 		<script>
