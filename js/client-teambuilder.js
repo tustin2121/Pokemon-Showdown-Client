@@ -115,7 +115,7 @@
 		// format
 		// Special values:
 		// '' -     show all
-		// 'gen6' - show teams with no format
+		// 'gen7' - show teams with no format
 		// '/' -    show teams with no folder
 		curFolder: '',
 		curFolderKeep: '',
@@ -216,7 +216,7 @@
 					format = this.curFolder;
 				} else {
 					format = Storage.teams[i].format;
-					if (!format) format = 'gen6';
+					if (!format) format = 'gen7';
 				}
 				if (!format) continue;
 				if (format in folderTable) continue;
@@ -229,17 +229,19 @@
 					}
 					continue;
 				}
-				if (format === 'gen6') {
+				if (format === 'gen7') {
 					folders.push('A~');
 					continue;
 				}
 				switch (format.slice(0, 4)) {
-				case 'gen1': format = 'F' + format.slice(4); break;
-				case 'gen2': format = 'E' + format.slice(4); break;
-				case 'gen3': format = 'D' + format.slice(4); break;
-				case 'gen4': format = 'C' + format.slice(4); break;
-				case 'gen5': format = 'B' + format.slice(4); break;
-				default: format = 'A' + format; break;
+				case 'gen1': format = 'G' + format.slice(4); break;
+				case 'gen2': format = 'F' + format.slice(4); break;
+				case 'gen3': format = 'E' + format.slice(4); break;
+				case 'gen4': format = 'D' + format.slice(4); break;
+				case 'gen5': format = 'C' + format.slice(4); break;
+				case 'gen6': format = 'B' + format.slice(4); break;
+				case 'gen7': format = 'A' + format.slice(4); break;
+				default: format = 'B' + format; break;
 				}
 				folders.push(format);
 			}
@@ -251,12 +253,13 @@
 				var format = folders[i];
 				var newGen;
 				switch (format.charAt(0)) {
-				case 'F': newGen = '1'; break;
-				case 'E': newGen = '2'; break;
-				case 'D': newGen = '3'; break;
-				case 'C': newGen = '4'; break;
-				case 'B': newGen = '5'; break;
-				case 'A': newGen = '6'; break;
+				case 'G': newGen = '1'; break;
+				case 'F': newGen = '2'; break;
+				case 'E': newGen = '3'; break;
+				case 'D': newGen = '4'; break;
+				case 'C': newGen = '5'; break;
+				case 'B': newGen = '6'; break;
+				case 'A': newGen = '7'; break;
 				case 'Z': newGen = '/'; break;
 				}
 				if (gen !== newGen) {
@@ -289,7 +292,7 @@
 				} else {
 					format = 'gen' + newGen + formatName;
 				}
-				if (format === 'gen6') formatName = '(uncategorized)';
+				if (format === 'gen7') formatName = '(uncategorized)';
 				// folders are <div>s rather than <button>s because in theory it has
 				// less weird interactions with HTML5 drag-and-drop
 				buf += '<div class="folder' + (this.curFolder === format ? ' cur"><div class="folderhack3"><div class="folderhack1"></div><div class="folderhack2"></div>' : '">') + '<div class="selectFolder" data-value="' + format + '"><i class="fa ' + (this.curFolder === format ? 'fa-folder-open-o' : 'fa-folder-o') + '"></i>' + formatName + '</div></div>' + (this.curFolder === format ? '</div>' : '');
@@ -336,7 +339,7 @@
 
 			var newButtonText = "New Team";
 			if (filterFolder) newButtonText = "New Team in folder";
-			if (filterFormat && filterFormat !== 'gen6') {
+			if (filterFormat && filterFormat !== 'gen7') {
 				newButtonText = "New " + Tools.escapeFormat(filterFormat) + " Team";
 			}
 			buf += '<p><button name="newTop" class="button big"><i class="fa fa-plus-circle"></i> ' + newButtonText + '</button></p>';
@@ -377,7 +380,7 @@
 						continue;
 					}
 
-					if (filterFormat && filterFormat !== (team.format || 'gen6')) continue;
+					if (filterFormat && filterFormat !== (team.format || 'gen7')) continue;
 					if (filterFolder !== undefined && filterFolder !== team.folder) continue;
 
 					if (!atLeastOne) atLeastOne = true;
@@ -1876,7 +1879,7 @@
 						}
 					}
 				}
-				if (hpType) {
+				if (hpType && this.curTeam.gen <= 6) {
 					var hpIVs;
 					switch (hpType) {
 					case 'dark':
@@ -2125,7 +2128,7 @@
 		},
 		updateIVs: function () {
 			var set = this.curSet;
-			if (!set.moves) return;
+			if (!set.moves || this.curTeam.gen > 6) return;
 			var hasHiddenPower = false;
 			for (var i = 0; i < set.moves.length; i++) {
 				if (toId(set.moves[i]).slice(0, 11) === 'hiddenpower') {
@@ -2376,7 +2379,8 @@
 				this.search.find('');
 				return;
 			}
-			var val = $(e.currentTarget).data('entry').split(':')[1];
+			var entry = $(e.currentTarget).data('entry');
+			var val = entry.slice(entry.indexOf("|") + 1);
 			if (this.curChartType === 'move' && e.currentTarget.className === 'cur') {
 				// clicked a move, remove it if we already have it
 				var $emptyEl;
@@ -2421,7 +2425,8 @@
 					this.search.find('');
 					return;
 				}
-				var val = $firstResult.data('entry').split(':')[1];
+				var entry = $firstResult.data('entry');
+				var val = entry.slice(entry.indexOf("|") + 1);
 				this.chartSet(val, true);
 				return;
 			} else if (e.keyCode === 38) { // up
@@ -2531,9 +2536,12 @@
 				set.name = "Cathy";
 				set.species = 'Trevenant';
 				delete set.level;
+				var baseFormat = this.curTeam.format;
+				if (baseFormat.substr(0, 3) === 'gen') baseFormat = baseFormat.substr(4);
+				if (baseFormat.substr(0, 8) === 'pokebank') baseFormat = baseFormat.substr(8);
 				if (this.curTeam && this.curTeam.format) {
-					if (this.curTeam.format.substr(0, 10) === 'battlespot' || this.curTeam.format.substr(0, 3) === 'vgc') set.level = 50;
-					if (this.curTeam.format.substr(0, 2) === 'lc' || this.curTeam.format === 'gen5lc' || this.curTeam.format === 'gen4lc') set.level = 5;
+					if (baseFormat.substr(0, 10) === 'battlespot' || baseFormat.substr(0, 3) === 'vgc') set.level = 50;
+					if (baseFormat.substr(0, 2) === 'lc') set.level = 5;
 				}
 				set.gender = 'F';
 				if (set.happiness) delete set.happiness;
@@ -2705,8 +2713,13 @@
 			set.species = val;
 			if (set.level) delete set.level;
 			if (this.curTeam && this.curTeam.format) {
-				if (this.curTeam.format.substr(0, 10) === 'battlespot' || this.curTeam.format.substr(0, 3) === 'vgc') set.level = 50;
-				if (this.curTeam.format.substr(0, 2) === 'lc' || this.curTeam.format === 'gen5lc' || this.curTeam.format === 'gen4lc') set.level = 5;
+				var baseFormat = this.curTeam.format;
+				if (baseFormat.substr(0, 3) === 'gen') baseFormat = baseFormat.substr(4);
+				if (baseFormat.substr(0, 8) === 'pokebank') baseFormat = baseFormat.substr(8);
+				if (this.curTeam && this.curTeam.format) {
+					if (baseFormat.substr(0, 10) === 'battlespot' || baseFormat.substr(0, 3) === 'vgc') set.level = 50;
+					if (baseFormat.substr(0, 2) === 'lc') set.level = 5;
+				}
 			}
 			if (set.gender) delete set.gender;
 			if (template.gender && template.gender !== 'N') set.gender = template.gender;
@@ -2718,6 +2731,10 @@
 				set.item = '';
 			}
 			set.ability = template.abilities['0'];
+			var table = BattleTeambuilderTable['gen' + this.curTeam.gen];
+			var overrideAbility = table && table.overrideAbility[template.id];
+			if (overrideAbility) set.ability = overrideAbility;
+
 			set.moves = [];
 			set.evs = {};
 			set.ivs = {};
@@ -3345,7 +3362,9 @@
 			}
 			buf += '</div>';
 
-			this.$el.html(buf).css({'max-width': (4 + spriteSize) * (formCount < 6 ? formCount : 6), 'height': 42 + (4 + spriteSize) * (formCount < 6 ? 1 : formCount / 6)});
+			var height = Math.ceil(formCount / 7);
+			var width = Math.ceil(formCount / height);
+			this.$el.html(buf).css({'max-width': (4 + spriteSize) * width, 'height': 42 + (4 + spriteSize) * height});
 		},
 		setForm: function (form) {
 			var template = Tools.getTemplate(this.curSet.species);
