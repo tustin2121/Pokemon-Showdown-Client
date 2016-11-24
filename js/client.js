@@ -370,27 +370,24 @@
 			this.topbar = new Topbar({el: $('#header')});
 			if (this.down) {
 				this.isDisconnected = true;
-			} else if ($(window).width() >= 916) {
-				if (document.location.hostname === 'play.pokemonshowdown.com' || Config.testclient) {
-					this.addRoom('rooms', null, true);
-					Storage.whenPrefsLoaded(function () {
-						var autojoin = (Tools.prefs('autojoin') || '');
-						var autojoinIds = [];
-						if (autojoin) {
-							var autojoins = autojoin.split(',');
-							var roomid;
-							for (var i = 0; i < autojoins.length; i++) {
-								roomid = toRoomid(autojoins[i]);
-								app.addRoom(roomid, null, true, autojoins[i]);
-								if (roomid !== 'staff' && roomid !== 'upperstaff') autojoinIds.push(roomid);
-							}
+			} else if (document.location.hostname === 'play.pokemonshowdown.com' || Config.testclient) {
+				this.addRoom('rooms', null, true);
+				Storage.whenPrefsLoaded(function () {
+					var autojoin = (Tools.prefs('autojoin') || '');
+					var autojoinIds = [];
+					if (autojoin) {
+						var autojoins = autojoin.split(',');
+						for (var i = 0; i < autojoins.length; i++) {
+							var roomid = toRoomid(autojoins[i]);
+							app.addRoom(roomid, null, true, autojoins[i]);
+							if (roomid !== 'staff' && roomid !== 'upperstaff') autojoinIds.push(roomid);
 						}
-						app.send('/autojoin ' + autojoinIds.join(','));
-					});
-				} else {
-					this.addRoom('lobby', null, true);
-					this.send('/autojoin');
-				}
+					}
+					app.send('/autojoin ' + autojoinIds.join(','));
+				});
+			} else {
+				this.addRoom('lobby', null, true);
+				this.send('/autojoin');
 			}
 
 			var self = this;
@@ -511,7 +508,23 @@
 
 				// keypress happened in an empty textarea or a button
 				var safeLocation = ((tagName === 'TEXTAREA' && !el.value.length) || tagName === 'BUTTON');
+				var isMac = (navigator.userAgent.indexOf("Mac") !== -1);
 
+				if (e.keyCode === 70 && window.nodewebkit && (isMac ? e.metaKey : e.ctrlKey)) {
+					e.preventDefault();
+					e.stopImmediatePropagation();
+					var query = window.getSelection().toString();
+					query = window.prompt("find?", query);
+					if (query) window.find(query);
+					return;
+				}
+				if (e.keyCode === 71 && window.nodewebkit && (isMac ? e.metaKey : e.ctrlKey)) {
+					e.preventDefault();
+					e.stopImmediatePropagation();
+					var query = window.getSelection().toString();
+					if (query) window.find(query);
+					return;
+				}
 				if (app.curSideRoom && $(e.target).closest(app.curSideRoom.$el).length) {
 					// keypress happened in sideroom
 					if (e.shiftKey && e.keyCode === 37 && safeLocation) {
@@ -2178,12 +2191,16 @@
 				var privatebuf = '';
 				for (var i in data.rooms) {
 					if (i === 'global') continue;
+					var roomrank = '';
+					if (!/[A-Za-z0-9]/.test(i.charAt(0))) {
+						roomrank = '<small style="color: #888; font-size: 100%">' + i.charAt(0) + '</small>';
+					}
 					var roomid = toRoomid(i);
 					if (roomid.substr(0, 7) === 'battle-') {
 						var p1 = data.rooms[i].p1.substr(1);
 						var p2 = data.rooms[i].p2.substr(1);
 						var ownBattle = (ownUserid === toUserid(p1) || ownUserid === toUserid(p2));
-						var room = '<span title="' + (Tools.escapeHTML(p1) || '?') + ' v. ' + (Tools.escapeHTML(p2) || '?') + '"><a href="' + app.root + roomid + '" class="ilink' + ((ownBattle || app.rooms[i]) ? ' yours' : '') + '">' + roomid.substr(7) + '</a></span>';
+						var room = '<span title="' + (Tools.escapeHTML(p1) || '?') + ' v. ' + (Tools.escapeHTML(p2) || '?') + '">' + '<a href="' + app.root + roomid + '" class="ilink' + ((ownBattle || app.rooms[i]) ? ' yours' : '') + '">' + roomrank + roomid.substr(7) + '</a></span>';
 						if (data.rooms[i].isPrivate) {
 							if (!privatebuf) privatebuf = '<br /><em>Private rooms:</em> ';
 							else privatebuf += ', ';
@@ -2194,7 +2211,7 @@
 							battlebuf += room;
 						}
 					} else {
-						var room = '<a href="' + app.root + roomid + '" class="ilink' + (app.rooms[i] ? ' yours' : '') + '">' + roomid + '</a>';
+						var room = '<a href="' + app.root + roomid + '" class="ilink' + (app.rooms[i] ? ' yours' : '') + '">' + roomrank + roomid + '</a>';
 						if (data.rooms[i].isPrivate) {
 							if (!privatebuf) privatebuf = '<br /><em>Private rooms:</em> ';
 							else privatebuf += ', ';

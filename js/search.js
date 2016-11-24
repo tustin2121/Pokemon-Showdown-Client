@@ -30,9 +30,10 @@
 		this.sortCol = null;
 		this.renderedIndex = 0;
 		this.renderingDone = true;
+		this.externalFilter = false;
 		this.cur = {};
 		this.$inputEl = null;
-		this.gen = 6;
+		this.gen = 7;
 
 		var self = this;
 		this.$el.on('click', '.more button', function (e) {
@@ -41,17 +42,7 @@
 		});
 		this.$el.on('click', '.filter', function (e) {
 			e.preventDefault();
-			if (!self.filters) return;
-			// delete filter
-			for (var i = 0; i < self.filters.length; i++) {
-				if (e.currentTarget.value === self.filters[i].join(':')) {
-					self.filters.splice(i, 1);
-					if (!self.filters.length) self.filters = null;
-					self.q = undefined;
-					self.find('');
-					break;
-				}
-			}
+			self.removeFilter(e);
 			if (self.$inputEl) self.$inputEl.focus();
 		});
 		this.$el.on('click', '.sortcol', function (e) {
@@ -84,7 +75,8 @@
 		item: 5,
 		ability: 6,
 		egggroup: 7,
-		category: 8
+		category: 8,
+		article: 9
 	};
 	var typeName = {
 		pokemon: 'Pok&eacute;mon',
@@ -94,7 +86,8 @@
 		item: 'Items',
 		ability: 'Abilities',
 		egggroup: 'Egg group',
-		category: 'Category'
+		category: 'Category',
+		article: 'Article'
 	};
 	Search.prototype.find = function (query) {
 		query = toId(query);
@@ -204,7 +197,7 @@
 
 		// Notes:
 		// - if we have a qType, that qType's buffer will be on top
-		var bufs = [[], [], [], [], [], [], [], [], []];
+		var bufs = [[], [], [], [], [], [], [], [], [], []];
 		var topbufIndex = -1;
 
 		var count = 0;
@@ -257,7 +250,7 @@
 
 			// For pokemon queries, accept types/tier/abilities/moves/eggroups as filters
 			if (qType === 'pokemon' && (typeIndex === 5 || typeIndex > 7)) continue;
-			if (qType === 'pokemon' && typeIndex === 3 && this.gen < 6) continue;
+			if (qType === 'pokemon' && typeIndex === 3 && this.gen < 7) continue;
 			// For move queries, accept types/categories as filters
 			if (qType === 'move' && ((typeIndex !== 8 && typeIndex > 4) || typeIndex === 3)) continue;
 			// For move queries in the teambuilder, don't accept pokemon as filters
@@ -321,7 +314,7 @@
 
 		var topbuf = [];
 		if (nearMatch) topbuf = [['html', '<p><em>No exact match found. The closest matches alphabetically are:</em></p></li>']];
-		if (this.filters) {
+		if (this.filters && !this.externalFilter) {
 			topbuf.push(['html', this.getFilterText(1)]);
 		}
 		if (topbufIndex >= 0) {
@@ -365,9 +358,12 @@
 			case 'ability':
 				var ability = Tools.getAbility(fId).name;
 				buf.push(['header', "" + ability + " Pok&eacute;mon"]);
+				var abilityTable = {};
+				var table = (this.gen < 7 ? BattleTeambuilderTable['gen' + this.gen] : null);
+				if (table) abilityTable = table.overrideAbility;
 				for (var id in BattlePokedex) {
 					if (!BattlePokedex[id].abilities) continue;
-					if (BattlePokedex[id].abilities['0'] === ability || BattlePokedex[id].abilities['1'] === ability || BattlePokedex[id].abilities['H'] === ability) {
+					if ((abilityTable[id] || BattlePokedex[id].abilities['0']) === ability || BattlePokedex[id].abilities['1'] === ability || BattlePokedex[id].abilities['H'] === ability) {
 						(legal && !(id in legal) ? illegalBuf : buf).push(['pokemon', id]);
 					}
 				}
@@ -399,7 +395,7 @@
 	};
 	Search.prototype.addFilter = function (node) {
 		if (!node.dataset.entry) return;
-		var entry = node.dataset.entry.split(':');
+		var entry = node.dataset.entry.split('|');
 		if (this.qType === 'pokemon') {
 			if (entry[0] === this.sortCol) this.sortCol = null;
 			if (entry[0] !== 'type' && entry[0] !== 'move' && entry[0] !== 'ability' && entry[0] !== 'egggroup' && entry[0] !== 'tier') return;
@@ -423,8 +419,21 @@
 			return true;
 		}
 	};
-	Search.prototype.removeFilter = function () {
+	Search.prototype.removeFilter = function (e) {
 		if (!this.filters) return;
+		if (e) {
+			// delete filter
+			for (var i = 0; i < this.filters.length; i++) {
+				if (e.currentTarget.value === this.filters[i].join(':')) {
+					this.filters.splice(i, 1);
+					if (!this.filters.length) this.filters = null;
+					this.q = undefined;
+					this.find('');
+					break;
+				}
+			}
+			return;
+		}
 		this.filters.pop();
 		if (!this.filters.length) this.filters = null;
 		this.q = undefined;
@@ -452,6 +461,9 @@
 				break;
 			case 'chespin':
 				resultSet.push(['header', "Generation 6"]);
+				break;
+			case 'rowlet':
+				resultSet.push(['header', "Generation 7"]);
 				break;
 			case 'missingno':
 				resultSet.push(['header', "Glitch"]);
@@ -535,7 +547,10 @@
 		var sortCol = this.sortCol;
 
 		this.resultSet = [['sortpokemon', '']];
-		if (filters.length) this.resultSet.push(['html', this.getFilterText()], ['header', "Filtered results"]);
+		if (filters.length) {
+			if (!this.externalFilter) this.resultSet.push(['html', this.getFilterText()]);
+			this.resultSet.push(['header', "Filtered results"]);
+		}
 		if (sortCol === 'type') {
 			return this.allTypes(this.resultSet);
 		} else if (sortCol === 'ability') {
@@ -560,7 +575,10 @@
 					if (template.tier !== tier) break;
 				} else if (filters[i][0] === 'ability') {
 					var ability = filters[i][1];
-					if (template.abilities['0'] !== ability && template.abilities['1'] !== ability && template.abilities['H'] !== ability) break;
+					var ability0 = template.abilities['0'];
+					var table = (this.gen < 7 ? BattleTeambuilderTable['gen' + this.gen] : null);
+					if (table && id in table.overrideAbility) ability0 = table.overrideAbility[id];
+					if (ability0 !== ability && template.abilities['1'] !== ability && template.abilities['H'] !== ability) break;
 				} else if (filters[i][0] === 'move') {
 					var learned = false;
 					var learnsetid = id;
@@ -619,7 +637,10 @@
 		var sortCol = this.sortCol;
 
 		this.resultSet = [['sortmove', '']];
-		if (filters.length) this.resultSet.push(['html', this.getFilterText()], ['header', "Filtered results"]);
+		if (filters.length) {
+			if (!this.externalFilter) this.resultSet.push(['html', this.getFilterText()]);
+			this.resultSet.push(['header', "Filtered results"]);
+		}
 		if (sortCol === 'type') {
 			return this.allTypes(this.resultSet);
 		} else if (sortCol === 'category') {
@@ -765,11 +786,16 @@
 		case 'pokemon':
 			var table = BattleTeambuilderTable;
 			var isDoubles = false;
-			if (this.gen < 6) table = table['gen' + this.gen];
-			if (this.gen >= 6 && format.indexOf('doubles') >= 0 || format.indexOf('vgc') >= 0 || format.indexOf('triples') >= 0) {
-				table = table['doubles'];
+			if (this.gen === 7 && format.indexOf('vgc') >= 0) {
+				table = table['gen' + this.gen + 'vgc'];
 				isDoubles = true;
+			} else if (this.gen === 6 && format.indexOf('doubles') >= 0 || format.indexOf('vgc') >= 0 || format.indexOf('triples') >= 0) {
+				table = table['gen' + this.gen + 'doubles'];
+				isDoubles = true;
+			} else if (this.gen < 7) {
+				table = table['gen' + this.gen];
 			}
+
 			if (!table.tierSet) {
 				table.tierSet = table.tiers.map(function (r) {
 					if (typeof r === 'string') return ['pokemon', r];
@@ -780,8 +806,11 @@
 			var tierSet = table.tierSet;
 			var slices = table.formatSlices;
 			var agTierSet = [];
-			if (this.gen >= 6) agTierSet = [['header', "AG"], ['pokemon', 'rayquazamega']];
+			if (this.gen === 6) agTierSet = [['header', "AG"], ['pokemon', 'rayquazamega']];
 			if (format === 'ubers' || format === 'uber') tierSet = tierSet.slice(slices.Uber);
+			else if (this.gen === 7 && format === 'vgc2017') tierSet = tierSet.slice(slices.Legal);
+			else if (this.gen === 7 && (format === 'pokebankubers' || format === 'pokebankanythinggoes')) tierSet = tierSet.slice(slices.Uber);
+			else if (this.gen === 7) tierSet = tierSet.slice(slices.New);
 			else if (format === 'ou') tierSet = tierSet.slice(slices.OU);
 			else if (format === 'uu') tierSet = tierSet.slice(slices.UU);
 			else if (format === 'ru') tierSet = tierSet.slice(slices.RU);
@@ -811,7 +840,7 @@
 
 		case 'item':
 			var table = BattleTeambuilderTable;
-			if (this.gen < 6) table = table['gen' + this.gen];
+			if (this.gen < 7) table = table['gen' + this.gen];
 			if (!table.itemSet) {
 				table.itemSet = table.items.map(function (r) {
 					if (typeof r === 'string') return ['item', r];
@@ -829,7 +858,10 @@
 				abilitySet.unshift(['html', '<p>Will be <strong>' + Tools.escapeHTML(template.abilities['0']) + '</strong> after Mega Evolving.</p>']);
 				template = Tools.getTemplate(template.baseSpecies);
 			}
-			abilitySet.push(['ability', toId(template.abilities['0'])]);
+			var ability0 = template.abilities['0'];
+			var table = (this.gen < 7 ? BattleTeambuilderTable['gen' + this.gen] : null);
+			if (table && template.id in table.overrideAbility) ability0 = table.overrideAbility[template.id];
+			abilitySet.push(['ability', toId(ability0)]);
 			if (template.abilities['1'] && Tools.getAbility(template.abilities['1']).gen <= this.gen) {
 				abilitySet.push(['ability', toId(template.abilities['1'])]);
 			}
@@ -1028,14 +1060,17 @@
 			var tier = {name: tierTable[id]};
 			return this.renderTierRow(tier, matchStart, matchLength, errorMessage);
 		case 'category':
-			var category = {name: id[0].toUpperCase() + id.substr(1)};
+			var category = {name: id[0].toUpperCase() + id.substr(1), id: id};
 			return this.renderCategoryRow(category, matchStart, matchLength, errorMessage);
+		case 'article':
+			var article = {name: id[0].toUpperCase() + id.substr(1), id: id};
+			return this.renderArticleRow(article, matchStart, matchLength, errorMessage);
 		}
 		return 'Error: not found';
 	};
 	Search.prototype.renderPokemonSortRow = function () {
 		var buf = '<li class="result"><div class="sortrow">';
-		buf += '<button class="sortcol numsortcol">' + (this.defaultResultSet && !this.filters ? 'Tier' : 'Number') + '</button>';
+		buf += '<button class="sortcol numsortcol' + (!this.sortCol ? ' cur' : '') + '">' + (!this.sortCol ? 'Sort: ' : (this.defaultResultSet && !this.filters ? 'Tier' : 'Number')) + '</button>';
 		buf += '<button class="sortcol pnamesortcol' + (this.sortCol === 'name' ? ' cur' : '') + '" data-sort="name">Name</button>';
 		buf += '<button class="sortcol typesortcol' + (this.sortCol === 'type' ? ' cur' : '') + '" data-sort="type">Types</button>';
 		buf += '<button class="sortcol abilitysortcol' + (this.sortCol === 'ability' ? ' cur' : '') + '" data-sort="ability">Abilities</button>';
@@ -1064,11 +1099,11 @@
 		if (!attrs) attrs = '';
 		var id = toId(pokemon.species);
 		if (Search.urlRoot) attrs += ' href="' + Search.urlRoot + 'pokemon/' + id + '" data-target="push"';
-		var buf = '<li class="result"><a' + attrs + ' data-entry="pokemon:' + Tools.escapeHTML(pokemon.species) + '">';
+		var buf = '<li class="result"><a' + attrs + ' data-entry="pokemon|' + Tools.escapeHTML(pokemon.species) + '">';
 
 		// number
 		// buf += '<span class="col numcol">' + (pokemon.num >= 0 ? pokemon.num : 'CAP') + '</span> ';
-		var tier = this.gen >= 6 ? pokemon.tier || Tools.getTemplate(pokemon.baseSpecies).tier : pokemon.num;
+		var tier = this.gen >= 7 ? pokemon.tier || (pokemon.baseSpecies ? Tools.getTemplate(pokemon.baseSpecies).tier : 'Illegal') : pokemon.num;
 
 		if (!exports.BattleTPP[id] && tier !== 'CAP') {
 			tier = 'T-Rule ' + tier;
@@ -1106,21 +1141,13 @@
 			return buf;
 		}
 
+		var gen = this.gen;
+		var table = (gen < 7 ? BattleTeambuilderTable['gen' + gen] : null);
+
 		// type
 		buf += '<span class="col typecol">';
 		var types = pokemon.types;
-		var gen = this.gen;
-		if (gen < 5 && pokemon.baseSpecies === 'Rotom') {
-			types = ["Electric", "Ghost"];
-		} else if (gen < 2 && types[1] === 'Steel') {
-			types = [types[0]];
-		} else if (gen < 6 && types[0] === 'Fairy' && types.length > 1) {
-			types = ['Normal', types[1]];
-		} else if (gen < 6 && types[0] === 'Fairy') {
-			types = ['Normal'];
-		} else if (gen < 6 && types[1] === 'Fairy') {
-			types = [types[0]];
-		}
+		if (table && id in table.overrideType) types = table.overrideType[id].split('/');
 		for (var i = 0; i < types.length; i++) {
 			buf += Tools.getTypeIcon(types[i]);
 		}
@@ -1128,11 +1155,13 @@
 
 		// abilities
 		if (gen >= 3) {
+			var ability0 = pokemon.abilities['0'];
+			if (table && id in table.overrideAbility) ability0 = table.overrideAbility[id];
 			if (pokemon.abilities['1']) {
-				buf += '<span class="col twoabilitycol">' + pokemon.abilities['0'] + '<br />' +
+				buf += '<span class="col twoabilitycol">' + ability0 + '<br />' +
 					pokemon.abilities['1'] + '</span>';
 			} else {
-				buf += '<span class="col abilitycol">' + pokemon.abilities['0'] + '</span>';
+				buf += '<span class="col abilitycol">' + ability0 + '</span>';
 			}
 			if (gen >= 5) {
 				if (pokemon.abilities['H']) {
@@ -1145,8 +1174,8 @@
 
 		// base stats
 		var stats = pokemon.baseStats;
-		if (gen < 6) {
-			var overrideStats = BattleTeambuilderTable['gen' + gen].overrideStats[id];
+		if (table) {
+			var overrideStats = table.overrideStats[id];
 			if (overrideStats || gen === 1) {
 				stats = {
 					hp: pokemon.baseStats.hp,
@@ -1188,7 +1217,7 @@
 	Search.prototype.renderTaggedPokemonRowInner = function (pokemon, tag, errorMessage) {
 		var attrs = '';
 		if (Search.urlRoot) attrs = ' href="' + Search.urlRoot + 'pokemon/' + toId(pokemon.species) + '" data-target="push"';
-		var buf = '<a' + attrs + ' data-entry="pokemon:' + Tools.escapeHTML(pokemon.species) + '">';
+		var buf = '<a' + attrs + ' data-entry="pokemon|' + Tools.escapeHTML(pokemon.species) + '">';
 
 		// tag
 		buf += '<span class="col tagcol shorttagcol">' + tag + '</span> ';
@@ -1258,7 +1287,7 @@
 		if (!attrs) attrs = '';
 		var id = toId(item.name);
 		if (Search.urlRoot) attrs += ' href="' + Search.urlRoot + 'items/' + id + '" data-target="push"';
-		var buf = '<li class="result"><a' + attrs + ' data-entry="item:' + Tools.escapeHTML(item.name) + '">';
+		var buf = '<li class="result"><a' + attrs + ' data-entry="item|' + Tools.escapeHTML(item.name) + '">';
 
 		// icon
 		buf += '<span class="col itemiconcol">';
@@ -1280,8 +1309,8 @@
 
 		// desc
 		var desc = (item.shortDesc || item.desc);
-		if (this.gen < 6) {
-			for (var i = this.gen; i < 6; i++) {
+		if (this.gen < 7) {
+			for (var i = this.gen; i < 7; i++) {
 				if (id in BattleTeambuilderTable['gen' + i].overrideItemDesc) {
 					desc = BattleTeambuilderTable['gen' + i].overrideItemDesc[id];
 					break;
@@ -1298,7 +1327,7 @@
 		if (!attrs) attrs = '';
 		var id = toId(ability.name);
 		if (Search.urlRoot) attrs += ' href="' + Search.urlRoot + 'abilities/' + id + '" data-target="push"';
-		var buf = '<li class="result"><a' + attrs + ' data-entry="ability:' + Tools.escapeHTML(ability.name) + '">';
+		var buf = '<li class="result"><a' + attrs + ' data-entry="ability|' + Tools.escapeHTML(ability.name) + '">';
 
 		// name
 		var name = ability.name;
@@ -1323,7 +1352,7 @@
 		if (!attrs) attrs = '';
 		var id = toId(move.name);
 		if (Search.urlRoot) attrs += ' href="' + Search.urlRoot + 'moves/' + id + '" data-target="push"';
-		var buf = '<li class="result"><a' + attrs + ' data-entry="move:' + Tools.escapeHTML(move.name) + '">';
+		var buf = '<li class="result"><a' + attrs + ' data-entry="move|' + Tools.escapeHTML(move.name) + '">';
 
 		// name
 		var name = move.name;
@@ -1351,11 +1380,12 @@
 			return buf;
 		}
 
+		var table = (this.gen < 7 ? BattleTeambuilderTable['gen' + this.gen] : null);
+
 		// type
 		buf += '<span class="col typecol">';
 		var type = move.type;
-		if (this.gen <= 1 && (id === 'bite' || id === 'gust' || id === 'karatechop' || id === 'sandattack')) type = 'Normal';
-		if (this.gen <= 5 && (id === 'charm' || id === 'moonlight' || id === 'sweetkiss')) type = 'Normal';
+		if (table && id in table.overrideMoveType) type = table.overrideMoveType[id];
 		buf += Tools.getTypeIcon(type);
 		var category = Tools.getCategory(move, this.gen, type);
 		buf += '<img src="' + Tools.resourcePrefix + 'sprites/categories/' + category + '.png" alt="' + category + '" height="14" width="32" />';
@@ -1365,8 +1395,7 @@
 		var basePower = move.basePower;
 		var accuracy = move.accuracy;
 		var pp = move.pp;
-		if (this.gen < 6) {
-			var table = BattleTeambuilderTable['gen' + this.gen];
+		if (table) {
 			if (id in table.overrideBP) basePower = table.overrideBP[id];
 			if (id in table.overrideAcc) accuracy = table.overrideAcc[id];
 			if (id in table.overridePP) pp = table.overridePP[id];
@@ -1377,8 +1406,8 @@
 
 		// desc
 		var desc = (move.shortDesc || move.desc);
-		if (this.gen < 6) {
-			for (var i = this.gen; i < 6; i++) {
+		if (this.gen < 7) {
+			for (var i = this.gen; i < 7; i++) {
 				if (id in BattleTeambuilderTable['gen' + i].overrideMoveDesc) {
 					desc = BattleTeambuilderTable['gen' + i].overrideMoveDesc[id];
 					break;
@@ -1394,7 +1423,7 @@
 	Search.prototype.renderMoveRowInner = function (move, errorMessage) {
 		var attrs = '';
 		if (Search.urlRoot) attrs = ' href="' + Search.urlRoot + 'moves/' + toId(move.name) + '" data-target="push"';
-		var buf = '<a' + attrs + ' data-entry="move:' + Tools.escapeHTML(move.name) + '">';
+		var buf = '<a' + attrs + ' data-entry="move|' + Tools.escapeHTML(move.name) + '">';
 
 		// name
 		var name = move.name;
@@ -1429,7 +1458,7 @@
 	Search.prototype.renderTaggedMoveRow = function (move, tag, errorMessage) {
 		var attrs = '';
 		if (Search.urlRoot) attrs = ' href="' + Search.urlRoot + 'moves/' + toId(move.name) + '" data-target="push"';
-		var buf = '<li class="result"><a' + attrs + ' data-entry="move:' + Tools.escapeHTML(move.name) + '">';
+		var buf = '<li class="result"><a' + attrs + ' data-entry="move|' + Tools.escapeHTML(move.name) + '">';
 
 		// tag
 		buf += '<span class="col tagcol">' + tag + '</span> ';
@@ -1467,7 +1496,7 @@
 	Search.prototype.renderTypeRow = function (type, matchStart, matchLength, errorMessage) {
 		var attrs = '';
 		if (Search.urlRoot) attrs = ' href="' + Search.urlRoot + 'types/' + toId(type.name) + '" data-target="push"';
-		var buf = '<li class="result"><a' + attrs + ' data-entry="type:' + Tools.escapeHTML(type.name) + '">';
+		var buf = '<li class="result"><a' + attrs + ' data-entry="type|' + Tools.escapeHTML(type.name) + '">';
 
 		// name
 		var name = type.name;
@@ -1493,8 +1522,8 @@
 	};
 	Search.prototype.renderCategoryRow = function (category, matchStart, matchLength, errorMessage) {
 		var attrs = '';
-		if (Search.urlRoot) attrs = ' href="' + Search.urlRoot + 'categories/' + toId(category.name) + '" data-target="push"';
-		var buf = '<li class="result"><a' + attrs + ' data-entry="category:' + Tools.escapeHTML(category.name) + '">';
+		if (Search.urlRoot) attrs = ' href="' + Search.urlRoot + 'categories/' + category.id + '" data-target="push"';
+		var buf = '<li class="result"><a' + attrs + ' data-entry="category|' + Tools.escapeHTML(category.name) + '">';
 
 		// name
 		var name = category.name;
@@ -1518,10 +1547,41 @@
 
 		return buf;
 	};
+	Search.prototype.renderArticleRow = function (article, matchStart, matchLength, errorMessage) {
+		var attrs = '';
+		if (Search.urlRoot) attrs = ' href="' + Search.urlRoot + 'articles/' + article.id + '" data-target="push"';
+		var isSearchType = (article.id === 'pokemon' || article.id === 'moves');
+		if (isSearchType) attrs = ' href="' + article.id + '/" data-target="replace"';
+		var buf = '<li class="result"><a' + attrs + ' data-entry="article|' + Tools.escapeHTML(article.name) + '">';
+
+		// name
+		var name = article.name;
+		if (matchLength) {
+			name = name.substr(0, matchStart) + '<b>' + name.substr(matchStart, matchLength) + '</b>' + name.substr(matchStart + matchLength);
+		}
+		buf += '<span class="col namecol">' + name + '</span> ';
+
+		// article
+		if (isSearchType) {
+			buf += '<span class="col movedesccol">(search type)</span> ';
+		} else {
+			buf += '<span class="col movedesccol">(article)</span> ';
+		}
+
+		// error
+		if (errorMessage) {
+			buf += errorMessage + '</a></li>';
+			return buf;
+		}
+
+		buf += '</a></li>';
+
+		return buf;
+	};
 	Search.prototype.renderEggGroupRow = function (egggroup, matchStart, matchLength, errorMessage) {
 		var attrs = '';
 		if (Search.urlRoot) attrs = ' href="' + Search.urlRoot + 'egggroups/' + toId(egggroup.name) + '" data-target="push"';
-		var buf = '<li class="result"><a' + attrs + ' data-entry="egggroup:' + Tools.escapeHTML(egggroup.name) + '">';
+		var buf = '<li class="result"><a' + attrs + ' data-entry="egggroup|' + Tools.escapeHTML(egggroup.name) + '">';
 
 		// name
 		var name = egggroup.name;
@@ -1543,7 +1603,7 @@
 	Search.prototype.renderTierRow = function (tier, matchStart, matchLength, errorMessage) {
 		var attrs = '';
 		if (Search.urlRoot) attrs = ' href="' + Search.urlRoot + 'tiers/' + toId(tier.name) + '" data-target="push"';
-		var buf = '<li class="result"><a' + attrs + ' data-entry="tier:' + Tools.escapeHTML(tier.name) + '">';
+		var buf = '<li class="result"><a' + attrs + ' data-entry="tier|' + Tools.escapeHTML(tier.name) + '">';
 
 		// name
 		var name = tier.name;
@@ -1563,7 +1623,7 @@
 		return buf;
 	};
 
-	Search.gen = 6;
+	Search.gen = 7;
 	Search.renderRow = Search.prototype.renderRow;
 	Search.renderPokemonRow = Search.prototype.renderPokemonRow;
 	Search.renderTaggedPokemonRowInner = Search.prototype.renderTaggedPokemonRowInner;
