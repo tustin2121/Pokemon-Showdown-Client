@@ -2294,6 +2294,7 @@ var Side = (function () {
 			grudge: '<span class="good">Grudge</span>',
 			endure: '<span class="good">Endure</span>',
 			focuspunch: '<span class="neutral">Focusing</span>',
+			shelltrap: '<span class="neutral">Trap&nbsp;set</span>',
 			powder: '<span class="bad">Powder</span>',
 			electrify: '<span class="bad">Electrify</span>',
 			ragepowder: '<span class="good">Rage&nbsp;Powder</span>',
@@ -3293,6 +3294,9 @@ var Battle = (function () {
 			target = pokemon.side.foe.missedPokemon;
 		}
 		if (!kwargs.silent) {
+			if (kwargs.zeffect) {
+				this.message('<small>' + pokemon.getName() + ' unleashes its full force Z-Move!</small>', '');
+			}
 			switch (fromeffect.id) {
 			case 'snatch':
 				break;
@@ -3542,6 +3546,11 @@ var Battle = (function () {
 			this.resultAnim(pokemon, 'Lost focus', 'neutral');
 			this.message(pokemon.getName() + ' lost its focus and couldn\'t move!');
 			pokemon.removeTurnstatus('focuspunch');
+			break;
+		case 'shelltrap':
+			this.resultAnim(pokemon, 'Trap failed', 'neutral');
+			this.message(pokemon.getName() + '\'s shell trap didn\'t work!');
+			pokemon.removeTurnstatus('shelltrap');
 			break;
 		case 'flinch':
 			this.resultAnim(pokemon, 'Flinched', 'neutral');
@@ -3799,6 +3808,8 @@ var Battle = (function () {
 						}
 						break;
 					}
+				} else if (kwargs.zeffect) {
+					actions += "" + poke.getName() + " restored its HP using its Z-Power!";
 				} else {
 					actions += poke.getName() + ' restored its HP.';
 				}
@@ -3870,6 +3881,15 @@ var Battle = (function () {
 							actions += "The " + effect.name + amountString + " raised " + poke.getLowerName() + "'s " + BattleStats[stat] + "! ";
 						}
 						break;
+					}
+				} else if (kwargs.zeffect) {
+					if (minors.length) {
+						actions += "" + poke.getName() + " boosted its stats" + amountString + " using its Z-Power! ";
+						for (var i = 0; i < minors.length; i++) {
+							minors[i][1].silent = '.';
+						}
+					} else {
+						actions += "" + poke.getName() + " boosted its " + BattleStats[stat] + amountString + " using its Z-Power! ";
 					}
 				} else {
 					actions += "" + poke.getName() + "'s " + BattleStats[stat] + " rose" + amountString + "! ";
@@ -4269,6 +4289,12 @@ var Battle = (function () {
 				actions += "The two moves have become one! It's a combined move!";
 				break;
 
+			case '-zpower':
+				var poke = this.getPokemon(args[1]);
+				if (!this.fastForward) BattleOtherAnims.zpower.anim(this, [poke.sprite]);
+				actions += "" + poke.getName() + " surrounded itself with its Z-Power! ";
+				break;
+
 			case '-prepare':
 				var poke = this.getPokemon(args[1]);
 				var move = Tools.getMove(args[2]);
@@ -4661,7 +4687,7 @@ var Battle = (function () {
 					if (kwargs.fail) {
 						this.resultAnim(poke, ability.name, 'ability');
 						this.message('', "<small>[" + poke.getName(true) + "'s " + ability.name + "!]</small>");
-						actions += "The mysterious air current blows on regardless!";
+						actions += "The mysterious strong winds blow on regardless!";
 					}
 					break;
 				default:
@@ -4782,8 +4808,12 @@ var Battle = (function () {
 						actions += "" + poke.getName() + " formed a school!";
 						isCustomAnim = true;
 					} else if (toId(template.species) === 'wishiwashi') {
-						actions += "" + poke.getName() + "'s school was scattered! (placeholder)";
+						actions += "" + poke.getName() + " stopped schooling!";
 						isCustomAnim = true;
+					} else if (toId(template.species) === 'miniormeteor') {
+						actions += "Shields Down deactivated!";
+					} else if (toId(template.species) === 'minior') {
+						actions += "Shields Down activated!";
 					}
 				}
 				poke.sprite.animTransform($.extend(spriteData, template), isCustomAnim);
@@ -5002,6 +5032,8 @@ var Battle = (function () {
 					this.resultAnim(poke, '+Crit rate', 'good');
 					if (fromeffect.effectType === 'Item') {
 						actions += "" + poke.getName() + " used the " + fromeffect.name + " to get pumped!";
+					} else if (kwargs.zeffect) {
+						actions += "" + poke.getName() + " boosted its critical-hit ratio using its Z-Power!";
 					} else {
 						actions += "" + poke.getName() + " is getting pumped!";
 					}
@@ -5262,6 +5294,11 @@ var Battle = (function () {
 					actions += '' + poke.getName() + ' is tightening its focus!';
 					poke.markMove(effect.name, 0);
 					break;
+				case 'shelltrap':
+					this.resultAnim(poke, 'Trap set', 'neutral');
+					actions += '' + poke.getName() + ' set a shell trap!';
+					poke.markMove(effect.name, 0);
+					break;
 				case 'snatch':
 					actions += '' + poke.getName() + ' waits for a target to make a move!';
 					break;
@@ -5273,7 +5310,11 @@ var Battle = (function () {
 					break;
 				case 'followme':
 				case 'ragepowder':
-					actions += '' + poke.getName() + ' became the center of attention!';
+					if (kwargs.zeffect) {
+						actions += '' + poke.getName() + ' became the center of attention using its Z-Power!';
+					} else {
+						actions += '' + poke.getName() + ' became the center of attention!';
+					}
 					break;
 				case 'powder':
 					actions += '' + poke.getName() + ' is covered in powder!';

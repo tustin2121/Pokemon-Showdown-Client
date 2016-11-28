@@ -1005,6 +1005,8 @@
 				var move = e.getAttribute('data-move');
 				var target = e.getAttribute('data-target');
 				var choosableTargets = {normal: 1, any: 1, adjacentAlly: 1, adjacentAllyOrSelf: 1, adjacentFoe: 1};
+				var spreadTargets = {allAdjacentFoes: 1, allAdjacent: 1};
+				if (isZMove && target in spreadTargets) target = 'normal';
 
 				this.choice.choices.push('move ' + pos + (isMega ? ' mega' : '') + (isZMove ? ' zmove' : ''));
 				if (myActive.length > 1 && target in choosableTargets) {
