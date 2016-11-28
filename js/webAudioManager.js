@@ -363,7 +363,12 @@ Sound.prototype = {
     id : null,
     
     distruct : function(){},
-    load : function(){},
+    load : function(){ 
+        if (window.Promise)
+            return Promise.resolve(); 
+        else
+            return { then : function(fn){ fn(); } };
+    },
     unload : function(){},
     play : function(){},
     stop: function(){},

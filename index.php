@@ -104,6 +104,7 @@
 		<script src="data/graphics.js"></script>
 		<script src="sprites/bgs/bg-index.js"></script>
 		<script src="emotes/emoteregex.js"></script>
+		<script src="badges/badge-anim.js"></script>
 
 		<script>
 			var app = new App();
