@@ -220,13 +220,15 @@ var BattleTooltips = (function () {
 		// Deal with Nature Power special case, indicating which move it calls.
 		if (move.id === 'naturepower') {
 			var calls;
-			if (this.battle.gen === 6) {
+			if (this.battle.gen > 5) {
 				if (this.battle.hasPseudoWeather('Electric Terrain')) {
 					calls = 'Thunderbolt';
 				} else if (this.battle.hasPseudoWeather('Grassy Terrain')) {
 					calls = 'Energy Ball';
 				} else if (this.battle.hasPseudoWeather('Misty Terrain')) {
 					calls = 'Moonblast';
+				} else if (this.battle.hasPseudoWeather('Psychic Terrain')) {
+					calls = 'Psychic';
 				} else {
 					calls = 'Tri Attack';
 				}
@@ -793,7 +795,7 @@ var BattleTooltips = (function () {
 			}
 			if (move.id === 'judgment') {
 				var item = Tools.getItem(myPokemon.item);
-				if (item.onPlate) moveType = item.onPlate;
+				if (item.onPlate && !item.zMove) moveType = item.onPlate;
 			}
 			if (move.id === 'technoblast') {
 				var item = Tools.getItem(myPokemon.item);
@@ -962,7 +964,7 @@ var BattleTooltips = (function () {
 				basePowerComment = ' (Boosted by status)';
 			}
 		}
-		if (move.id === 'storedpower') {
+		if (move.id === 'storedpower' || move.id == 'powertrip') {
 			var boosts = Object.keys(pokemon.boosts);
 			var multiply = 0;
 			for (var i = 0; i < boosts.length; i++) {
