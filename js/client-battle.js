@@ -29,15 +29,17 @@
 
 			this.$options = this.battle.optionsElem.html('<div style="padding-top: 3px; padding-right: 3px; text-align: right"><button class="icon button" name="openBattleOptions" title="Options">Battle Options</button></div>');
 
-			this.battle.customCallback = _.bind(this.updateControls, this);
-			this.battle.endCallback = _.bind(this.updateControls, this);
-			this.battle.startCallback = _.bind(this.updateControls, this);
-			this.battle.stagnateCallback = _.bind(this.updateControls, this);
+			var self = this;
+			this.battle.customCallback = function () { self.updateControls(); };
+			this.battle.endCallback = function () { self.updateControls(); };
+			this.battle.startCallback = function () { self.updateControls(); };
+			this.battle.stagnateCallback = function () { self.updateControls(); };
 
 			this.battle.play();
 		},
 		events: {
-			'click .replayDownloadButton': 'clickReplayDownloadButton'
+			'click .replayDownloadButton': 'clickReplayDownloadButton',
+			'change input[name=zmove]': 'updateZMove'
 		},
 		battleEnded: false,
 		join: function () {
@@ -125,10 +127,10 @@
 				var choiceData = {offset: 0};
 				var requestData = null;
 				data = data.slice(9);
-				if (!isNaN(data.substr(0, 1)) && data.substr(1, 1) === '|') {
+				if (!isNaN(data.charAt(0)) && data.charAt(1) === '|') {
 					var nlIndex = data.indexOf('\n');
 					if (nlIndex >= 0) {
-						choiceData.offset = +data.substr(0, 1);
+						choiceData.offset = +data.charAt(0);
 						try {
 							$.extend(choiceData, $.parseJSON(data.slice(2, nlIndex)));
 						} catch (err) {}
@@ -163,7 +165,8 @@
 					switch (args[0]) {
 					case 'trapped':
 						requestData.trapped = true;
-						this.battle.activityQueue.push('|message|' + pokemon.getName() + ' is trapped and cannot switch!');
+						var pokeName = pokemon.side.n === 0 ? Tools.escapeHTML(pokemon.name) : "The opposing " + (this.battle.ignoreOpponent || this.battle.ignoreNicks ? pokemon.species : Tools.escapeHTML(pokemon.name));
+						this.battle.activityQueue.push('|message|' + pokeName + ' is trapped and cannot switch!');
 						break;
 					case 'cant':
 						for (var i = 0; i < requestData.moves.length; i++) {
@@ -206,7 +209,7 @@
 		 * Battle stuff
 		 *********************************************************/
 
-		updateControls: function () {
+		updateControls: function (force) {
 			if (this.$join) {
 				this.$join.remove();
 				this.$join = null;
@@ -224,11 +227,14 @@
 			} else if (this.battle.playbackState === 2 || this.battle.playbackState === 3) {
 
 				// battle is playing or paused
-				if (this.side) {
-					// is a player
-					this.$controls.html('<p><button name="skipTurn">Skip turn <i class="fa fa-step-forward"></i></button><button name="goToEnd">Go to last turn <i class="fa fa-fast-forward"></i></button></p>');
+				if (!this.side) {
+					// spectator
+					this.$controls.html('<p><button class="button" name="instantReplay"><i class="fa fa-undo"></i><br />First turn</button> <button class="button" name="rewindTurn"><i class="fa fa-step-backward"></i><br />Last turn</button><button class="button" name="skipTurn"><i class="fa fa-step-forward"></i><br />Skip turn</button> <button class="button" name="goToEnd"><i class="fa fa-fast-forward"></i><br />Skip to end</button></p><p><button name="switchSides"><i class="fa fa-random"></i> Switch sides</button></p>');
+				} else if (this.battleEnded) {
+					this.$controls.html('<p><button class="button" name="instantReplay"><i class="fa fa-undo"></i><br />First turn</button> <button class="button" name="rewindTurn"><i class="fa fa-step-backward"></i><br />Last turn</button><button class="button" name="skipTurn"><i class="fa fa-step-forward"></i><br />Skip turn</button> <button class="button" name="goToEnd"><i class="fa fa-fast-forward"></i><br />Skip to end</button></p>');
 				} else {
-					this.$controls.html('<p><button name="switchSides"><i class="fa fa-random"></i> Switch sides</button> <button name="skipTurn">Skip turn <i class="fa fa-step-forward"></i></button> <button name="goToEnd">Go to last turn <i class="fa fa-fast-forward"></i></button></p>');
+					// is a player
+					this.$controls.html('<p>' + this.getTimerHTML() + '<button class="button" name="skipTurn"><i class="fa fa-step-forward"></i><br />Skip turn</button> <button class="button" name="goToEnd"><i class="fa fa-fast-forward"></i><br />Skip to end</button></p>');
 				}
 				return;
 
@@ -242,48 +248,33 @@
 				if (this.side) {
 					// was a player
 					this.closeNotification('choice');
-					this.$controls.html('<div class="controls"><p>' + replayDownloadButton + '<em><button name="instantReplay"><i class="fa fa-undo"></i> Instant Replay</button></p><p><button name="closeAndMainMenu"><strong>Main menu</strong><br /><small>(closes this battle)</small></button> <button name="closeAndRematch"><strong>Rematch</strong><br /><small>(closes this battle)</small></button></p></div>');
+					this.$controls.html('<div class="controls"><p>' + replayDownloadButton + '<button class="button" name="instantReplay"><i class="fa fa-undo"></i><br />Instant replay</button></p><p><button class="button" name="closeAndMainMenu"><strong>Main menu</strong><br /><small>(closes this battle)</small></button> <button class="button" name="closeAndRematch"><strong>Rematch</strong><br /><small>(closes this battle)</small></button></p></div>');
 				} else {
-					this.$controls.html('<div class="controls"><p>' + replayDownloadButton + '<em><button name="switchSides"><i class="fa fa-random"></i> Switch sides</button> <button name="instantReplay"><i class="fa fa-undo"></i> Instant Replay</button></p></div>');
-				}
-
-			} else if (!this.battle.mySide.initialized || !this.battle.yourSide.initialized) {
-
-				// empty battle
-
-				if (this.side) {
-					if (this.battle.kickingInactive) {
-						this.$controls.html('<div class="controls"><p><button name="setTimer" value="off"><small>Stop timer</small></button> <small>&larr; Your opponent has disconnected. This will give them more time to reconnect.</small></p></div>');
-					} else {
-						this.$controls.html('<div class="controls"><p><button name="setTimer" value="on"><small>Claim victory</small></button> <small>&larr; Your opponent has disconnected. Click this if they don\'t reconnect.</small></p></div>');
-					}
-				} else {
-					this.$controls.html('<p><em>Waiting for players...</em></p>');
-					this.$join = $('<div class="playbutton"><button name="joinBattle">Join Battle</button></div>');
-					this.$battle.append(this.$join);
+					this.$controls.html('<div class="controls"><p>' + replayDownloadButton + '<button class="button" name="instantReplay"><i class="fa fa-undo"></i><br />Instant replay</button></p><p><button name="switchSides"><i class="fa fa-random"></i> Switch sides</button></p></div>');
 				}
 
 			} else if (this.side) {
 
 				// player
-				if (!this.request) {
-					if (this.battle.kickingInactive) {
-						this.$controls.html('<div class="controls"><p><button name="setTimer" value="off"><small>Stop timer</small></button> <small>&larr; Your opponent has disconnected. This will give them more time to reconnect.</small></p></div>');
-					} else {
-						this.$controls.html('<div class="controls"><p><button name="setTimer" value="on"><small>Claim victory</small></button> <small>&larr; Your opponent has disconnected. Click this if they don\'t reconnect.</small></p></div>');
-					}
+				this.controlsShown = true;
+				if (force || !controlsShown || this.choice === undefined || this.choice && this.choice.waiting) {
+					// don't update controls (and, therefore, side) if `this.choice === null`: causes damage miscalculations
+					this.updateControlsForPlayer();
 				} else {
-					this.controlsShown = true;
-					if (!controlsShown || typeof this.choice === 'undefined' || this.choice && this.choice.waiting) {
-						// don't update controls (and, therefore, side) if `this.choice === null`: causes damage miscalculations
-						this.updateControlsForPlayer();
-					}
+					this.updateTimer();
 				}
+
+			} else if (!this.battle.mySide.initialized || !this.battle.yourSide.initialized) {
+
+				// empty battle
+				this.$controls.html('<p><em>Waiting for players...</em></p>');
+				this.$join = $('<div class="playbutton"><button name="joinBattle">Join Battle</button></div>');
+				this.$battle.append(this.$join);
 
 			} else {
 
 				// full battle
-				this.$controls.html('<p><em><button name="switchSides"><i class="fa fa-random"></i> Switch sides</button> Waiting for players...</em></p>');
+				this.$controls.html('<p><button class="button" name="instantReplay"><i class="fa fa-undo"></i><br />First turn</button> <button class="button" name="rewindTurn"><i class="fa fa-step-backward"></i><br />Last turn</button><button class="button disabled" disabled><i class="fa fa-step-forward"></i><br />Skip turn</button> <button class="button disabled" disabled><i class="fa fa-fast-forward"></i><br />Skip to end</button></p><p><button name="switchSides"><i class="fa fa-random"></i> Switch sides</button></p><p><em>Waiting for players...</em></p>');
 
 			}
 
@@ -376,6 +367,11 @@
 				break;
 
 			case 'team':
+				if (this.battle.mySide.pokemon && !this.battle.mySide.pokemon.length) {
+					// too early, we can't determine `this.choice.count` yet
+					// TODO: send teamPreviewCount in the request object
+					return;
+				}
 				if (!this.choice) {
 					this.choice = {
 						preDecided: preDecided,
@@ -417,6 +413,61 @@
 				break;
 			}
 		},
+		timerInterval: 0,
+		getTimerHTML: function (nextTick) {
+			var time = 'Timer';
+			var timerTicking = (this.battle.kickingInactive && this.request && !this.request.wait && !(this.choice && this.choice.waiting)) ? ' timerbutton-on' : '';
+
+			if (!nextTick) {
+				var self = this;
+				if (this.timerInterval) {
+					clearInterval(this.timerInterval);
+					this.timerInterval = 0;
+				}
+				if (timerTicking) this.timerInterval = setInterval(function () {
+					var $timerButton = self.$('.timerbutton');
+					if ($timerButton.length) {
+						$timerButton.replaceWith(self.getTimerHTML(true));
+					} else {
+						clearInterval(self.timerInterval);
+						self.timerInterval = 0;
+					}
+				}, 1000);
+			} else if (this.battle.kickingInactive > 1) {
+				this.battle.kickingInactive--;
+			}
+
+			if (this.battle.kickingInactive) {
+				var secondsLeft = this.battle.kickingInactive;
+				if (secondsLeft !== true) {
+					if (secondsLeft <= 10 && timerTicking) {
+						timerTicking = ' timerbutton-critical';
+					}
+					var minutesLeft = Math.floor(secondsLeft / 60);
+					secondsLeft -= minutesLeft * 60;
+					time = '' + minutesLeft + ':' + (secondsLeft < 10 ? '0' : '') + secondsLeft;
+				} else {
+					time = '-:--';
+				}
+			}
+			return '<button name="openTimer" class="button timerbutton' + timerTicking + '"><i class="fa fa-hourglass-start"></i> ' + time + '</button>';
+		},
+		updateZMove: function () {
+			var zChecked = this.$('input[name=zmove]')[0].checked;
+			if (zChecked) {
+				this.$('.movebuttons-noz').hide();
+				this.$('.movebuttons-z').show();
+			} else {
+				this.$('.movebuttons-noz').show();
+				this.$('.movebuttons-z').hide();
+			}
+		},
+		updateTimer: function () {
+			this.$('.timerbutton').replaceWith(this.getTimerHTML());
+		},
+		openTimer: function () {
+			app.addPopup(TimerPopup, {room: this});
+		},
 		updateMoveControls: function (type) {
 			var preDecided = this.choice.preDecided;
 			var switchables = this.request && this.request.side ? this.myPokemon : [];
@@ -431,12 +482,12 @@
 			var pos = this.choice.choices.length - (type === 'movetarget' ? 1 : 0);
 
 			var hpRatio = switchables[pos].hp / switchables[pos].maxhp;
-			var hpBar = '<small class="' + (hpRatio < 0.2 ? 'critical' : hpRatio < 0.5 ? 'weak' : 'healthy') + '">' + switchables[pos].hp + '/' + switchables[pos].maxhp + '</small>';
 
 			var curActive = this.request && this.request.active && this.request.active[pos];
 			if (!curActive) return;
 			var trapped = curActive.trapped;
 			var canMegaEvo = curActive.canMegaEvo || switchables[pos].canMegaEvo;
+			var canZMove = curActive.canZMove || switchables[pos].canZMove;
 
 			this.finalDecisionMove = curActive.maybeDisabled || false;
 			this.finalDecisionSwitch = curActive.maybeTrapped || false;
@@ -455,7 +506,7 @@
 
 			// Target selector
 			if (type === 'movetarget') {
-				requestTitle += 'At who? ' + hpBar;
+				requestTitle += 'At who? ';
 
 				var targetMenus = ['', ''];
 				var myActive = this.battle.mySide.active;
@@ -473,7 +524,7 @@
 					}
 
 					if (disabled) {
-						targetMenus[0] += '<button disabled="disabled" style="visibility:hidden"></button> ';
+						targetMenus[0] += '<button disabled="disabled"></button> ';
 					} else if (!pokemon || pokemon.zerohp) {
 						targetMenus[0] += '<button class="disabled" name="chooseMoveTarget" value="' + (i + 1) + '"><span class="picon" style="' + Tools.getPokemonIcon('missingno') + '"></span></button> ';
 					} else {
@@ -502,14 +553,15 @@
 
 				this.$controls.html(
 					'<div class="controls">' +
-					'<div class="whatdo">' + requestTitle + '</div>' +
+					'<div class="whatdo">' + requestTitle + this.getTimerHTML() + '</div>' +
 					'<div class="switchmenu" style="display:block">' + targetMenus[0] + '<div style="clear:both"></div> </div>' +
 					'<div class="switchmenu" style="display:block">' + targetMenus[1] + '</div>' +
 					'</div>'
 				);
 			} else {
 				// Move chooser
-				requestTitle += ' What will <strong>' + Tools.escapeHTML(switchables[pos].name) + '</strong> do? ' + hpBar + '';
+				var hpBar = '<small class="' + (hpRatio < 0.2 ? 'critical' : hpRatio < 0.5 ? 'weak' : 'healthy') + '">HP ' + switchables[pos].hp + '/' + switchables[pos].maxhp + '</small>';
+				requestTitle += ' What will <strong>' + Tools.escapeHTML(switchables[pos].name) + '</strong> do? ' + hpBar;
 
 				var hasMoves = false;
 				var moveMenu = '';
@@ -535,10 +587,27 @@
 				if (!hasMoves) {
 					moveMenu += '<button class="movebutton" name="chooseMove" value="0" data-move="Struggle" data-target="randomNormal">Struggle<br /><small class="type">Normal</small> <small class="pp">&ndash;</small>&nbsp;</button> ';
 				} else {
+					if (canZMove) {
+						movebuttons = '<div class="movebuttons-noz">' + movebuttons + '</div><div class="movebuttons-z" style="display:none">';
+						for (var i = 0; i < curActive.moves.length; i++) {
+							var moveData = curActive.moves[i];
+							var move = Tools.getMove(moveData.move);
+							var moveType = this.tooltips.getMoveType(move, this.battle.mySide.active[pos] || this.myPokemon[pos]);
+							if (canZMove[i]) {
+								movebuttons += '<button class="type-' + moveType + '" name="chooseMove" value="' + (i + 1) + '" data-move="' + Tools.escapeHTML(canZMove[i]) + '" data-target="' + Tools.escapeHTML(moveData.target) + '"' + this.tooltips.tooltipAttrs(canZMove[i], 'move') + '>';
+								movebuttons += canZMove[i] + '<br /><small class="type">' + (moveType ? Tools.getType(moveType).name : "Unknown") + '</small> <small class="pp">1/1</small>&nbsp;</button> ';
+							} else {
+								movebuttons += '<button disabled="disabled">&nbsp;</button>';
+							}
+						}
+						movebuttons += '</div>';
+					}
 					moveMenu += movebuttons;
 				}
 				if (canMegaEvo) {
 					moveMenu += '<br /><label class="megaevo"><input type="checkbox" name="megaevo" />&nbsp;Mega&nbsp;Evolution</label>';
+				} else if (canZMove) {
+					moveMenu += '<br /><label class="megaevo"><input type="checkbox" name="zmove" />&nbsp;Use Z Move</label>';
 				}
 				if (this.finalDecisionMove) {
 					moveMenu += '<em style="display:block;clear:both">You <strong>might</strong> have some moves disabled, so you won\'t be able to cancel an attack!</em><br/>';
@@ -583,7 +652,7 @@
 
 				this.$controls.html(
 					'<div class="controls">' +
-					'<div class="whatdo">' + requestTitle + '</div>' +
+					'<div class="whatdo">' + requestTitle + this.getTimerHTML() + '</div>' +
 					moveControls + shiftControls + switchControls +
 					'</div>'
 				);
@@ -625,7 +694,7 @@
 				controls += '</div>';
 				this.$controls.html(
 					'<div class="controls">' +
-					'<div class="whatdo">' + requestTitle + '</div>' +
+					'<div class="whatdo">' + requestTitle + this.getTimerHTML() + '</div>' +
 					controls +
 					'</div>'
 				);
@@ -655,7 +724,7 @@
 				);
 				this.$controls.html(
 					'<div class="controls">' +
-					'<div class="whatdo">' + requestTitle + '</div>' +
+					'<div class="whatdo">' + requestTitle + this.getTimerHTML() + '</div>' +
 					controls +
 					'</div>'
 				);
@@ -692,35 +761,89 @@
 			);
 			this.$controls.html(
 				'<div class="controls">' +
-				'<div class="whatdo">' + requestTitle + '</div>' +
+				'<div class="whatdo">' + requestTitle + this.getTimerHTML() + '</div>' +
 				controls +
 				'</div>'
 			);
 			this.selectSwitch();
 		},
 		updateWaitControls: function () {
-			var buf = '<p><em>' + "Waiting for opponent..." + '</em> ';
-			if (this.choice && this.choice.waiting && !this.finalDecision) {
-				buf += '<button name="undoChoice">' + "Cancel" + '</button>';
+			var buf = '<div class="controls">';
+			buf += this.getPlayerChoicesHTML();
+			if (!this.battle.mySide.initialized || !this.battle.yourSide.initialized || !this.request) {
+				if (this.battle.kickingInactive) {
+					buf += '<p><button class="button" name="setTimer" value="off">Stop timer</button> <small>&larr; Your opponent has disconnected. This will give them more time to reconnect.</small></p>';
+				} else {
+					buf += '<p><button class="button" name="setTimer" value="on">Claim victory</button> <small>&larr; Your opponent has disconnected. Click this if they don\'t reconnect.</small></p>';
+				}
 			}
-			buf += '</p>';
-			if (this.battle.kickingInactive) {
-				buf += '<p class="timer"><button name="setTimer" value="off"><small>' + "Stop timer" + '</small></button></p>';
-			} else {
-				buf += '<p class="timer"><button name="setTimer" value="on"><small>' + "Start timer" + '</small></button></p>';
-			}
-			this.$controls.html(
-				'<div class="controls" style="height:130px">' +
-				buf +
-				'</div>'
-			);
+			this.$controls.html(buf + '</div>');
 		},
 
-		decide: function (message) {
-			if (this.partialDecisions) return this.sendDecision(message);
-			if (this.choice.choices.length >= (this.choice.count || this.battle.mySide.active.length)) {
-				return this.sendDecision(this.choice.choices);
+		getPlayerChoicesHTML: function () {
+			var buf = '<p>' + this.getTimerHTML();
+			if (!this.choice || !this.choice.waiting) {
+				return buf + '<em>Waiting for opponent...</em></p>';
 			}
+			buf += '<small>';
+
+			if (this.choice.teamPreview) {
+				var myPokemon = this.battle.mySide.pokemon;
+				var leads = [];
+				for (var i = 0; i < this.choice.count; i++) {
+					leads.push(myPokemon[this.choice.teamPreview[i] - 1].species);
+				}
+				buf += leads.join(', ') + ' will be sent out first.<br />';
+			} else if (this.choice.choices) {
+				var myActive = this.battle.mySide.active;
+				for (var i = 0; i < this.choice.choices.length; i++) {
+					var parts = this.choice.choices[i].split(' ');
+					switch (parts[0]) {
+					case 'move':
+						var move = this.request.active[i].moves[parts[1] - 1].move;
+						var target = '';
+						buf += myActive[i].species + ' will ';
+						if (parts.length > 2) {
+							var targetPos = parts[2];
+							if (targetPos === 'mega') {
+								buf += 'mega evolve, then ';
+								targetPos = parts[3];
+							}
+							if (targetPos === 'zmove') {
+								move = this.request.active[i].canZMove[parts[1] - 1];
+								targetPos = parts[3];
+							}
+							if (targetPos) {
+								var targetActive = this.battle.yourSide.active;
+								// Targeting your own side in doubles / triples
+								if (targetPos < 0) {
+									targetActive = myActive;
+									targetPos = -targetPos;
+									target += 'your ';
+								}
+								target += targetActive[targetPos - 1].species;
+							}
+						}
+						buf += 'use ' + move + (target ? ' against ' + target : '') + '.<br />';
+						break;
+					case 'switch':
+						buf += '' + this.myPokemon[parts[1] - 1].species + ' will switch in';
+						if (myActive[i]) {
+							buf += ', replacing ' + myActive[i].species;
+						}
+						buf += '.<br />';
+						break;
+					case 'shift':
+						buf += myActive[i].species + ' will shift position.<br />';
+						break;
+					}
+				}
+			}
+			buf += '</small></p>';
+			if (!this.finalDecision) {
+				buf += '<p><small><em>Waiting for opponent...</em></small> <button class="button" name="undoChoice">Cancel</button></p>';
+			}
+			return buf;
 		},
 
 		// Appends the rqid to the message so that the server can
@@ -749,7 +872,7 @@
 				request.requestType = 'wait';
 			}
 
-			this.choice = null;
+			this.choice = (choiceData && choiceData.offset ? {waiting: true} : null);
 			this.choiceData = choiceData;
 			this.finalDecision = this.finalDecisionMove = this.finalDecisionSwitch = false;
 			this.request = request;
@@ -757,7 +880,7 @@
 				this.updateSideLocation(request.side, true);
 			}
 			this.notifyRequest();
-			this.updateControls();
+			this.updateControls(true);
 		},
 		notifyRequest: function () {
 			var oName = this.battle.yourSide.name;
@@ -842,6 +965,12 @@
 		skipTurn: function () {
 			this.battle.skipTurn();
 		},
+		rewindTurn: function () {
+			if (this.battle.turn) {
+				this.battle.fastForwardTo(this.battle.turn - 1);
+				this.battle.play();
+			}
+		},
 		goToEnd: function () {
 			this.battle.fastForwardTo(-1);
 		},
@@ -871,12 +1000,15 @@
 			if (pos !== undefined) { // pos === undefined if called by chooseMoveTarget()
 				var myActive = this.battle.mySide.active;
 				var isMega = !!(this.$('input[name=megaevo]')[0] || '').checked;
+				var isZMove = !!(this.$('input[name=zmove]')[0] || '').checked;
 
 				var move = e.getAttribute('data-move');
 				var target = e.getAttribute('data-target');
 				var choosableTargets = {normal: 1, any: 1, adjacentAlly: 1, adjacentAllyOrSelf: 1, adjacentFoe: 1};
+				var spreadTargets = {allAdjacentFoes: 1, allAdjacent: 1};
+				if (isZMove && target in spreadTargets) target = 'normal';
 
-				this.choice.choices.push('move ' + pos + (isMega ? ' mega' : ''));
+				this.choice.choices.push('move ' + pos + (isMega ? ' mega' : '') + (isZMove ? ' zmove' : ''));
 				if (myActive.length > 1 && target in choosableTargets) {
 					this.choice.type = 'movetarget';
 					this.choice.moveTarget = target;
@@ -1025,9 +1157,14 @@
 					}
 				}
 
-				for (var i = 0; i < this.choice.choices.length; i++) {
-					this.decide(this.choice.choices[i]);
+				if (this.partialDecisions) {
+					for (var i = 0; i < this.choice.choices.length; i++) {
+						this.sendDecision(this.choice.choices[i]);
+					}
+				} else if (this.choice.choices.length >= (this.choice.count || this.battle.mySide.active.length)) {
+					this.sendDecision(this.choice.choices);
 				}
+
 				if (!this.finalDecision) {
 					var lastChoice = this.choice.choices[this.choice.choices.length - 1];
 					if (lastChoice.substr(0, 5) === 'move ' && this.finalDecisionMove) {
@@ -1039,18 +1176,18 @@
 			}
 			this.closeNotification('choice');
 
-			this.choice = {waiting: true};
+			this.choice.waiting = true;
 			this.updateControlsForPlayer();
 		},
 		undoChoice: function (pos) {
 			this.send('/undo');
 			this.notifyRequest();
 
-			this.choice = null;
-			this.updateControlsForPlayer();
+			this.clearChoice();
 		},
 		clearChoice: function () {
 			this.choice = null;
+			this.choiceData = {offset: 0};
 			this.updateControlsForPlayer();
 		},
 		leaveBattle: function () {
@@ -1190,7 +1327,26 @@
 				side.updateStatbar(side.active[i], true, true);
 			}
 			side.updateSidebar();
+		}
+	});
+
+	var TimerPopup = this.TimerPopup = Popup.extend({
+		initialize: function (data) {
+			this.room = data.room;
+			if (this.room.battle.kickingInactive) {
+				this.$el.html('<p><button name="timerOff"><strong>Stop timer</strong></button></p>');
+			} else {
+				this.$el.html('<p><button name="timerOn"><strong>Start timer</strong></button></p>');
+			}
 		},
+		timerOff: function () {
+			this.room.setTimer('off');
+			this.close();
+		},
+		timerOn: function () {
+			this.room.setTimer('on');
+			this.close();
+		}
 	});
 
 }).call(this, jQuery);
