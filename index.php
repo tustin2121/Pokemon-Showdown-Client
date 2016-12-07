@@ -94,6 +94,7 @@
 		<script src="js/client-topbar.js"></script>
 		<script src="js/client-mainmenu.js"></script>
 		<script src="js/client-teambuilder.js"></script>
+		<script src="js/client-adventbuilder.js"></script>
 		<script src="js/client-ladder.js"></script>
 		<script src="js/client-chat.js"></script>
 		<script src="js/client-chat-tournament.js"></script>

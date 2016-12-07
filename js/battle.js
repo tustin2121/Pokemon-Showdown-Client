@@ -105,7 +105,9 @@ var BattleSoundLibrary = (function () {
 		this.winm = this.loadWinMusic(url, loopstart, loopstop).setVolume(this.bgmVolume);
 		if (!this.muted && this.winm) {
 			this.winm.play();
-			this.winm.fadeOut(30.0, 15.0);
+			if (this.winm.loop) {
+				this.winm.fadeOut(30.0, 15.0);
+			}
 			
 			var self = this;
 			setTimeout(function(){
@@ -1332,6 +1334,7 @@ var Side = (function () {
 		this.foe = null;
 		this.spriteid = 262;
 		this.totalPokemon = 6;
+		this.title = null;
 
 		if (n == 0) {
 			this.x = 0;
@@ -1438,13 +1441,13 @@ var Side = (function () {
 		pokemonhtml = '<div class="teamicons">' + pokemonhtml + '</div>';
 		if (this.n === 1) {
 			if (this.initialized) {
-				this.battle.rightbarElem.html('<div class="trainer"><strong>' + Tools.escapeHTML(this.name) + '</strong><div class="trainersprite" style="background-image:url(' + Tools.resolveAvatar(this.spriteid) + ')"></div>' + pokemonhtml + '</div>').find('.trainer').css('opacity', 1);
+				this.battle.rightbarElem.html('<div class="trainer">'+(this.title?"<span class='gymtitle'>"+this.title+"</span>":"")+'<strong>' + Tools.escapeHTML(this.name) + '</strong><div class="trainersprite" style="background-image:url(' + Tools.resolveAvatar(this.spriteid) + ')"></div>' + pokemonhtml + '</div>').find('.trainer').css('opacity', 1);
 			} else {
 				this.battle.rightbarElem.find('.trainer').css('opacity', 0.4);
 			}
 		} else {
 			if (this.initialized) {
-				this.battle.leftbarElem.html('<div class="trainer"><strong>' + Tools.escapeHTML(this.name) + '</strong><div class="trainersprite" style="background-image:url(' + Tools.resolveAvatar(this.spriteid) + ')"></div>' + pokemonhtml + '</div>').find('.trainer').css('opacity', 1);
+				this.battle.leftbarElem.html('<div class="trainer">'+(this.title?"<span class='gymtitle'>"+this.title+"</span>":"")+'<strong>' + Tools.escapeHTML(this.name) + '</strong><div class="trainersprite" style="background-image:url(' + Tools.resolveAvatar(this.spriteid) + ')"></div>' + pokemonhtml + '</div>').find('.trainer').css('opacity', 1);
 			} else {
 				this.battle.leftbarElem.find('.trainer').css('opacity', 0.4);
 			}
@@ -2217,14 +2220,14 @@ var Side = (function () {
 		}
 		if (pokemon.volatiles.typechange && pokemon.volatiles.typechange[2]) {
 			var types = pokemon.volatiles.typechange[2].split('/');
-			status += '<img src="' + Tools.resourcePrefix + 'sprites/types/' + types[0] + '.png" alt="' + types[0] + '" /> ';
+			status += '<img src="' + Tools.resourcePrefix + 'sprites/types/' + types[0].replace(/\?/g, '%3f') + '.png" alt="' + types[0] + '" /> ';
 			if (types[1]) {
-				status += '<img src="' + Tools.resourcePrefix + 'sprites/types/' + types[1] + '.png" alt="' + types[1] + '" /> ';
+				status += '<img src="' + Tools.resourcePrefix + 'sprites/types/' + types[1].replace(/\?/g, '%3f') + '.png" alt="' + types[1] + '" /> ';
 			}
 		}
 		if (pokemon.volatiles.typeadd) {
 			var type = pokemon.volatiles.typeadd[2];
-			status += '+<img src="' + Tools.resourcePrefix + 'sprites/types/' + type + '.png" alt="' + type + '" /> ';
+			status += '+<img src="' + Tools.resourcePrefix + 'sprites/types/' + type.replace(/\?/g, '%3f') + '.png" alt="' + type + '" /> ';
 		}
 		for (var x in pokemon.boosts) {
 			if (pokemon.boosts[x]) {
@@ -4876,7 +4879,7 @@ var Battle = (function () {
 						actions += "" + poke.getName() + " transformed into the " + args[3] + " type!";
 					}
 					this.resultAnim(poke, args[3].split('/').map(function (type) {
-						return '<img src="' + Tools.resourcePrefix + 'sprites/types/' + type + '.png" alt="' + type + '" />';
+						return '<img src="' + Tools.resourcePrefix + 'sprites/types/' + type.replace(/\?/g, '%3f') + '.png" alt="' + type + '" />';
 					}).join(' '), 'neutral');
 					break;
 				case 'typeadd':
@@ -4884,7 +4887,7 @@ var Battle = (function () {
 					poke.volatiles.typeadd[2] = args[3];
 					if (kwargs.silent) break;
 					actions += "" + args[3] + " type was added to " + poke.getLowerName() + "!";
-					this.resultAnim(poke, '<img src="' + Tools.resourcePrefix + 'sprites/types/' + args[3] + '.png" alt="' + args[3] + '" />', 'neutral');
+					this.resultAnim(poke, '<img src="' + Tools.resourcePrefix + 'sprites/types/' + args[3].replace(/\?/g, '%3f') + '.png" alt="' + args[3] + '" />', 'neutral');
 					break;
 				case 'powertrick':
 					this.resultAnim(poke, 'Power Trick', 'neutral');
@@ -5979,18 +5982,26 @@ var Battle = (function () {
 					this.updateGen();
 				}
 				if (kwargs.music && kwargs.music !== '.') {
-					window.forceBgm = kwargs.music;
+					this.forceBgm = kwargs.music;
 					this.preloadBgm();
 					if (!kwargs.vmusic) this.preloadVictory();
 				}
 				if (kwargs.premusic && kwargs.premusic !== '.') {
-					
+					this.forcePrebgm = kwargs.premusic;
 				}
 				if (kwargs.vmusic && kwargs.vmusic !== '.') {
-					window.forceWinm = kwargs.vmusic;
+					this.forceWinm = kwargs.vmusic;
 					this.preloadVictory();
 				}
 				break;
+			
+			case '-tppgym': {
+				if (this.yourSide !== this.p1 && app.user.get('userid') !== this.p1.id) {
+					// Always show the leader as "your" side.
+					this.setSidesSwitched(true);
+				}
+				this.p1.title = Tools.escapeHTML(args[2]);
+			} break;
 
 			default:
 				this.logConsole('Unknown minor: ' + args[0]);
@@ -6971,40 +6982,34 @@ var Battle = (function () {
 		//this.preloadImage(Tools.fxPrefix + 'bg.jpg');
 	};
 	Battle.prototype.dogarsCheck = function (pokemon) {
-		if (pokemon.side.n === 1) return;
+		// if (pokemon.side.n === 1) return;
 
-		if (pokemon.species === 'Koffing' && pokemon.name.match(/dogars/i)) {
-			if (window.forceBgm !== 'bw2-homika-dogars') {
-				window.originalBgm = window.bgmId;
-				window.forceBgm = 'bw2-homika-dogars';
-				this.preloadBgm();
-				this.soundStart();
-			}
-		} else if (window.forceBgm === 'bw2-homika-dogars') {
-			window.forceBgm = null;
-			if (window.originalBgm || window.originalBgm === 0) {
-				window.forceBgm = window.originalBgm;
-			}
-			this.preloadBgm();
-			this.soundStart();
-		}
+		// if (pokemon.species === 'Koffing' && pokemon.name.match(/dogars/i)) {
+		// 	if (window.forceBgm !== 'bw2-homika-dogars') {
+		// 		window.originalBgm = window.bgmId;
+		// 		window.forceBgm = 'bw2-homika-dogars';
+		// 		this.preloadBgm();
+		// 		this.soundStart();
+		// 	}
+		// } else if (window.forceBgm === 'bw2-homika-dogars') {
+		// 	window.forceBgm = null;
+		// 	if (window.originalBgm || window.originalBgm === 0) {
+		// 		window.forceBgm = window.originalBgm;
+		// 	}
+		// 	this.preloadBgm();
+		// 	this.soundStart();
+		// }
 	};
-	
-	// TODO:
-	// /music <id> : command to force the battle music
-	// |music|cat|<category>  - To force a certain category of music (trainer/gym/wild)
-	// |music|force|<id>      - To force a certain music id
-	// |music|dynamic|gym     - To set the music to change when the last pokemon on the opposing side is left (a la Black/White)
 	
 	Battle.prototype.preloadVictory = function() {
 		// console.debug("preloadVictory");
 		var id = musicTable.randVictory();
 		if (!id) return;
-		if (window.bgmId && musicTable.meta[window.bgmId+"-win"]) {
-			id = window.bgmId+"-win"; //if there's a matching win music, load that up
+		if (this.bgmId && musicTable.meta[this.bgmId+"-win"]) {
+			id = this.bgmId+"-win"; //if there's a matching win music, load that up
 		}
-		if (window.forceWinm) {
-			id = window.forceWinm;
+		if (this.forceWinm) {
+			id = this.forceWinm;
 		}
 		var bgmInfo = musicTable.meta[id];
 		BattleSound.loadWinMusic(bgmInfo.url, bgmInfo.loop[0], bgmInfo.loop[1]);
@@ -7014,11 +7019,11 @@ var Battle = (function () {
 		// console.debug("preloadBgm");
 		var id = musicTable.randBattle();
 		if (!id) return;
-		if (window.forceBgm) {
-			id = window.forceBgm;
+		if (this.forceBgm) {
+			id = this.forceBgm;
 		}
 		var bgmInfo = musicTable.meta[id];
-		window.bgmId = id;
+		this.bgmId = id;
 		BattleSound.loadBgm(bgmInfo.url, bgmInfo.loop[0], bgmInfo.loop[1]);
 		this.bgm = bgmInfo.url;
 	};
@@ -7030,6 +7035,15 @@ var Battle = (function () {
 		// console.debug("soundStart");
 		if (!this.bgm) this.preloadBgm();
 		if (!this.winm) this.preloadVictory();
+		if (this.forcePrebgm && this.battleState >= 5 && this.battleState < 10) {
+			console.log("FORCED: "+this.forcePrebgm);
+			try {
+				var bgmInfo = musicTable.meta[this.forcePrebgm];
+				BattleSound.loadBgm(bgmInfo.url, bgmInfo.loop[0], bgmInfo.loop[1]);
+				BattleSound.playBgm(bgmInfo.url, 1);
+			} catch (e) { console.error(e); }
+			return;
+		}
 		if (this.battleState < 10 || this.battleState >= 20) return; //don't play music until battle begins
 		BattleSound.playBgm(this.bgm, this.turn);
 	};
