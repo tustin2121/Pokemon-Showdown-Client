@@ -784,8 +784,8 @@
 			if (!noChoice) {
 				this.curFormat = formatid;
 				if (!this.curFormat) {
-					if (BattleFormats['randombattle']) {
-						this.curFormat = 'randombattle';
+					if (BattleFormats['gen7randombattle']) {
+						this.curFormat = 'gen7randombattle';
 					} else for (var i in BattleFormats) {
 						if (!BattleFormats[i].searchShow || !BattleFormats[i].challengeShow) continue;
 						this.curFormat = i;
@@ -935,7 +935,10 @@
 					}
 					bufs[curBuf] += '<li><h3>' + Tools.escapeHTML(curSection) + '</li>';
 				}
-				bufs[curBuf] += '<li><button name="selectFormat" value="' + i + '"' + (curFormat === i ? ' class="sel"' : '') + '>' + Tools.escapeFormat(format.id) + '</button></li>';
+				var formatName = Tools.escapeFormat(format.id);
+				if (formatName.charAt(0) !== '[') formatName = '[Gen 6] ' + formatName;
+				formatName = formatName.replace('[Gen 7] ', '');
+				bufs[curBuf] += '<li><button name="selectFormat" value="' + i + '"' + (curFormat === i ? ' class="sel"' : '') + '>' + formatName + '</button></li>';
 			}
 
 			var html = '';
