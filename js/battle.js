@@ -2217,14 +2217,14 @@ var Side = (function () {
 		}
 		if (pokemon.volatiles.typechange && pokemon.volatiles.typechange[2]) {
 			var types = pokemon.volatiles.typechange[2].split('/');
-			status += '<img src="' + Tools.resourcePrefix + 'sprites/types/' + types[0] + '.png" alt="' + types[0] + '" /> ';
+			status += '<img src="' + Tools.resourcePrefix + 'sprites/types/' + types[0].replace(/\?/g, '%3f') + '.png" alt="' + types[0] + '" /> ';
 			if (types[1]) {
-				status += '<img src="' + Tools.resourcePrefix + 'sprites/types/' + types[1] + '.png" alt="' + types[1] + '" /> ';
+				status += '<img src="' + Tools.resourcePrefix + 'sprites/types/' + types[1].replace(/\?/g, '%3f') + '.png" alt="' + types[1] + '" /> ';
 			}
 		}
 		if (pokemon.volatiles.typeadd) {
 			var type = pokemon.volatiles.typeadd[2];
-			status += '+<img src="' + Tools.resourcePrefix + 'sprites/types/' + type + '.png" alt="' + type + '" /> ';
+			status += '+<img src="' + Tools.resourcePrefix + 'sprites/types/' + type.replace(/\?/g, '%3f') + '.png" alt="' + type + '" /> ';
 		}
 		for (var x in pokemon.boosts) {
 			if (pokemon.boosts[x]) {
@@ -4876,7 +4876,7 @@ var Battle = (function () {
 						actions += "" + poke.getName() + " transformed into the " + args[3] + " type!";
 					}
 					this.resultAnim(poke, args[3].split('/').map(function (type) {
-						return '<img src="' + Tools.resourcePrefix + 'sprites/types/' + type + '.png" alt="' + type + '" />';
+						return '<img src="' + Tools.resourcePrefix + 'sprites/types/' + type.replace(/\?/g, '%3f') + '.png" alt="' + type + '" />';
 					}).join(' '), 'neutral');
 					break;
 				case 'typeadd':
@@ -4884,7 +4884,7 @@ var Battle = (function () {
 					poke.volatiles.typeadd[2] = args[3];
 					if (kwargs.silent) break;
 					actions += "" + args[3] + " type was added to " + poke.getLowerName() + "!";
-					this.resultAnim(poke, '<img src="' + Tools.resourcePrefix + 'sprites/types/' + args[3] + '.png" alt="' + args[3] + '" />', 'neutral');
+					this.resultAnim(poke, '<img src="' + Tools.resourcePrefix + 'sprites/types/' + args[3].replace(/\?/g, '%3f') + '.png" alt="' + args[3] + '" />', 'neutral');
 					break;
 				case 'powertrick':
 					this.resultAnim(poke, 'Power Trick', 'neutral');

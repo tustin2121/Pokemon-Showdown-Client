@@ -28041,6 +28041,83 @@ BattleMoveAnims['operationlovebomb'] = {
 	},
 };
 
+BattleOtherAnims['glitch'] = {
+	anim: function(battle, args) {
+		var attacker = args[0];
+		
+		attacker.elem.delay(300).animate({ opacity: 0.03 }, 1);
+		glitchOut({x: 0.0, y: 0.0, width: 0.3, height: 0.5}, 500, 300, 2);
+		glitchOut({x: 0.1, y: 0.3, width: 0.4, height: 0.7}, 100, 500, 4);
+		glitchOut({x: 0.9, y: 0.2, width: 0.1, height: 0.8},  50, 700, 3);
+		glitchOut({x: 0.1, y: 0.8, width: 0.5, height: 0.3}, 200, 200, 5);
+		glitchOut({x: 0.4, y: 0.6, width: 0.7, height: 0.3}, 400, 100, 7);
+		glitchOut({x: 0.6, y: 0.5, width: 0.3, height: 0.1},   1, 900, 3);
+		glitchOut({x: 0.3, y: 0.1, width: 0.6, height: 0.8}, 150, 200, 4);
+		attacker.elem.delay(2000).animate({ opacity: 1 }, 100);
+		
+		// battle.activityWait(2000);
+		return;
+		
+		function glitchOut(section, starttime, betweentime, jumps) {
+			var effect = attacker.sp;
+			if (!effect) return;
+			if (!starttime) starttime = 0;
+			starttime += battle.animationDelay;
+		
+			battle.fxElem.append('<div style="display:none;position:absolute; background-image:url(' + effect.url + ')" />');
+			var effectElem = battle.fxElem.children().last();
+			var srcElem = attacker.elem;
+			
+			var sec = {
+				l : parseInt(srcElem.css("left")),
+				t : parseInt(srcElem.css("top")),
+				x : parseInt(srcElem.css("width")) * section.x,
+				y : parseInt(srcElem.css("height")) * section.y,
+				w : parseInt(srcElem.css("width")) * section.width,
+				h : parseInt(srcElem.css("height")) * section.height,
+			};
+			effectElem.css({
+				left: sec.l + sec.x,
+				top: sec.t + sec.y,
+				width: sec.w,
+				height: sec.h,
+				"background-repeat": "no-repeat",
+				"background-position": (-sec.x)+"px "+(-sec.y)+"px",
+				"background-size": srcElem.css("width")+" "+srcElem.css("height"),
+				display: 'block',
+			});
+		
+			if (starttime) {
+				effectElem.delay(starttime).animate({
+					opacity: 1
+				}, 1);
+			} else {
+				effectElem.css('opacity', 1);
+			}
+			effectElem.animate({
+				left: sec.l +sec.x + rand(-64, 64),
+				top : sec.t +sec.y + rand(-64, 64),
+			}, 1);
+			for (var i = 1; i < jumps; i++) {
+				effectElem.delay(betweentime).animate({
+					left: sec.l +sec.x + rand(-64, 64),
+					top : sec.t +sec.y + rand(-64, 64),
+				}, 1);
+			}
+			effectElem.delay(betweentime).animate({ //fade
+				left: sec.l +sec.x,
+				top : sec.t +sec.y,
+			}, 1);
+			battle.activityWait(effectElem);
+		}
+		
+		function rand(min, max) {
+			return Math.floor(Math.random() * (max - min)) + min;
+		}
+
+	},
+};
+
 /*
 battle.showEffect('mistball', {
     y: attacker.y - 26,

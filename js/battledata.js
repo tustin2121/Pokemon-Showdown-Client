@@ -13,7 +13,7 @@ if (window.soundManager) {
 	soundManager.onready(function () {
 		soundManager.createSound({
 			id: 'notif',
-			url: 'https://play.pokemonshowdown.com/audio/notification.wav'
+			url: '/audio/notification.wav'
 		});
 	});
 }
@@ -1149,7 +1149,6 @@ var Tools = {
 
 		// Decide what gen sprites to use.
 		var gen = {1:'rby', 2:'gsc', 3:'rse', 4:'dpp', 5:'bw', 6:'xy', 7:'xy'}[Math.max(options.gen, pokemon.gen)];
-		if (pokemon.gen === 7) gen = 'bw';
 		if (Tools.prefs('nopastgens')) gen = 'xy';
 		if (Tools.prefs('bwgfx') && gen === 'xy') gen = 'bw';
 
