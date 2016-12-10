@@ -1,7 +1,7 @@
 // badge-anim.js
 
 function showBadgeAnim(badgeName) {
-	var md = 150; //music delay
+	var md = 450; //music delay
 	
 	var badgeGetPanel = $(".badgeget").hide();
 	
@@ -51,6 +51,10 @@ function showBadgeAnim(badgeName) {
 		opacity: 0,
 	}).html(badgeName+" Badge!").appendTo(center);
 	
+	if ($("body").innerWidth() < 600) {
+		text2.html(badgeName+"<br/>Badge!");
+	}
+	
 	var clickclose = $("<p>").html("Click anywhere to close.").css({
 		position: "fixed",
 		bottom: 10, left: 10,
@@ -81,16 +85,16 @@ function showBadgeAnim(badgeName) {
 	function _beginAnim() {
 		music.play(md*0.001);
 		bg.animate({ opacity: 1, "background-size": "100%"}, 400);
-		badge.delay(md+700-400).animate({
+		badge.delay(md+200-400).animate({
 			opacity: 1,
 			top: -80, left: -80,
 			width: 160, height: 160,
 		}, 400);
-		text1.delay(md+2000-300).animate({
+		text1.delay(md+1500-300).animate({
 			opacity: 1,
 			"font-size": "3.5em",
 		}, 300);
-		text2.delay(md+2380-300).animate({
+		text2.delay(md+1880-300).animate({
 			opacity: 1,
 			"font-size": "3.5em",
 		}, 300);
@@ -104,7 +108,7 @@ function showBadgeAnim(badgeName) {
 			makeSparkle(fx[i%fx.length], i)
 		}
 		
-		clickclose.delay(5000).fadeIn(1000, function(){
+		clickclose.delay(4500).fadeIn(600, function(){
 			overlay.on("click", closeOverlay);
 		});
 	}

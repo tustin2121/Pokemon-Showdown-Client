@@ -13,7 +13,7 @@ if (window.soundManager) {
 	soundManager.onready(function () {
 		soundManager.createSound({
 			id: 'notif',
-			url: 'https://play.pokemonshowdown.com/audio/notification.wav'
+			url: '/audio/notification.wav'
 		});
 	});
 }
@@ -268,48 +268,54 @@ var BattleStatNames = { // proper style
 	spe: 'Spe'
 };
 
-var baseSpeciesChart = {
-	'pikachu': 1,
-	'pichu': 1,
-	'unown': 1,
-	'castform': 1,
-	'deoxys': 1,
-	'burmy': 1,
-	'wormadam': 1,
-	'cherrim': 1,
-	'shellos': 1,
-	'gastrodon': 1,
-	'rotom': 1,
-	'giratina': 1,
-	'shaymin': 1,
-	'arceus': 1,
-	'basculin': 1,
-	'darmanitan': 1,
-	'deerling': 1,
-	'sawsbuck': 1,
-	'tornadus': 1,
-	'thundurus': 1,
-	'landorus': 1,
-	'kyurem': 1,
-	'keldeo': 1,
-	'meloetta': 1,
-	'genesect': 1,
-	'vivillon': 1,
-	'flabebe': 1,
-	'floette': 1,
-	'florges': 1,
-	'furfrou': 1,
-	'aegislash': 1,
-	'pumpkaboo': 1,
-	'gourgeist': 1,
-	'meowstic': 1,
-	'hoopa': 1,
+var baseSpeciesChart = [
+	'pikachu',
+	'pichu',
+	'unown',
+	'castform',
+	'deoxys',
+	'burmy',
+	'wormadam',
+	'cherrim',
+	'shellos',
+	'gastrodon',
+	'rotom',
+	'giratina',
+	'shaymin',
+	'arceus',
+	'basculin',
+	'darmanitan',
+	'deerling',
+	'sawsbuck',
+	'tornadus',
+	'thundurus',
+	'landorus',
+	'kyurem',
+	'keldeo',
+	'meloetta',
+	'genesect',
+	'vivillon',
+	'flabebe',
+	'floette',
+	'florges',
+	'furfrou',
+	'aegislash',
+	'pumpkaboo',
+	'gourgeist',
+	'meowstic',
+	'hoopa',
+	'wishiwashi',
+	'minior',
+	'mimikyu',
+	'greninja',
+	'oricorio',
+	'silvally',
 
 	// mega evolutions
-	'charizard': 1,
-	'mewtwo': 1
+	'charizard',
+	'mewtwo'
 	// others are hardcoded by ending with 'mega'
-};
+];
 
 // Precompile often used regular expression for links.
 var domainRegex = '[a-z0-9\\-]+(?:[.][a-z0-9\\-]+)*';
@@ -1013,18 +1019,22 @@ var Tools = {
 			if (!window.BattlePokedex) window.BattlePokedex = {};
 			if (!window.BattlePokedex[id]) {
 				template = window.BattlePokedex[id] = {};
-				for (var k in baseSpeciesChart) {
-					if (id.length > k.length && id.substr(0, k.length) === k) {
-						template.baseSpecies = k;
-						template.forme = id.substr(k.length);
+				for (var i = 0; i < baseSpeciesChart.length; i++) {
+					var baseid = baseSpeciesChart[i];
+					if (id.length > baseid.length && id.substr(0, baseid.length) === baseid) {
+						template.baseSpecies = baseid;
+						template.forme = id.substr(baseid.length);
 					}
 				}
-				if (id !== 'yanmega' && id.substr(id.length - 4) === 'mega') {
-					template.baseSpecies = id.substr(0, id.length - 4);
-					template.forme = id.substr(id.length - 4);
-				} else if (id.substr(id.length - 6) === 'primal') {
-					template.baseSpecies = id.substr(0, id.length - 6);
-					template.forme = id.substr(id.length - 6);
+				if (id !== 'yanmega' && id.slice(-4) === 'mega') {
+					template.baseSpecies = id.slice(0, -4);
+					template.forme = id.slice(-4);
+				} else if (id.slice(-6) === 'primal') {
+					template.baseSpecies = id.slice(0, -6);
+					template.forme = id.slice(-6);
+				} else if (id.slice(-5) === 'alola') {
+					template.baseSpecies = id.slice(0, -5);
+					template.forme = id.slice(-5);
 				}
 				template.exists = false;
 			}
@@ -1042,8 +1052,6 @@ var Tools = {
 				var formeid = '';
 				if (template.baseSpecies !== name) {
 					formeid = '-' + toId(template.forme);
-					if (formeid === '-megax') formeid = '-mega-x';
-					if (formeid === '-megay') formeid = '-mega-y';
 				}
 				template.formeid = formeid;
 			}
@@ -1565,14 +1573,16 @@ var Tools = {
 		// 	return 'background-image:url(' + Tools.resourcePrefix + 'sprites/bw' + shiny + '/' + spriteid + '.png);background-position:10px 5px;background-repeat:no-repeat';
 		// }
 		if (Tools.prefs('nopastgens')) gen = 6;
+		var spriteDir = Tools.resourcePrefix + 'sprites/xydex';
+		if (template.gen >= 7) spriteDir = Tools.resourcePrefix + 'sprites/bw';
 		if ((!gen || gen === 6) && !template.isNonstandard && !Tools.prefs('bwgfx')) {
 			var offset = '-2px -3px';
 			if (id.substr(0, 6) === 'arceus') offset = '-2px 7px';
 			if (id === 'garchomp') offset = '-2px 2px';
 			if (id === 'garchompmega') offset = '-2px 0px';
-			return 'background-image:url(' + Tools.resourcePrefix + 'sprites/xydex' + shiny + '/' + spriteid + '.png);background-position:' + offset + ';background-repeat:no-repeat';
+			return 'background-image:url(' + spriteDir + shiny + '/' + spriteid + '.png);background-position:' + offset + ';background-repeat:no-repeat';
 		}
-		var spriteDir = Tools.resourcePrefix + 'sprites/bw';
+		spriteDir = Tools.resourcePrefix + 'sprites/bw';
 		if (gen <= 1 && template.gen <= 1) spriteDir = Tools.resourcePrefix + 'sprites/rby';
 		else if (gen <= 2 && template.gen <= 2) spriteDir = Tools.resourcePrefix + 'sprites/gsc';
 		else if (gen <= 3 && template.gen <= 3) spriteDir = Tools.resourcePrefix + 'sprites/rse';
