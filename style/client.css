@@ -361,9 +361,16 @@ button:disabled {
 	background: linear-gradient(to bottom,  #cfcfcf,  #f2f2f2);
 }
 
+.button.sel,
+.popupmenu button.button.sel {
+	background: linear-gradient(to bottom,  #afb4b6,  #c4c8ca);
+}
+
+.button:disabled,
 .button.disabled,
 .button.disabled:hover,
 .button.disabled:active,
+.mainmenuwrapper .menugroup .button:disabled,
 .mainmenuwrapper .menugroup .button.disabled,
 .mainmenuwrapper .menugroup .button.disabled:hover,
 .mainmenuwrapper .menugroup .button.disabled:active {
@@ -958,15 +965,15 @@ p.or:after {
 	border-bottom: 1px solid #AAAAAA;
 }
 .newsentry h4 {
-    margin: 6px 0;
+	margin: 6px 0;
 }
 .newsentry ul {
-    margin: 2px 0;
+	margin: 2px 0;
 }
 .newsfooter {
-    font-size: 7pt;
-    border-bottom: 1px solid #AAAAAA;
-    padding: 3px 10px;
+	font-size: 7pt;
+	border-bottom: 1px solid #AAAAAA;
+	padding: 3px 10px;
 }
 .unread {
 	background: rgba(255,240,130,0.33);
@@ -1978,28 +1985,28 @@ a.ilink.yours {
 	font-size: 7pt;
 }
 .megaevo {
-    clear: both;
-    display: block;
-    width: 180px;
-    margin: 0 auto 0;
-    position: relative;
-    top: 6px;
-    left: -7px;
-    padding: 2px;
-    text-align: center;
+	clear: both;
+	display: block;
+	width: 180px;
+	margin: 0 auto 0;
+	position: relative;
+	top: 6px;
+	left: -7px;
+	padding: 2px;
+	text-align: center;
 
-    cursor: pointer;
-    border: 1px solid #BBB;
-    border-radius: 3px;
-    color: #333;
-    background: #EEF2F5;
-    font-size: 10pt;
-    font-weight: bold;
+	cursor: pointer;
+	border: 1px solid #BBB;
+	border-radius: 3px;
+	color: #333;
+	background: #EEF2F5;
+	font-size: 10pt;
+	font-weight: bold;
 }
 .megaevo:hover {
-    border-color: #888;
-    background: #E5E5E5;
-    color: black;
+	border-color: #888;
+	background: #E5E5E5;
+	color: black;
 }
 
 .switchmenu,
@@ -3059,6 +3066,226 @@ a.ilink.yours {
 	margin-top: 4px;
 }
 
+/*********************************************************
+ * TPPLeague Admin
+ *********************************************************/
+
+.tpp .inabox { /* BibleThump */
+	border: 1px solid #999999;
+	border-radius: 5px;
+	background-color: #DAE5F0;
+	padding: 4px;
+	box-shadow: inset 1px 1px 0 rgba(255,255,255,.6)
+}
+.tpp .inabox label {
+	display: block;
+	font-size: 8pt;
+	font-weight: bold;
+	color: #555555;
+	padding-left: 2px;
+}
+.tpp ul {
+	list-style: none; 
+	margin: 0; padding: 0;
+}
+.tpp ul li {
+	margin: 5px;
+}
+
+.tpp .league-admin .badge {
+	float: right;
+	width: 54px; height: 54px;
+	margin-right: 16px;
+}
+.tpp .league-admin .gym-entry h3 {
+	margin: 4px;
+} 
+.tpp .league-admin .gym-entry h4 {
+	margin: 4px;
+	color: #888;
+}
+.tpp .league-admin .trid {
+	font-size: 0.7em;
+	font-weight: normal;
+}
+.tpp .league-admin h3, 
+.tpp .league-admin h4 {
+	margin: 0;
+}
+.tpp .league-admin h1:first-child {
+	margin-top: 0;
+}
+.tpp .league-admin .battletype {
+	font-size: 8pt;
+	padding-right: 5px;
+	vertical-align: top;
+	font-style: italic;
+}
+
+.tpp ul.gymList {
+	list-style: none;
+	margin: 0; padding: 0;
+}
+.tpp ul.gymList li {
+	width: 280px;
+	display: inline-block;
+}
+.tpp ul.gymList li.champ {
+	width: 580px;
+}
+.tpp .gymList h3, 
+.tpp .gymList h4 {
+	margin: 0;
+}
+.tpp ul.gymList .gym-entry {
+	text-align: center;
+}
+.tpp ul.gymList .badge {
+	width: 80px; height: 80px;
+}
+.tpp .unobtained {
+	-webkit-filter: grayscale(1);
+	-webkit-filter: grayscale(100%);
+	filter: url("data:image/svg+xml;utf8,<svg version='1.1' xmlns='http://www.w3.org/2000/svg' height='0'><filter id='greyscale'><feColorMatrix type='matrix' values='0.3333 0.3333 0.3333 0 0 0.3333 0.3333 0.3333 0 0 0.3333 0.3333 0.3333 0 0 0 0 0 1 0' /></filter></svg>#greyscale");
+	filter: gray;
+	filter: grayscale(100%);
+}
+
+/* http://paletton.com/#uid=20H0u0kqKKYfdSMllOvz+HrEmr+ */
+.tpp .trainer-card {
+	position: relative;
+	border: 1px solid black;
+	border-radius: 10px;
+	padding: 5px;
+	width: 280px; height: 160px;
+	background-color: #2D8DD1;
+	font-size: 11pt;
+}
+.tpp .trainer-card:before {
+	content: "TPPLeague Trainer ID";
+	background-color: #FFA22A;
+	display: block;
+	position: absolute;
+	top: 2px; left: 2px; bottom: 2px; right: 2px;
+	border-radius: 10px;
+	border: 4px double #2D8DD1;
+	padding: 4px;
+	text-decoration: underline;
+	font-size: 10pt;
+	font-style: italic;
+	font-variant: small-caps;
+	background-image: url(/badges/_trainercard_bg.png);
+	background-repeat: no-repeat;
+	background-position: left -5px bottom -5px;
+}
+.tpp .trainer-card .field {
+	position: absolute;
+	left: 10px; right: 104px;
+	background-color: rgba(255, 181, 85, 0.65);
+	padding: 2px 5px 2px 2px;
+	border-radius: 6px;
+	text-align: right;
+}
+.tpp .trainer-card .field:before {
+	float: left;
+	font-size: 9pt;
+	font-variant: small-caps;
+	background-color: #52A2DB;
+	color: black;
+	border-radius: 6px;
+	margin-right: 4px;
+	padding: 1px 3px;
+}
+.tpp .trainer-card .pic {
+	position: absolute;
+	top: 16px; right: 16px;
+	background-color: rgba(255, 181, 85, 0.65);
+	padding: 1px;
+	border-radius: 10px;
+	box-shadow: 1px 1px #FFCA86, -1px -1px #FF9000;
+}
+.tpp .trainer-card .name {
+	top: 31px;
+}
+.tpp .trainer-card .name:before {
+	content: "Name";
+}
+.tpp .trainer-card .id {
+	top: 57px;
+}
+.tpp .trainer-card .id:before {
+	content: "Trainer ID";
+}
+.tpp .trainer-card .score {
+	top: 83px;
+}
+.tpp .trainer-card .score:before {
+	content: "Score";
+}
+.tpp .trainer-card .startdate {
+	top: 109px; right: 10px;
+}
+.tpp .trainer-card .startdate:before {
+	content: "Start Date";
+}
+
+/* Brown: http://paletton.com/#uid=c0n3Q0Q5A0kuu7Vl9hJpDczEI46RN1i */
+/* Blue: http://paletton.com/#uid=c0n3Q0Q5-0ktllzkutdqUr8zyh2KIbk */
+.tpp .badge-case-cover {
+	display: none;
+	float: right;
+	position: relative;
+	width: 265px;
+	background-color: #3F1A03;
+	padding: 2px 18px 18px;
+	border-radius: 10px;
+	color: gold;
+	text-align: center;
+	box-shadow: inset 5px 4px 5px #643314, inset -2px -2px 5px #210D00;
+	cursor: pointer;
+}
+.tpp .badge-case-cover:before {
+	content: " ";
+	display: block;
+	background-color: black;
+	position: absolute;
+	height: 1px;
+	bottom: 15px;
+	left: 0;
+	right: 0;
+}
+.tpp .badge-case {
+	float: right;
+	position: relative;
+	width: 265px;
+	background-color: #3F1A03;
+	padding: 18px;
+	border-radius: 25px;
+	box-shadow: inset 2px 1px 5px #643314, inset -1px -1px 5px #210D00;
+}
+.tpp .badge-case:before {
+	content: " ";
+	display: block;
+	position: absolute;
+	top: 15px; left: 15px; right: 15px; bottom: 15px;
+	background-color: #162A75;
+	border-radius: 15px;
+	box-shadow: inset 1px 1px 10px;
+}
+.tpp .badge-case .badge {
+	position: relative;
+	float: left;
+	z-index: 1;
+	width: 80px; height: 80px;
+	margin: 10px;
+	background-color: #263D93;
+	padding: 5px;
+	border-radius: 64px;
+	box-shadow: inset 0px 0px 56px #162A75, 0px 0px 47px #263D93;
+}
+.tpp .badge-case .badge img {
+	width: 80px; height: 80px;
+}
 
 /*********************************************************
  * Popups

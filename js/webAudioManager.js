@@ -70,7 +70,7 @@ function Sound(opts) {
     
     this.volume = (opts.volume || 50) / 100;
     this.pan = (opts.pan || 0) / 100;
-    if (opts.loopstart && opts.loopend) {
+    if (opts.loopstart && opts.loopend && opts.loopstart != opts.loopend) {
         // If the loop start and end are given in milliseconds, convert to seconds.
         if (opts.loopstart > 1000 && opts.loopend > 2000) {
             opts.loopstart /= 1000;
@@ -234,6 +234,10 @@ Sound.prototype = {
     set onended(evt) {
         if (!this.__sourceNode) return; //can't assign when not playing
         this.__sourceNode.onended = evt;
+    },
+    
+    get playing() {
+        return !!this.__sourceNode;
     },
     
     get muted() {

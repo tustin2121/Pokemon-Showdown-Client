@@ -3,6 +3,8 @@
 function showBadgeAnim(badgeName) {
 	var md = 450; //music delay
 	
+	var badgeGetPanel = $(".badgeget").hide();
+	
 	var overlay = $("<div>").addClass("ps-overlay").css({ overflow: "hidden" });
 	var bg = $("<div>").css({
 		position: "absolute",
@@ -145,6 +147,7 @@ function showBadgeAnim(badgeName) {
 	
 	function closeOverlay() {
 		done = true;
+		badgeGetPanel.slideDown(1000);
 		overlay.fadeOut(1000, function(){
 			overlay.remove();
 		});

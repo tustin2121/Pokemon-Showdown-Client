@@ -1250,6 +1250,7 @@
 			}
 			var roomTable = {
 				'': MainMenuRoom,
+				'adventbuilder': AdventbuilderRoom,
 				'teambuilder': TeambuilderRoom,
 				'rooms': RoomsRoom,
 				'battles': BattlesRoom,

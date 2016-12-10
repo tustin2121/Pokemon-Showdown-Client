@@ -1262,7 +1262,7 @@
 				buf += '<p><label class="optlabel">Battle Music: <select name="battlemusic">';
 				var music = Object.keys(musicTable.meta);
 				for (var i = 0; i < music.length; i++) {
-					buf += "<option value='"+music[i]+"'"+(window.forceBgm==music[i]?"selected":"")+">"+music[i]+"</option>";
+					buf += "<option value='"+music[i]+"'"+(this.battle.forceBgm==music[i]?"selected":"")+">"+music[i]+"</option>";
 				}
 				buf += '</select></label></p>';
 			}
