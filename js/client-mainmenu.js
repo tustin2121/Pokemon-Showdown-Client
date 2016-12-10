@@ -936,9 +936,12 @@
 					bufs[curBuf] += '<li><h3>' + Tools.escapeHTML(curSection) + '</li>';
 				}
 				var formatName = Tools.escapeFormat(format.id);
-				if (formatName.charAt(0) !== '[') formatName = '[Gen 6] ' + formatName;
-				formatName = formatName.replace('[Gen 7] ', '');
-				bufs[curBuf] += '<li><button name="selectFormat" value="' + i + '"' + (curFormat === i ? ' class="sel"' : '') + '>' + formatName + '</button></li>';
+				var formatGen = /\[Gen (\d)\]/.exec(formatName);
+				formatGen = (formatGen && formatGen[1]) || 6;
+				formatGen = (/TPPLeague|Super (TPP|Glitch)/.test(formatName))? 7 : formatGen;
+				// if (formatName.charAt(0) !== '[') formatName = '[Gen 6] ' + formatName;
+				formatName = formatName.replace(/\[Gen \d\] /, '');
+				bufs[curBuf] += '<li><button name="selectFormat" value="' + i + '" class="format-gen gen'+formatGen+' ' + (curFormat === i ? ' sel' : '') + '">' + formatName + '</button></li>';
 			}
 
 			var html = '';

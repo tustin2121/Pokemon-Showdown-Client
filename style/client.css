@@ -3435,3 +3435,70 @@ blink {
 	animation-duration: 1s;
 	text-decoration: none;
 }
+
+/*********************************************************
+ * Formats Menu Gen indicators
+ *********************************************************/
+ .popupmenu button.sel.format-gen {
+ 	overflow: visible;
+ }
+ .format-gen {
+ 	position: relative;
+ }
+ .format-gen:before {
+ 	position: absolute;
+ 	border-radius: 4px;
+ 	left: -1.2em;
+ 	width: 1em; height: 1em;
+ 	text-align: center;
+ 	border: white 1px solid;
+ 	line-height: 1.1em;
+ }
+ .format-gen.gen0:before {
+ 	content: '?';
+ 	border-color: blue;
+ 	color: black;
+ }
+ .format-gen.gen1:before {
+ 	content: '1';
+ 	background-color: #FF0000;
+ 	border-color: #002FFF;
+ 	color: white;
+ }
+ .format-gen.gen2:before {
+ 	content: '2';
+ 	background-color: #FFD036;
+ 	border-color: #B5B5B5;
+ 	color: black;
+ }
+ .format-gen.gen3:before {
+ 	content: '3';
+ 	background-color: #C90000;
+ 	border-color: #3697FF;
+ 	color: white;
+ }
+ .format-gen.gen4:before {
+ 	content: '4';
+ 	background-color: #0075F2;
+ 	border-color: #F200EE;
+ 	color: white;
+ }
+ .format-gen.gen5:before {
+ 	content: '5';
+ 	background-color: black;
+ 	border-color: black;
+ 	color: white;
+ }
+ .format-gen.gen6:before {
+ 	content: '6';
+ 	background-color: #0099FF;
+ 	border-color: #960000;
+ 	color: white;
+ }
+ .format-gen.gen7:before {
+ 	content: '7';
+ 	background-color: #FFE84F;
+ 	border-color: #002DBF;
+ 	color: black;
+ }
+ 
