@@ -35,9 +35,14 @@
 			} else if (app.user.get('named')) {
 				buf = '<span class="username" data-name="' + Tools.escapeHTML(name) + '" style="' + color + '"><i class="fa fa-user" style="color:#779EC5"></i> ' + Tools.escapeHTML(name) + '</span>';
 			} else {
-				buf = '<button name="login">Choose name</button>';
+				buf = '<button class="button" name="login">Choose name</button>';
 			}
-			buf += ' <button class="icon button" name="openSounds" title="Sound"><i class="' + (Tools.prefs('mute') ? 'fa fa-volume-off' : 'fa fa-volume-up') + '"></i></button> <button class="icon button" name="openOptions" title="Options"><i class="fa fa-cog"></i></button>';
+			if (window.AudioContext || window.webkitAudioContext) {
+				buf += ' <button class="icon button" name="openSounds" title="Sound"><i class="' + (Tools.prefs('mute') ? 'fa fa-volume-off' : 'fa fa-volume-up') + '"></i></button>';
+			} else {
+				buf += ' <button class="icon button" disabled title="Your browser does not support audio playback"><i class="fa fa-volume-off text-danger"></i></button>';
+			}
+			buf += ' <button class="icon button" name="openOptions" title="Options"><i class="fa fa-cog"></i></button>';
 			this.$userbar.html(buf);
 		},
 		login: function () {

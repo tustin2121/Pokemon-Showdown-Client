@@ -236,6 +236,10 @@ Sound.prototype = {
         this.__sourceNode.onended = evt;
     },
     
+    get playing() {
+        return !!this.__sourceNode;
+    },
+    
     get muted() {
         return this.__muteNode.gain.value < 0.5;
     },

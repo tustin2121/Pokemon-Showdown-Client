@@ -1279,6 +1279,12 @@
 					}
 					break;
 				
+				case 'badgeget':
+					if (window.showBadgeAnim) {
+						window.showBadgeAnim(row[1]);
+					}
+					break;
+				
 				default:
 					this.$chat.append('<div class="notice"><code>|' + Tools.escapeHTML(row.join('|')) + '</code></div>');
 					break;
