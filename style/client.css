@@ -3092,6 +3092,19 @@ a.ilink.yours {
 	margin: 5px;
 }
 
+.tpp .banlist {
+    text-decoration: underline;
+    font-size: 8pt;
+}
+.tpp .banlist:before {
+	content: "(";
+	text-decoration: none;
+}
+.tpp .banlist:after {
+	content: ")";
+	text-decoration: none;
+}
+
 .tpp .league-admin .badge {
 	float: right;
 	width: 54px; height: 54px;
@@ -3130,7 +3143,7 @@ a.ilink.yours {
 	width: 280px;
 	display: inline-block;
 }
-.tpp ul.gymList li.champ {
+.tpp ul.gymList li.champ:nth-last-child(odd):last-child {
 	width: 580px;
 }
 .tpp .gymList h3, 

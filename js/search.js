@@ -776,6 +776,8 @@
 		if (format.slice(0, 3) === 'gen') {
 			this.gen = (Number(format.charAt(3)) || 6);
 			format = format.slice(4);
+		} else if (format.slice(0 ,9) === 'tppleague') {
+			this.gen = 7;
 		}
 		var requirePentagon = (format === 'vgc2016');
 		var template;

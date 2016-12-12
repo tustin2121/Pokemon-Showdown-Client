@@ -978,6 +978,17 @@
 				// refresh the page
 				document.location.reload(true);
 				break;
+			
+			case 'champnotify':
+				switch (parts[1]) {
+					case 'notify':
+						app.notify("Champ Fight!", "A TPPLeague Champion fight has begun!", 'champ');
+						break;
+					case 'finished':
+						app.closeNotification('champ');
+						break;
+				}
+				break;
 
 			case 'c':
 			case 'chat':
@@ -987,7 +998,7 @@
 						break;
 					}
 				}
-
+			
 			/* fall through */
 			default:
 				// the messagetype wasn't in our list of recognized global

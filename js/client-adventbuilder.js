@@ -7,6 +7,37 @@
 		+"<option value='triples'>Triples</option>"
 	+"</select>";
 	
+	// Because Mantis uses IE... OpieOP
+	if (!Array.prototype.includes) {
+		Array.prototype.includes = function(searchElement /*, fromIndex*/) {
+			'use strict';
+			if (this == null) {
+				throw new TypeError('Array.prototype.includes called on null or undefined');
+			}
+			
+			var O = Object(this);
+			var len = parseInt(O.length, 10) || 0;
+			if (len === 0) return false;
+			var n = parseInt(arguments[1], 10) || 0;
+			var k;
+			if (n >= 0) {
+				k = n;
+			} else {
+				k = len + n;
+				if (k < 0) {k = 0;}
+			}
+			var currentElement;
+			while (k < len) {
+				currentElement = O[k];
+				if (searchElement === currentElement || (searchElement !== searchElement && currentElement !== currentElement)) { // NaN !== NaN
+					return true;
+				}
+				k++;
+			}
+			return false;
+		};
+	}
+	
 	var ConfirmPopup = this.ConfirmPopup = Popup.extend({
 		initialize: function (data) {
 			if (!data || !data.message || typeof data.callback !== "function") return;
@@ -47,6 +78,20 @@
 			if (this.callback) {
 				$(btn).toggleClass("sel", this.callback(type));
 			}
+		},
+	});
+	
+	var ExplainationPopup = Popup.extend({
+		type: 'semimodal',
+		initialize: function (data) {
+			var buf = "<h2>Information: "+data.title+"</h2>";
+			if (typeof data.info === 'string') {
+				buf += "<p>"+data.info+"</p>";
+			} else if (Array.isArray(data.info)) {
+				buf += "<p>"+data.info.join("</p><p>")+"</p>";
+			}
+			buf += '<p class="buttonbar"><button name="close" class="autofocus">Close</button></p>';
+			this.$el.css('max-width', 760).html(buf);
 		},
 	});
 	
@@ -91,6 +136,7 @@
 			'change select[name=battlefield]': 'updateBattlefield',
 			'change select[name=battlemusic]': 'updateBattleMusic',
 			'change select[name=battletype]': 'updateBattleType',
+			'change input[name=banlist]': 'markDirty',
 			'click .badge-case-cover': 'openBadgeCase',
 		},
 		
@@ -212,6 +258,7 @@
 					b.attr({'name':'openView', 'value': data.info[i]});
 					switch (data.info[i]) {
 						case 'league-admin': b.html("<i class='fa fa-cogs'></i> Administer TPPLeague"); break;
+						case 'view-league': b.html("<i class='fa fa-map-o'></i> View TPPLeague"); break;
 						case 'league-champ': b.html("<i class='fa fa-star'></i> Edit Champion Setup"); break;
 						case 'league-elite': b.html("<i class='fa fa-star-o'></i> Edit Elite Four Setup"); break;
 						case 'league-gym': b.html("<i class='fa fa-shield'></i> Edit Gym Setup"); break;
@@ -350,7 +397,7 @@
 				data.info.bgmusic = data.info.bgmusic || (data.info.isChamp?'dpp-champ':'dpp-e4');
 				
 				scrn.append(' <button class="button commitButton" name="commitElite" disabled>Save Changes</button>')
-				scrn.append('<h1>'+(data.info.isChamp?'Champion':'Elite Four')+' Settings</h1>');
+				scrn.append('<h1>'+(data.info.isChamp?'Champion':'Elite Four')+" Settings <button style='font-size:9pt; vertical-align:top;' class='button' name='openHelpPopup' value='elite'><i class='fa fa-question-circle-o'></i></button></h1>");
 				
 				$("<div>").addClass("inabox").appendTo(scrn)
 					.append("<div style='float:left;'><label>Your Title:</label><input type='text' class='textbox' name='title' placeholder='"+(data.info.isChamp?'Champion':'Elite Four')+"' value='"+data.info.name+"'></div>")
@@ -361,6 +408,11 @@
 					.append('<div style="clear:both;"></div>');
 				
 				this.renderPreview(data, "e4").appendTo(scrn);
+				
+				$("<div>").addClass("inabox").appendTo(scrn)
+					.append("<label>Supplemental Ban List: <button class='button' name='openHelpPopup' value='banlist'><i class='fa fa-question-circle-o'></i></button></label>")
+					.append("<input style='width:99%' type='text' name='banlist' value='"+(data.info.banlist||[""]).join(", ")+"' placeholder='Comma separated list of Pokemon, Moves, Abilities, or Items to ban.'/>");
+				
 				scrn.find("input[name=title]").attr('maxlength', 32);
 				scrn.find("select[name=battletype]").val(data.info.battletype);
 				break;
@@ -371,7 +423,7 @@
 				data.info.bgmusic = data.info.bgmusic || 'oras-gym';
 				
 				scrn.append(' <button class="button commitButton" name="commitGym" disabled>Save Changes</button>')
-				scrn.append('<h1>Gym Settings</h1>');
+				scrn.append("<h1>Gym Settings <button style='font-size:9pt; vertical-align:top;' class='button' name='openHelpPopup' value='gym'><i class='fa fa-question-circle-o'></i></button></h1>");
 				
 				$("<div>").addClass("inabox").appendTo(scrn)
 					.append("<div style='float:left;'><label>Gym Name:</label><input type='text' class='textbox' name='title' placeholder='' value='"+data.info.name+"'></div>")
@@ -384,9 +436,55 @@
 					.append('<div style="clear:both;"></div>');
 				
 				this.renderPreview(data, "gym").appendTo(scrn);
+				
+				$("<div>").addClass("inabox").appendTo(scrn)
+					.append("<label>Supplemental Ban List: <button class='button' name='openHelpPopup' value='banlist'><i class='fa fa-question-circle-o'></i></button></label>")
+					.append("<input style='width:99%' type='text' name='banlist' value='"+(data.info.banlist||[""]).join(", ")+"' placeholder='Comma separated list of Pokemon, Moves, Abilities, or Items to ban.'/>");
+				
+				
 				scrn.find("input[name=title]").attr('maxlength', 16);
 				scrn.find("input[name=badgename]").attr({'maxlength': 32, pattern: '[a-zA-Z- ]{0,32}'});
 				scrn.find("select[name=battletype]").val(data.info.battletype);
+				break;
+			
+			case 'view-league':
+				scrn.append("<h3>Regional Gyms:</h3>");
+				var gymlist = $("<ul>").addClass("gymList").appendTo(scrn);
+				
+				var self = this;
+				Object.keys(data.league.gyms).forEach(function(nick){
+					var settings = data.league.gyms[nick];
+					gymlist.append(self.renderGymPanel(nick, settings, true, true));
+				});
+				
+				scrn.append("<h3>Elite Members:</h3>");
+				var singles = [];
+				var doubles = [];
+				var elitelist = $("<ul>").addClass("gymList").appendTo(scrn);
+				var champPanels = $("<ul>").addClass("gymList").appendTo(scrn);
+				Object.keys(data.league.elites).forEach(function(nick){
+					var settings = data.league.elites[nick];
+					var panel = self.renderElitePanel(nick, settings, false/*TODO track elite four defeats*/, true);
+					if (!settings.isChamp) {
+						if (settings.battletype === 'singles') {
+							singles.push(panel);
+						} else if (settings.battletype === 'doubles') {
+							doubles.push(panel);
+						} else {
+							elitelist.append(panel);
+						}
+					} else {
+						if (settings.battletype === 'singles') {
+							champPanels.addClass("champ").prepend(panel);
+						} else {
+							champPanels.addClass("champ").append(panel);
+						}
+					}
+				});
+				while (doubles.length || singles.length) {
+					if (doubles.length) elitelist.prepend(doubles.pop());
+					if (singles.length) elitelist.prepend(singles.pop());
+				}
 				break;
 			
 			case 'league-challenge':
@@ -415,7 +513,7 @@
 				bcase.append("<div style='clear:both;'></div>");
 				bcase.find("img").one("error", function(){ $(this).prop("src", "/badges/_Error_.png"); });
 				
-				scrn.append("<div style='clear:both;'></div>");
+				scrn.append("<p style='clear:both; margin-top:6px;'>Note: Remember when challenging a gym leader or elite member that <strong><em>you</em> must be the one to issue the challenge</strong>. If the leader issues you the challenge, the battle will error. Use the 'TPPLeague (Gym)' format for challenging Gym Leaders, 'TPPLeague (Elite Four)' for challenging elite four members, and 'TPPLeague (Champion)' for challenging the Champion. (In the future, there will be buttons on this page to automate the process.)</p>");
 				
 				scrn.append("<h3>Regional Gyms:</h3>");
 				var gymlist = $("<ul>").addClass("gymList").appendTo(scrn);
@@ -428,19 +526,38 @@
 				
 				if (badges.length > 8) {
 					scrn.append("<h3>Elite Members:</h3>");
+					var singles = [];
+					var doubles = [];
 					var elitelist = $("<ul>").addClass("gymList").appendTo(scrn);
-					var champPanel;
+					var champPanels = $("<ul>").addClass("gymList").appendTo(scrn);
 					Object.keys(data.league.elites).forEach(function(nick){
 						var settings = data.league.elites[nick];
-						var panel = self.renderElitePanel(nick, settings /*TODO track elite four defeats*/);
+						var panel = self.renderElitePanel(nick, settings, false/*TODO track elite four defeats*/);
 						if (!settings.isChamp) {
-							elitelist.append(panel);
+							if (settings.battletype === 'singles') {
+								singles.push(panel);
+							} else if (settings.battletype === 'doubles') {
+								doubles.push(panel);
+							} else {
+								elitelist.append(panel);
+							}
 						} else {
-							champPanel = panel;
+							if (settings.battletype === 'singles') {
+								champPanels.addClass("champ").prepend(panel);
+							} else {
+								champPanels.addClass("champ").append(panel);
+							}
 						}
 					});
-					champPanel.addClass("champ").appendTo(elitelist);
+					while (doubles.length || singles.length) {
+						if (doubles.length) elitelist.prepend(doubles.pop());
+						if (singles.length) elitelist.prepend(singles.pop());
+					}
 				}
+				
+				scrn.find("li[value="+toId(data.user.name)+"] .challengeBtn")
+					.prop("disabled", true)
+					.attr('title', 'You cannot challenge yourself');
 				
 				break;
 			
@@ -451,7 +568,7 @@
 			this.$el.empty().append(scrn);
 		},
 		
-		renderGymPanel: function(nick, settings, haveBadge) {
+		renderGymPanel: function(nick, settings, haveBadge, dontChallenge) {
 			if (haveBadge === undefined) haveBadge = true;
 			
 			var li = $("<li>").attr("value", nick).addClass("inabox gym-entry");
@@ -468,10 +585,13 @@
 				.one("error", function(){ $(this).prop("src", "/badges/_Error_.png"); });
 			li.append("<h4>"+(settings.badge||"???")+" Badge</h4>");
 			
-			// $("<button>").addClass("button")
-			// 	.html("Challenge Gym Leader")
-			// 	.attr({name:'challengeGym', value: nick})
-			// 	.appendTo(btnpane);
+			if (!dontChallenge) {
+				$("<button>").addClass("button challengeBtn")
+					.html("Challenge")
+					.attr({name:'challengeGym', value: nick})
+					.appendTo(li);
+				li.append("<div style='clear:both;'></div>");
+			}
 			
 			li.append("<span class='battletype' style='float:left;'>"+settings.battletype+"</span>")
 			
@@ -484,13 +604,17 @@
 				}
 			}
 			li.append("<div style='clear:both;'></div>");
+			
+			if (settings.banlist) {
+				li.find(".battletype").append(" <span class='banlist' title='This gym has banned: "+settings.banlist.join(", ")+".'>Banlist</span>")
+			}
 			return li;
 		},
 		
-		renderElitePanel: function(nick, settings, defeated) {
+		renderElitePanel: function(nick, settings, defeated, dontChallenge) {
 			var li = $("<li>").attr("value", nick).addClass("inabox gym-entry");
 			
-			li.append("<h4>"+settings.name+"</h4>");
+			li.append("<h4>"+(settings.name||(settings.isChamp?"Champion":"Elite Four"))+"</h4>");
 			li.append("<h3>"+nick+"</h3>");
 			
 			$("<img>").appendTo(li)
@@ -498,10 +622,13 @@
 				.attr("src", Tools.resolveAvatar(settings.avatar||UNKNOWN_AVATAR));
 			li.append("<h4>"+(settings.isChamp?"Champion":"Elite Four")+"</h4>");
 			
-			// $("<button>").addClass("button")
-			// 	.html("Challenge Gym Leader")
-			// 	.attr({name:'challengeGym', value: nick})
-			// 	.appendTo(btnpane);
+			if (!dontChallenge) {
+				$("<button>").addClass("button challengeBtn")
+					.html("Challenge")
+					.attr({name:'challenge'+(settings.isChamp?"Champ":"E4"), value: nick})
+					.appendTo(li);
+				li.append("<div style='clear:both;'></div>");
+			}
 			
 			li.append("<span class='battletype' style='float:left;'>"+settings.battletype+"</span>")
 			
@@ -514,6 +641,10 @@
 				}
 			}
 			li.append("<div style='clear:both;'></div>");
+			
+			if (settings.banlist) {
+				li.find(".battletype").append(" <span class='banlist' title='This elite member has banned: "+settings.banlist.join(", ")+".'>Banlist</span>")
+			}
 			return li;
 		},
 		
@@ -585,8 +716,8 @@
 			
 			if (type === "gym") {
 				sidebox
-					.append("<label style='margin-top:6px;'>Badge:</label>")
-					.append("<input type='text' name='badgename' value='"+data.info.badge+"'/>");
+					.append("<label style='margin-top:6px;'>Badge: <button class='button' name='openHelpPopup' value='badges'><i class='fa fa-question-circle-o'></i></button></label>")
+					.append("<input type='text' name='badgename' value='"+(data.info.badge||"")+"'/>");
 				$('<img>').appendTo(bgsettings)
 					.attr("src", "/badges/"+data.info.badge+".png")
 					.css({ position: 'absolute', bottom: 4, right: 40, width: 130, height: 130,  })
@@ -609,7 +740,7 @@
 			app.send('/adventbuilder request options');
 		},
 		openView: function(id, element) {
-			if (id.endsWith(":new")) {
+			if (id.slice(-4) === ":new") {
 				app.send('/adventbuilder new '+id.slice(0, -4));
 			} else {
 				app.send('/adventbuilder request '+id);
@@ -694,6 +825,7 @@
 				bgmusic: this.$("select[name=battlemusic]").val(),
 				battletype: this.$("select[name=battletype]").val(),
 				types: map2array(this.$(".typeList").data('types')),
+				banlist: this.$("input[name=banlist]").val().split(/, ?/i),
 			};
 			app.send('/adventbuilder commit elite '+JSON.stringify(json));
 		},
@@ -705,6 +837,7 @@
 				battletype: this.$("select[name=battletype]").val(),
 				types: map2array(this.$(".typeList").data('types')),
 				badge: this.$("input[name=badgename]").val().replace(/[^a-zA-Z- ]/, "").substr(0, 32),
+				banlist: this.$("input[name=banlist]").val().split(/, ?/i),
 			};
 			app.send('/adventbuilder commit gym '+JSON.stringify(json));
 		},
@@ -716,6 +849,19 @@
 		closeBadgeCase: function(){
 			this.$(".badge-case").slideUp(1000);
 			this.$(".badge-case-cover").slideDown(1000);
+		},
+		
+		challengeGym: function(nick){
+			app.focusRoom('');
+			app.rooms[''].challenge(nick, "TPPLeagueGym");
+		},
+		challengeE4: function(nick){
+			app.focusRoom('');
+			app.rooms[''].challenge(nick, "TPPLeagueEliteFour");
+		},
+		challengeChamp: function(nick){
+			app.focusRoom('');
+			app.rooms[''].challenge(nick, "TPPLeagueChampion");
 		},
 		
 		musicpreview: null,
@@ -798,6 +944,44 @@
 		},
 		adminDemoteChamp: function(nick) {
 			app.send('/adventbuilder commit demotechamp '+nick);
+		},
+		
+		openHelpPopup: function(topic) {
+			app.addPopup(ExplainationPopup, {
+				sourceEl: null,
+				title: topic,
+				info: this.helpText[topic],
+			});
+		},
+		
+		helpText: {
+			"elite": [
+				"These are your elite four (or champion) battle settings. Remember to save any changes you make here.",
+				"When challengers want to challenge you, <strong>do not send the challenge to them</strong>. They must send the challenge to you (which they can do easily from the View League Challenge screen in the TPPLeague tab once they earn 8 badges). Make sure the format is 'TPPLeague (Elite Four)' (or 'TPPLeague (Champion)' if you are the champion), or your settings here won't be applied to the battle, and the battle may error before you even begin.",
+				"If you are offline, challengers can still send you challenges. They will be recorded and reported to you when you next log in to the server. Challengers will stay in this 'pending' list until you battle them (or Tustin2121 manually removes them). You can view your current pending list with the command <code>/pendingchallenges</code>.",
+				"The server does not currently track wins and losses for E4/Champion challenges.",
+				"When a Champion fight starts, the server will automatically ping the IRC channel and send notifications to everyone on the server currently afk.",
+			],
+			"gym": [
+				"These are your gym settings. Remember to save any changes you make here.",
+				"When challengers want to challenge your gym, <strong>do not send the challenge to them</strong>. They must send the challenge to you (which they can do easily from the View League Challenge screen in the TPPLeague tab). Make sure the format is 'TPPLeague (Gym)', or your settings here won't be applied to the battle, and the battle may error before you even begin.",
+				"If you are offline, challengers can still send you challenges. They will be recorded and reported to you when you next log in to the server. Challengers will stay in this 'pending' list until you battle them (or Tustin2121 manually removes them). You can view your current pending list with the command <code>/pendingchallenges</code>.",
+				"You must give challengers badges yourself, using the command <code>/givebadge [name]</code>. Think of it like handing the challenger your badge, and how Clair was a dick for not giving you a badge after you defeat her."
+			],
+			"banlist": [
+				"If you wish, your gym or elite battle setup may ban (or unban) Moves, Pokemon, Items, or Abilities. The text field takes a comma-separated list of items, where items with a '!' in front of it will unban the item.",
+				"For example: \"Earthquake, !Swagger\" will ban the move Earthquake, and unban the move Swagger.",
+				"This list will be checked against by the server-side verifier, when the challenger challenges you, before you receive the challenge.",
+				"Note: The TPPLeague format already has the following clauses:",
+				"Swagger Clause, Mega Rayquaza Clause, Sleep Clause Mod, OHKO Clause, Moody Clause, Evasion Moves Clause, Endless Battle Clause, HP Percentage Mod"
+			],
+			"badges": [
+				'The badge your gym gives out is named here.',
+				'This name corresponds to a graphic on the server of the same name. (A badge named "Heat" will correspond to the graphic "Heat.png" at the server.) If you change your badge name, the graphic will change as well. The server has a graphic for every badge in the mainline games, if you wish to use one of those.',
+				"Badge graphics are 160x160 pixels square. You will need to give your badge graphic to Tustin2121, for him to manually put on the server.",
+				"When you wish to give a badge to a challenger, use the command <code>/givebadge [username]</code>. The recipient must be logged into the server with their proper name to recieve the badge. They will be shown an animation upon recieving the badge. You cannot give someone a badge more than once.",
+				"Badges cannot be handed out when the server is in lockdown. (In fact, this whole TPPLeague tab is unabled to be used when the server is in lockdown.)",
+			],
 		},
 	});
 	
