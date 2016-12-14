@@ -69,11 +69,13 @@ class NTBBUsers {
 
 	function modifyUser($userid, $data) {
 		$password = $data['password'];
-		$hash = password_hash($password, PASSWORD_DEFAULT);
-		$update_query = $this->database->prepare('UPDATE users SET password_hash = :password_hash WHERE userid = :userid');
-		$update_query->bindValue(':userid', $userid);
-		$update_query->bindValue(':password_hash', $hash);
-		$update_query->execute();
+		if (!empty($password)) {
+			$hash = password_hash($password, PASSWORD_DEFAULT);
+			$update_query = $this->database->prepare('UPDATE users SET password_hash = :password_hash WHERE userid = :userid');
+			$update_query->bindValue(':userid', $userid);
+			$update_query->bindValue(':password_hash', $hash);
+			$update_query->execute();
+		}
 		return true;
 	}
 
