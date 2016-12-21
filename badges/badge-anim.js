@@ -3,8 +3,6 @@
 function showBadgeAnim(badgeName) {
 	var md = 450; //music delay
 	
-	var badgeGetPanel = $(".badgeget").hide();
-	
 	var overlay = $("<div>").addClass("ps-overlay").css({ overflow: "hidden" });
 	var bg = $("<div>").css({
 		position: "absolute",
@@ -71,6 +69,8 @@ function showBadgeAnim(badgeName) {
 		volume: BattleSound.bgmVolume,
 	});
 	
+	$(".badgeget:last").hide()
+	
 	var done = false;
 	overlay.appendTo("body");
 	overlay.animate({ opacity: 1 }, 400);
@@ -83,6 +83,7 @@ function showBadgeAnim(badgeName) {
 	return;
 	
 	function _beginAnim() {
+		$(".badgeget:last").hide()
 		music.play(md*0.001);
 		bg.animate({ opacity: 1, "background-size": "100%"}, 400);
 		badge.delay(md+200-400).animate({
@@ -147,7 +148,7 @@ function showBadgeAnim(badgeName) {
 	
 	function closeOverlay() {
 		done = true;
-		badgeGetPanel.slideDown(1000);
+		$(".badgeget").slideDown(1000);
 		overlay.fadeOut(1000, function(){
 			overlay.remove();
 		});

@@ -3069,7 +3069,7 @@ a.ilink.yours {
 /*********************************************************
  * TPPLeague Admin
  *********************************************************/
-
+ 
 .tpp .inabox { /* BibleThump */
 	border: 1px solid #999999;
 	border-radius: 5px;
@@ -3084,6 +3084,13 @@ a.ilink.yours {
 	color: #555555;
 	padding-left: 2px;
 }
+.dark .tpp .inabox {
+	background-color: #5A6570;
+    box-shadow: none;
+}
+.dark .tpp .inabox label {
+	color: black;
+}
 .tpp ul {
 	list-style: none; 
 	margin: 0; padding: 0;
@@ -3092,8 +3099,13 @@ a.ilink.yours {
 	margin: 5px;
 }
 
+.tpp .battletype a {
+	border-bottom: 1px dotted currentcolor;
+	cursor: pointer;
+}
 .tpp .banlist {
-    text-decoration: underline;
+    border-bottom: 1px dotted currentcolor;
+    cursor: pointer;
     font-size: 8pt;
 }
 .tpp .banlist:before {
@@ -3173,6 +3185,7 @@ a.ilink.yours {
 	width: 280px; height: 160px;
 	background-color: #2D8DD1;
 	font-size: 11pt;
+	color: black;
 }
 .tpp .trainer-card:before {
 	content: "TPPLeague Trainer ID";

@@ -95,6 +95,16 @@
 		},
 	});
 	
+	var TooltopPopup = Popup.extend({
+		initialize: function (data) {
+			if (typeof data.info === 'string') {
+				data.info = data.info.split("\n");
+			}
+			var buf = "<p>"+data.info.join("</p><p>")+"</p>";
+			this.$el.css('max-width', 760).html(buf);
+		},
+	});
+	
 	function array2map(arr) {
 		arr = (arr && arr.slice()) || [];
 		var map = {};
@@ -138,6 +148,7 @@
 			'change select[name=battletype]': 'updateBattleType',
 			'change input[name=banlist]': 'markDirty',
 			'click .badge-case-cover': 'openBadgeCase',
+			'click .challBadgeRm': 'adminRemoveBadge',
 		},
 		
 		blur: function() {
@@ -273,12 +284,28 @@
 			
 			case 'league-admin':
 				scrn.append("<h1>TPPLeague Administration Console</h1>");
+				scrn.append("<h3>League Options:</h3>");
+				var optspane = $("<div>").addClass("inabox").appendTo(scrn);
 				scrn.append("<h3>Elite Members:</h3>");
 				var elitelist = $("<ul>").appendTo(scrn);
 				scrn.append("<h3>Regional Gyms:</h3>");
 				var gymlist = $("<ul>").appendTo(scrn);
 				scrn.append("<h3>Current Challengers:</h3>");
 				var challist = $("<ul>").appendTo(scrn);
+				
+				{
+					optspane.append("<button class='button' name='adminCommitLeagueOptions' style='float:right;'>Commit Options</button>");
+					optspane.append("<label><input type='checkbox' name='badgeRename'> Allow Gym Leaders to change their gym badges.</label>");
+					optspane.append("<label><input type='checkbox' name='gymRename'> Allow Gym Leaders to change their gym names.</label>");
+					optspane.append("<label><input type='checkbox' name='titleRename'> Allow Elite Four members to change their titles.</label>");
+					optspane.append("<hr/>");
+					optspane.append("<label><input type='checkbox' name='badgeGive'> Forbid Gym Leaders from handing out badges at this time.</label>");
+					
+					optspane.find("[name=badgeGive]").prop("checked", !data.info.options.badgeGive);
+					optspane.find("[name=badgeRename]").prop("checked", data.info.options.badgeRename);
+					optspane.find("[name=titleRename]").prop("checked", data.info.options.titleRename);
+					optspane.find("[name=gymRename]").prop("checked", data.info.options.gymRename);
+				}
 				
 				Object.keys(data.info.elites).forEach(function(nick){
 					var settings = data.info.elites[nick];
@@ -311,6 +338,9 @@
 						for (var i = 0; i < settings.types.length; i++) {
 							$("<img>").attr("src", "/sprites/types/"+settings.types[i].replace(/\?/g, '%3f')+".png").appendTo(types);
 						}
+					}
+					if (settings.isHidden) {
+						li.css({opacity: 0.5});
 					}
 				});
 				{
@@ -348,6 +378,9 @@
 							$("<img>").attr("src", "/sprites/types/"+settings.types[i].replace(/\?/g, '%3f')+".png").appendTo(types);
 						}
 					}
+					if (settings.isHidden) {
+						li.css({opacity: 0.5});
+					}
 				});
 				{
 					$("<li>").addClass("inabox").css({"text-align":"center"}).appendTo(gymlist)
@@ -380,10 +413,18 @@
 					
 					var badges = $("<div>").appendTo(li);
 					Object.keys(settings.badges).forEach(function(b){
-						$("<img>").attr("src", "/badges/"+b+".png").attr('title', b).css({width:32, height:32, 'margin-left':4}).appendTo(badges);
+						$("<img>")
+							.addClass("challBadgeRm")
+							.attr("src", "/badges/"+b+".png")
+							.attr('title', b)
+							.css({width:32, height:32, 'margin-left':4})
+							.appendTo(badges);
 					});
 					if (badges.find("img").length == 0) {
 						badges.append("No badges yet.");
+					}
+					if (settings.isHidden) {
+						li.css({opacity: 0.5});
 					}
 				});
 				if (challist.find("li").length == 0) {
@@ -400,7 +441,7 @@
 				scrn.append('<h1>'+(data.info.isChamp?'Champion':'Elite Four')+" Settings <button style='font-size:9pt; vertical-align:top;' class='button' name='openHelpPopup' value='elite'><i class='fa fa-question-circle-o'></i></button></h1>");
 				
 				$("<div>").addClass("inabox").appendTo(scrn)
-					.append("<div style='float:left;'><label>Your Title:</label><input type='text' class='textbox' name='title' placeholder='"+(data.info.isChamp?'Champion':'Elite Four')+"' value='"+data.info.name+"'></div>")
+					.append("<div style='float:left;'><label>Your Title:</label><input type='text' name='title' placeholder='"+(data.info.isChamp?'Champion':'Elite Four')+"' value='"+data.info.name+"'></div>")
 					.append(this.renderTypeSelector(data))
 					.append(
 						$("<div style='text-align:center'><label>Battle Type:</label></div>").append(BATTLETYPES)
@@ -411,10 +452,15 @@
 				
 				$("<div>").addClass("inabox").appendTo(scrn)
 					.append("<label>Supplemental Ban List: <button class='button' name='openHelpPopup' value='banlist'><i class='fa fa-question-circle-o'></i></button></label>")
-					.append("<input style='width:99%' type='text' name='banlist' value='"+(data.info.banlist||[""]).join(", ")+"' placeholder='Comma separated list of Pokemon, Moves, Abilities, or Items to ban.'/>");
+					.append("<input style='width:99%' type='text' name='banlist' maxlength='128' value='"+(data.info.banlist||[""]).join(", ")+"' placeholder='Comma separated list of Pokemon, Moves, Abilities, or Items to ban.'/>");
 				
 				scrn.find("input[name=title]").attr('maxlength', 32);
 				scrn.find("select[name=battletype]").val(data.info.battletype);
+				if (!data.options.titleRename) {
+					scrn.find("input[name=title]")
+						.prop('disabled', true)
+						.attr('title', "Changing of E4 Titles is not allowed at this time by League Admin mandate.");
+				}
 				break;
 				
 			case 'league-gym':
@@ -426,7 +472,7 @@
 				scrn.append("<h1>Gym Settings <button style='font-size:9pt; vertical-align:top;' class='button' name='openHelpPopup' value='gym'><i class='fa fa-question-circle-o'></i></button></h1>");
 				
 				$("<div>").addClass("inabox").appendTo(scrn)
-					.append("<div style='float:left;'><label>Gym Name:</label><input type='text' class='textbox' name='title' placeholder='' value='"+data.info.name+"'></div>")
+					.append("<div style='float:left;'><label>Gym Name:</label><input type='text' name='title' placeholder='' value='"+data.info.name+"'></div>")
 					.append(this.renderTypeSelector(data))
 					.append(
 						$("<div style='text-align:center'><label>Battle Type:</label></div>").append(
@@ -439,12 +485,26 @@
 				
 				$("<div>").addClass("inabox").appendTo(scrn)
 					.append("<label>Supplemental Ban List: <button class='button' name='openHelpPopup' value='banlist'><i class='fa fa-question-circle-o'></i></button></label>")
-					.append("<input style='width:99%' type='text' name='banlist' value='"+(data.info.banlist||[""]).join(", ")+"' placeholder='Comma separated list of Pokemon, Moves, Abilities, or Items to ban.'/>");
+					.append("<input style='width:99%' type='text' name='banlist' maxlength='128' value='"+(data.info.banlist||[""]).join(", ")+"' placeholder='Comma separated list of Pokemon, Moves, Abilities, or Items to ban.'/>");
 				
+				$("<div>").addClass("inabox trialDesc").appendTo(scrn)
+					.append("<label>Trial Description: <button class='button' name='openHelpPopup' value='trials'><i class='fa fa-question-circle-o'></i></button></label>")
+					.append("<textarea name='trialdesc' style='width:98%' rows='3' maxlength='1000' spellcheck='true' autocapitalize='sentences'>"+(data.info.trialdesc||"")+"</textarea>")
+					.toggle(data.info.battletype==='trial');
 				
 				scrn.find("input[name=title]").attr('maxlength', 16);
 				scrn.find("input[name=badgename]").attr({'maxlength': 32, pattern: '[a-zA-Z- ]{0,32}'});
 				scrn.find("select[name=battletype]").val(data.info.battletype);
+				if (!data.options.gymRename) {
+					scrn.find("input[name=title]")
+						.prop('disabled', true)
+						.attr('title', "Changing of Gym names is not allowed at this time by League Admin mandate.");
+				}
+				if (!data.options.badgeRename) {
+					scrn.find("input[name=badgename]")
+						.prop('disabled', true)
+						.attr('title', "Changing of Badge names is not allowed at this time by League Admin mandate.");
+				}
 				break;
 			
 			case 'view-league':
@@ -513,7 +573,7 @@
 				bcase.append("<div style='clear:both;'></div>");
 				bcase.find("img").one("error", function(){ $(this).prop("src", "/badges/_Error_.png"); });
 				
-				scrn.append("<p style='clear:both; margin-top:6px;'>Note: Remember when challenging a gym leader or elite member that <strong><em>you</em> must be the one to issue the challenge</strong>. If the leader issues you the challenge, the battle will error. Use the 'TPPLeague (Gym)' format for challenging Gym Leaders, 'TPPLeague (Elite Four)' for challenging elite four members, and 'TPPLeague (Champion)' for challenging the Champion. (In the future, there will be buttons on this page to automate the process.)</p>");
+				scrn.append("<p style='clear:both; margin-top:6px;'>Note: Remember when challenging a gym leader or elite member that <strong><em>you</em> must be the one to issue the challenge</strong>. If the leader issues you the challenge, the battle will error.</p><p>You may issue challenges to leaders even if they are not online; they will be notified of your challenge request when they next come online. You will have to re-issue the challenge to them at that time.</p>");
 				
 				scrn.append("<h3>Regional Gyms:</h3>");
 				var gymlist = $("<ul>").addClass("gymList").appendTo(scrn);
@@ -605,8 +665,23 @@
 			}
 			li.append("<div style='clear:both;'></div>");
 			
-			if (settings.banlist) {
-				li.find(".battletype").append(" <span class='banlist' title='This gym has banned: "+settings.banlist.join(", ")+".'>Banlist</span>")
+			if (settings.battletype === "trial") {
+				li.find(".battletype").wrapInner(
+					$("<a>")
+						.attr("title", Tools.escapeHTML(settings.trialdesc))
+						.css({cursor:"pointer"})
+						.on("click", function(e){
+							app.addPopup(TooltopPopup, {
+								sourceEl: e.target,
+								info: Tools.escapeHTML(settings.trialdesc),
+							});
+							e.preventDefault();
+							e.stopImmediatePropagation();
+						})
+				);
+			}
+			if (settings.banlist && settings.banlist.length) {
+				li.find(".battletype").append(this.renderBanlist(settings.banlist));
 			}
 			return li;
 		},
@@ -642,8 +717,8 @@
 			}
 			li.append("<div style='clear:both;'></div>");
 			
-			if (settings.banlist) {
-				li.find(".battletype").append(" <span class='banlist' title='This elite member has banned: "+settings.banlist.join(", ")+".'>Banlist</span>")
+			if (settings.banlist && settings.banlist.length) {
+				li.find(".battletype").append(this.renderBanlist(settings.banlist));
 			}
 			return li;
 		},
@@ -736,6 +811,19 @@
 			return bgsettings;
 		},
 		
+		renderBanlist: function(banlist){
+			var bl = $("<span class='banlist' title='This gym has banned: "+banlist.join(", ")+".'>Banlist</span>");
+			bl.on("click", function(e){
+				app.addPopup(TooltopPopup, {
+					sourceEl: e.target,
+					info: "This gym has banned: "+banlist.join(", ")+".",
+				});
+				e.preventDefault();
+				e.stopImmediatePropagation();
+			});
+			return [" ", bl];
+		},
+		
 		openMainMenu: function(){
 			app.send('/adventbuilder request options');
 		},
@@ -767,7 +855,7 @@
 		},
 		updateBadge: function() {
 			this.markDirty();
-			var name = this.$('input[name=badgename]').val().replace(/[^a-zA-Z- ]/, "").substr(0, 32);
+			var name = this.$('input[name=badgename]').val().trim().replace(/[^a-zA-Z- ]/, "").substr(0, 32);
 			this.$('input[name=badgename]').val(name);
 			this.$(".badgepreview").attr('src', "/badges/"+name+".png")
 				.one("error", function(){ $(this).prop("src", "/badges/_Error_.png"); });
@@ -778,9 +866,11 @@
 			if (type === 'trial') {
 				this.$("span[name=gymtype]").html("Trial");
 				this.$("span[name=gymleadertype]").html("Captain");
+				this.$(".trialDesc").slideDown();
 			} else {
 				this.$("span[name=gymtype]").html("Gym");
 				this.$("span[name=gymleadertype]").html("Leader");
+				this.$(".trialDesc").slideUp();
 			}
 		},
 		
@@ -820,24 +910,25 @@
 		
 		commitElite: function() {
 			var json = {
-				name: Tools.escapeHTML(this.$("input[name=title]").val().substr(0, 32)),
+				name: Tools.escapeHTML(this.$("input[name=title]").val().trim().substr(0, 32)),
 				bgimg: this.$("select[name=battlefield]").val(),
 				bgmusic: this.$("select[name=battlemusic]").val(),
 				battletype: this.$("select[name=battletype]").val(),
 				types: map2array(this.$(".typeList").data('types')),
-				banlist: this.$("input[name=banlist]").val().split(/, ?/i),
+				banlist: this.$("input[name=banlist]").val().trim().split(/, ?/i),
 			};
 			app.send('/adventbuilder commit elite '+JSON.stringify(json));
 		},
 		commitGym: function() {
 			var json = {
-				name: Tools.escapeHTML(this.$("input[name=title]").val().substr(0, 16)),
+				name: Tools.escapeHTML(this.$("input[name=title]").val().trim().substr(0, 16)),
 				bgimg: this.$("select[name=battlefield]").val(),
 				bgmusic: this.$("select[name=battlemusic]").val(),
 				battletype: this.$("select[name=battletype]").val(),
 				types: map2array(this.$(".typeList").data('types')),
-				badge: this.$("input[name=badgename]").val().replace(/[^a-zA-Z- ]/, "").substr(0, 32),
-				banlist: this.$("input[name=banlist]").val().split(/, ?/i),
+				badge: this.$("input[name=badgename]").val().trim().replace(/[^a-zA-Z- ]/, "").substr(0, 32),
+				trialdesc: this.$("textarea[name=trialdesc]").val().trim().substr(0, 1000),
+				banlist: this.$("input[name=banlist]").val().trim().split(/, ?/i),
 			};
 			app.send('/adventbuilder commit gym '+JSON.stringify(json));
 		},
@@ -924,6 +1015,18 @@
 			}.bind(this));
 		},
 		
+		adminCommitLeagueOptions: function() {
+			var opts = {
+				badgeGive: !this.$("[name=badgeGive]").is(":checked"),
+				badgeRename: this.$("[name=badgeRename]").is(":checked"),
+				titleRename: this.$("[name=titleRename]").is(":checked"),
+				gymRename: this.$("[name=gymRename]").is(":checked"),
+			};
+			app.send('/adventbuilder commit leagueopts '+JSON.stringify(opts));
+		},
+		adminRemoveBadge: function(el) {
+			
+		},
 		adminRemoveChallenger: function(nick){
 			app.send('/adventbuilder commit rmchal '+nick);
 		},
@@ -978,7 +1081,7 @@
 			"badges": [
 				'The badge your gym gives out is named here.',
 				'This name corresponds to a graphic on the server of the same name. (A badge named "Heat" will correspond to the graphic "Heat.png" at the server.) If you change your badge name, the graphic will change as well. The server has a graphic for every badge in the mainline games, if you wish to use one of those.',
-				"Badge graphics are 160x160 pixels square. You will need to give your badge graphic to Tustin2121, for him to manually put on the server.",
+				"Badge graphics are 160x160 pixels square. They should be \"badge-like\" in design (eg, no cut-off edges, no faces of people, most likely a symbol of some kind). You will need to give your badge graphic to Tustin2121, for him to manually put on the server.",
 				"When you wish to give a badge to a challenger, use the command <code>/givebadge [username]</code>. The recipient must be logged into the server with their proper name to recieve the badge. They will be shown an animation upon recieving the badge. You cannot give someone a badge more than once.",
 				"Badges cannot be handed out when the server is in lockdown. (In fact, this whole TPPLeague tab is unabled to be used when the server is in lockdown.)",
 			],

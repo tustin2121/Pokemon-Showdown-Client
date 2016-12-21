@@ -21,7 +21,7 @@ for (let id in Tools.data.Pokedex) {
 	let template = Tools.getTemplate(id);
 	let row = {num: template.num};
 	try {
-		let size = imageSize('../sprites/xyani/' + template.spriteid + '.gif');
+		let size = imageSize('../../assets/sprites/xyani/' + template.spriteid + '.gif');
 		row.front = {
 			ani: {
 				w: size.width,
@@ -30,7 +30,7 @@ for (let id in Tools.data.Pokedex) {
 		};
 	} catch (e) {}
 	try {
-		let size = imageSize('../sprites/xyani-back/' + template.spriteid + '.gif');
+		let size = imageSize('../../assets/sprites/xyani-back/' + template.spriteid + '.gif');
 		row.back = {
 			ani: {
 				w: size.width,

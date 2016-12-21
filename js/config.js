@@ -12,7 +12,9 @@ Config.customcolors = {
     'lasszeowx' : { color : "#FF7F0F" },
     'poksonkirmar' : { color : "#0000B7" },
     'cerebralharlot' : { color : "#FD00FF" },
+    'siribral': { color: "#0615e5" },
     'coryn216' : { color : "#006778" },
     'bigfatmantis' : { color : "#339E01" },
     'xinc' : { color : "#006633" },
+    'pokemongod777' : { color: "#FD01E9" },
 };
