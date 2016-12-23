@@ -2304,6 +2304,7 @@ var Side = (function () {
 			followme: '<span class="good">Follow&nbsp;Me</span>',
 			instruct: '<span class="neutral">Instruct</span>',
 			beakblast: '<span class="neutral">Beak&nbsp;Blast</span>',
+			totemaura: '<span class="good">Totem&nbsp;Aura</span>',
 			itemremoved: '',
 			// Gen 1
 			lightscreen: '<span class="good">Light&nbsp;Screen</span>',
@@ -5094,6 +5095,10 @@ var Battle = (function () {
 				case 'mimic':
 					actions += '' + poke.getName() + ' learned ' + Tools.escapeHTML(args[3]) + '!';
 					break;
+				case 'totemaura':
+					this.resultAnim(poke, 'Totem Aura', 'good');
+					actions += "Totem " + poke.getName() + "'s aura flared to life!";
+					break;
 				case 'followme':
 				case 'ragepowder': // Deprecated, now uses -singleturn
 					actions += '' + poke.getName() + ' became the center of attention!';
@@ -5101,7 +5106,7 @@ var Battle = (function () {
 				case 'powder': // Deprecated, now uses -singleturn
 					actions += '' + poke.getName() + ' is covered in powder!';
 					break;
-
+				
 				// Gen 1
 				case 'lightscreen':
 					this.resultAnim(poke, 'Light Screen', 'good');
@@ -6403,6 +6408,13 @@ var Battle = (function () {
 				this.mySide.active = [null, null, null];
 				this.yourSide.active = [null, null, null];
 				break;
+			case 'totem':
+				this.p1.active = [null, null];
+				this.p2.active = [null];
+				if (this.yourSide !== this.p1 && app.user.get('userid') !== this.p1.id) {
+					// Always show the totem as "your" side.
+					this.setSidesSwitched(true);
+				}
 			}
 			break;
 		case 'variation':

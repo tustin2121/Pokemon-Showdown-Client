@@ -1003,7 +1003,7 @@
 			this.tooltips.hideTooltip();
 
 			if (pos !== undefined) { // pos === undefined if called by chooseMoveTarget()
-				var myActive = this.battle.mySide.active;
+				var isMulti = this.battle.mySide.active.length > 1 || this.battle.yourSide.active.length > 1;
 				var isMega = !!(this.$('input[name=megaevo]')[0] || '').checked;
 				var isZMove = !!(this.$('input[name=zmove]')[0] || '').checked;
 
@@ -1013,7 +1013,7 @@
 				var spreadTargets = {allAdjacentFoes: 1, allAdjacent: 1};
 
 				this.choice.choices.push('move ' + pos + (isMega ? ' mega' : '') + (isZMove ? ' zmove' : ''));
-				if (myActive.length > 1 && target in choosableTargets) {
+				if (isMulti && target in choosableTargets) {
 					this.choice.type = 'movetarget';
 					this.choice.moveTarget = target;
 					this.updateControlsForPlayer();
