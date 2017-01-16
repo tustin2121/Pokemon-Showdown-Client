@@ -778,6 +778,8 @@
 			format = format.slice(4);
 		} else if (format.slice(0 ,9) === 'tppleague') {
 			this.gen = 7;
+		} else if (!format) {
+			this.gen = 7;
 		}
 		var requirePentagon = (format === 'vgc2016');
 		var template;
@@ -812,7 +814,7 @@
 			if (format === 'ubers' || format === 'uber') tierSet = tierSet.slice(slices.Uber);
 			else if (this.gen === 7 && format === 'vgc2017') tierSet = tierSet.slice(slices.Legal);
 			else if (this.gen === 7 && (format === 'pokebankubers' || format === 'pokebankanythinggoes')) tierSet = tierSet.slice(slices.Uber);
-			else if (this.gen === 7) tierSet = tierSet.slice(slices.New);
+			else if (this.gen === 7 && (format === 'ou' || format === 'pokebankou')) tierSet = tierSet.slice(slices.OU);
 			else if (format === 'ou') tierSet = tierSet.slice(slices.OU);
 			else if (format === 'uu') tierSet = tierSet.slice(slices.UU);
 			else if (format === 'ru') tierSet = tierSet.slice(slices.RU);
@@ -822,6 +824,7 @@
 			else if (format === 'cap') tierSet = tierSet.slice(0, slices.Uber).concat(tierSet.slice(slices.OU));
 			else if (format === 'anythinggoes' || format === 'ag') tierSet = agTierSet.concat(tierSet.slice(slices.Uber));
 			else if (format === 'balancedhackmons' || format === 'bh') tierSet = agTierSet.concat(tierSet.slice(slices.Uber));
+			else if (this.gen === 7) tierSet = tierSet.slice(slices.Uber);
 			else if (format === 'doublesou') tierSet = tierSet.slice(slices.DOU);
 			else if (format === 'doublesuu') tierSet = tierSet.slice(slices.DUU);
 			else if (format === 'doublesnu') tierSet = tierSet.slice(slices.DNU);
@@ -916,6 +919,27 @@
 				moves = [];
 				for (var i in BattleMovedex) {
 					if (i === 'chatter' || i === 'magikarpsrevenge' || i === 'paleowave' || i === 'shadowstrike') continue;
+					if (!BattleMovedex[i].gen) {
+						if (BattleMovedex[i].num >= 622) {
+							BattleMovedex[i].gen = 7;
+						} else if (BattleMovedex[i].num >= 560) {
+							BattleMovedex[i].gen = 6;
+						} else if (BattleMovedex[i].num >= 468) {
+							BattleMovedex[i].gen = 5;
+						} else if (BattleMovedex[i].num >= 355) {
+							BattleMovedex[i].gen = 4;
+						} else if (BattleMovedex[i].num >= 252) {
+							BattleMovedex[i].gen = 3;
+						} else if (BattleMovedex[i].num >= 166) {
+							BattleMovedex[i].gen = 2;
+						} else if (BattleMovedex[i].num >= 1) {
+							BattleMovedex[i].gen = 1;
+						} else {
+							BattleMovedex[i].gen = 0;
+						}
+					}
+					if (BattleMovedex[i].gen > this.gen) continue;
+					if (BattleMovedex[i].isZ) continue;
 					moves.push(i);
 				}
 			}

@@ -241,7 +241,7 @@
 				case 'gen5': format = 'C' + format.slice(4); break;
 				case 'gen6': format = 'B' + format.slice(4); break;
 				case 'gen7': format = 'A' + format.slice(4); break;
-				default: format = 'B' + format; break;
+				default: format = 'X' + format; break;
 				}
 				folders.push(format);
 			}
@@ -260,6 +260,7 @@
 				case 'C': newGen = '5'; break;
 				case 'B': newGen = '6'; break;
 				case 'A': newGen = '7'; break;
+				case 'X': newGen = 'X'; break;
 				case 'Z': newGen = '/'; break;
 				}
 				if (gen !== newGen) {
@@ -269,6 +270,8 @@
 						formatFolderBuf = '';
 						buf += '<div class="foldersep"></div>';
 						buf += '<div class="folder"><h3>Folders</h3></div>';
+					} else if (gen === 'X') {
+						buf += '<div class="folder"><h3>???</h3></div>';
 					} else {
 						buf += '<div class="folder"><h3>Gen ' + gen + '</h3></div>';
 					}
@@ -287,12 +290,8 @@
 				}
 				var formatName = format.slice(1);
 				if (formatName === '~') formatName = '';
-				if (newGen === '6' && formatName) {
-					format = formatName;
-				} else {
-					format = 'gen' + newGen + formatName;
-				}
-				if (format === 'gen7') formatName = '(uncategorized)';
+				format = 'gen' + newGen + formatName;
+				if (format.length === 4) formatName = '(uncategorized)';
 				// folders are <div>s rather than <button>s because in theory it has
 				// less weird interactions with HTML5 drag-and-drop
 				buf += '<div class="folder' + (this.curFolder === format ? ' cur"><div class="folderhack3"><div class="folderhack1"></div><div class="folderhack2"></div>' : '">') + '<div class="selectFolder" data-value="' + format + '"><i class="fa ' + (this.curFolder === format ? 'fa-folder-open-o' : 'fa-folder-o') + '"></i>' + formatName + '</div></div>' + (this.curFolder === format ? '</div>' : '');
@@ -831,7 +830,9 @@
 				this.updateTeamList();
 			} else {
 				if (format.slice(-1) === '/') {
-					team.folder = format.slice(0, -1);
+					format = format.slice(0, -1);
+					if (format && format.slice(0, 3) !== 'gen') format = 'gen6' + format;
+					team.folder = format;
 					edited = true;
 				}
 				this.updateTeamList();
@@ -972,6 +973,7 @@
 					var bracketIndex = name.indexOf(']');
 					if (bracketIndex >= 0) {
 						format = name.substr(1, bracketIndex - 1);
+						if (format && format.slice(0, 3) !== 'gen') format = 'gen6' + format;
 						name = $.trim(name.substr(bracketIndex + 1));
 					}
 					Storage.teams.push({
@@ -1083,8 +1085,11 @@
 				buf += '<span class="detailcell"><label>Happiness</label>' + (typeof set.happiness === 'number' ? set.happiness : 255) + '</span>';
 				buf += '<span class="detailcell"><label>Shiny</label>' + (set.shiny ? 'Yes' : 'No') + '</span>';
 			}
+			buf += '</button></div></div>';
 
-			buf += '</button>';
+			// item/type icons
+			buf += '<div class="setrow setrow-icons">';
+			buf += '<div class="setcell">';
 			var itemicon = '<span class="itemicon"></span>';
 			if (set.item) {
 				var item = Tools.getItem(set.item);
@@ -1092,7 +1097,14 @@
 			}
 			buf += itemicon;
 			buf += '</div>';
-			buf += '</div><div class="setrow">';
+			buf += '<div class="setcell setcell-typeicons">';
+			var types = Tools.getTemplate(set.species).types;
+			if (types) {
+				for (var i = 0; i < types.length; i++) buf += Tools.getTypeIcon(types[i]);
+			}
+			buf += '</div></div>';
+
+			buf += '<div class="setrow">';
 			if (this.curTeam.gen > 1) buf += '<div class="setcell setcell-item"><label>Item</label><input type="text" name="item" class="textbox chartinput" value="' + Tools.escapeHTML(set.item) + '" /></div>';
 			if (this.curTeam.gen > 2) buf += '<div class="setcell setcell-ability"><label>Ability</label><input type="text" name="ability" class="textbox chartinput" value="' + Tools.escapeHTML(set.ability) + '" /></div>';
 			buf += '</div></div>';
@@ -1182,7 +1194,7 @@
 			}
 		},
 		validate: function () {
-			var format = this.curTeam.format || 'anythinggoes';
+			var format = this.curTeam.format || 'gen7pokebankanythinggoes';
 
 			if (!this.curSetList.length) {
 				app.addPopupMessage("You need at least one Pokémon to validate.");
@@ -1879,7 +1891,7 @@
 						}
 					}
 				}
-				if (hpType && this.curTeam.gen <= 6) {
+				if (hpType && !this.canHyperTrain(set)) {
 					var hpIVs;
 					switch (hpType) {
 					case 'dark':
@@ -2128,7 +2140,7 @@
 		},
 		updateIVs: function () {
 			var set = this.curSet;
-			if (!set.moves || this.curTeam.gen > 6) return;
+			if (!set.moves || this.canHyperTrain(set)) return;
 			var hasHiddenPower = false;
 			for (var i = 0; i < set.moves.length; i++) {
 				if (toId(set.moves[i]).slice(0, 11) === 'hiddenpower') {
@@ -2614,7 +2626,7 @@
 		},
 		unChooseMove: function (moveName) {
 			var set = this.curSet;
-			if (!moveName || !set || this.curTeam.format === 'hiddentype') return;
+			if (!moveName || !set || this.curTeam.format === 'gen7hiddentype') return;
 			if (moveName.substr(0, 13) === 'Hidden Power ') {
 				if (set.ivs) {
 					for (var i in set.ivs) {
@@ -2629,6 +2641,16 @@
 			}
 			this.chooseMove('', resetSpeed);
 		},
+		canHyperTrain: function (set) {
+			if (this.curTeam.gen < 7) return false;
+			var format = this.curTeam.format;
+			if (!set.level || set.level === 100) return true;
+			if (format.substr(0, 3) === 'gen') format = format.substr(4);
+			if (format.substr(0, 10) === 'battlespot' || format.substr(0, 3) === 'vgc') {
+				if (set.level === 50) return true;
+			}
+			return false;
+		},
 		chooseMove: function (moveName, resetSpeed) {
 			var set = this.curSet;
 			if (!set) return;
@@ -2637,16 +2659,18 @@
 			var minSpe;
 			if (resetSpeed) minSpe = false;
 			if (moveName.substr(0, 13) === 'Hidden Power ') {
-				var hpType = moveName.substr(13);
+				if (!this.canHyperTrain(set)) {
+					var hpType = moveName.substr(13);
 
-				set.ivs = {};
-				if (this.curTeam.gen > 2) {
-					for (var i in exports.BattleTypeChart[hpType].HPivs) {
-						set.ivs[i] = exports.BattleTypeChart[hpType].HPivs[i];
-					}
-				} else {
-					for (var i in exports.BattleTypeChart[hpType].HPdvs) {
-						set.ivs[i] = exports.BattleTypeChart[hpType].HPdvs[i] * 2;
+					set.ivs = {};
+					if (this.curTeam.gen > 2) {
+						for (var i in exports.BattleTypeChart[hpType].HPivs) {
+							set.ivs[i] = exports.BattleTypeChart[hpType].HPivs[i];
+						}
+					} else {
+						for (var i in exports.BattleTypeChart[hpType].HPdvs) {
+							set.ivs[i] = exports.BattleTypeChart[hpType].HPdvs[i] * 2;
+						}
 					}
 				}
 			} else if (moveName === 'Return') {
@@ -2657,7 +2681,7 @@
 				minSpe = true;
 			}
 
-			if (this.curTeam.format === 'hiddentype') return;
+			if (this.curTeam.format === 'gen7hiddentype') return;
 
 			var minAtk = true;
 			var hpModulo = (this.curTeam.gen >= 6 ? 2 : 4);
@@ -2812,7 +2836,7 @@
 					}
 				} else if (move.id === 'counter' || move.id === 'endeavor' || move.id === 'metalburst' || move.id === 'mirrorcoat' || move.id === 'rapidspin') {
 					moveCount['Support']++;
-				} else if (move.id === 'nightshade' || move.id === 'seismictoss' || move.id === 'superfang' || move.id === 'foulplay' || move.id === 'endeavor' || move.id === 'finalgambit') {
+				} else if (move.id === 'nightshade' || move.id === 'seismictoss' || move.id === 'psywave' || move.id === 'superfang' || move.id === 'naturesmadness' || move.id === 'foulplay' || move.id === 'endeavor' || move.id === 'finalgambit') {
 					moveCount['Offense']++;
 				} else if (move.id === 'fellstinger') {
 					moveCount['PhysicalSetup']++;
@@ -3262,6 +3286,7 @@
 
 		getGen: function (format) {
 			format = '' + format;
+			if (!format) return 7;
 			if (format.substr(0, 3) !== 'gen') return 6;
 			return parseInt(format.substr(3, 1), 10) || 6;
 		},
@@ -3281,7 +3306,7 @@
 				if (i !== data.i && i !== data.i + 1) {
 					buf += '<li><button name="moveHere" value="' + i + '"><i class="fa fa-arrow-right"></i> Move here</button></li>';
 				}
-				buf += '<li' + (i === data.i ? ' style="opacity:.3"' : ' style="opacity:.6"') + '><span class="pokemonicon" style="display:inline-block;vertical-align:middle;' + Tools.getPokemonIcon(set) + '"></span> ' + Tools.escapeHTML(set.name) + '</li>';
+				buf += '<li' + (i === data.i ? ' style="opacity:.3"' : ' style="opacity:.6"') + '><span class="picon" style="display:inline-block;vertical-align:middle;' + Tools.getPokemonIcon(set) + '"></span> ' + Tools.escapeHTML(set.name || set.species) + '</li>';
 			}
 			if (i !== data.i && i !== data.i + 1) {
 				buf += '<li><button name="moveHere" value="' + i + '"><i class="fa fa-arrow-right"></i> Move here</button></li>';
@@ -3336,7 +3361,7 @@
 			var spriteSize = 96;
 			var spriteDim = 'width: 96px; height: 96px;';
 
-			var gen = {1:'rby', 2:'gsc', 3:'rse', 4:'dpp', 5:'bw', 6:'xy'}[Math.max(this.room.curTeam.gen, template.gen)];
+			var gen = {1:'rby', 2:'gsc', 3:'rse', 4:'dpp', 5:'bw', 6:'xy', 7:'xy'}[Math.max(this.room.curTeam.gen, template.gen)];
 			if (Tools.prefs('nopastgens')) gen = 'xy';
 			if (Tools.prefs('bwgfx') && gen === 'xy') gen = 'bw';
 			if (gen === 'xy') {
