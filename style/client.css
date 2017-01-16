@@ -207,6 +207,14 @@ button:disabled {
 	box-shadow: none;
 	color: #F9F9F9;
 }
+.dark .button.disabled,
+.dark .button.disabled:hover,
+.dark .button.disabled:active {
+	background: #555555;
+	border-color: #555555;
+	box-shadow: none;
+	color: #999999;
+}
 /*
 .dark .closebutton,
 .dark .minimizebutton,
@@ -2567,11 +2575,21 @@ a.ilink.yours {
 }
 .setcol-details .itemicon {
 	display: block;
-	margin-top: 10px;
 	width: 24px;
 	height: 24px;
 	background-image: transparent none no-repeat scroll center center;
 	opacity: 0.8;
+}
+.setrow-icons {
+	height: 24px;
+}
+.setcell-typeicons {
+	margin-top: 4px;
+	margin-right: 4px;
+	float:  right;
+}
+.setcell-typeicons img {
+	margin-left: 1px;
 }
 .setcell-sprite {
 	height: 82px;
@@ -2581,7 +2599,7 @@ a.ilink.yours {
 	margin-top: 0;
 }
 .setcell-details {
-	height: 84px;
+	height: 60px;
 }
 .setcol-moves .setcell {
 	padding-bottom: 1px;
@@ -3617,8 +3635,18 @@ a.ilink.yours {
 .dark .utilichart .movenamecol {
 	color: #DDD;
 }
+.dark .utilichart .cur .labelcol em,
+.dark .utilichart .cur .widelabelcol em,
+.dark .utilichart .cur .pplabelcol em,
+.dark .utilichart .cur .statcol em,
+.dark .utilichart .cur .bstcol em {
+	color: #FFF;
+}
 .dark .utilichart .col {
 	color: #999;
+}
+.dark .utilichart .cur .col {
+	color: #FFF;
 }
 .dark .setmenu button:hover,
 .dark .teamlist button:hover,

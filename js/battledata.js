@@ -304,6 +304,7 @@ var baseSpeciesChart = [
 	'gourgeist',
 	'meowstic',
 	'hoopa',
+	'zygarde',
 	'wishiwashi',
 	'minior',
 	'mimikyu',
@@ -567,6 +568,9 @@ var Tools = {
 		// ^^superscript^^
 		str = str.replace(/\^\^([^< ](?:[^<]*?[^< ])??)\^\^/g,
 			options.hidesuperscript ? '$1' : '<sup>$1</sup>');
+		// \\subscript\\
+		str = str.replace(/\\\\([^< ](?:[^<]*?[^< ])??)\\\\/g,
+			options.hidesubscript ? '$1' : '<sub>$1</sub>');
 		// <<roomid>>
 		str = str.replace(/&lt;&lt;([a-z0-9-]+)&gt;&gt;/g,
 			options.hidelinks ? '&laquo;$1&raquo;' : '&laquo;<a href="/$1" target="_blank">$1</a>&raquo;');
@@ -1058,15 +1062,15 @@ var Tools = {
 			if (!template.spriteid) template.spriteid = toId(template.baseSpecies) + template.formeid;
 			if (!template.effectType) template.effectType = 'Template';
 			if (!template.gen) {
-				if (template.forme && template.forme in {'Mega':1, 'Mega-X':1, 'Mega-Y':1}) {
+				if (template.forme && template.formeid in {'-mega':1, '-megax':1, '-megay':1}) {
 					template.gen = 6;
 					template.isMega = true;
 					template.battleOnly = true;
-				} else if (template.forme === 'Primal') {
+				} else if (template.formeid === '-primal') {
 					template.gen = 6;
 					template.isPrimal = true;
 					template.battleOnly = true;
-				} else if (template.forme === 'Alola') {
+				} else if (template.formeid === '-alola') {
 					template.gen = 7;
 				} else if (template.num >= 722) {
 					template.gen = 7;
@@ -1145,7 +1149,7 @@ var Tools = {
 			shiny: pokemon.shiny
 		};
 		var name = pokemon.spriteid;
-		var dir, isBack, facing;
+		var dir, facing;
 		if (siden) {
 			dir = '';
 			facing = 'front';
@@ -1156,30 +1160,39 @@ var Tools = {
 		}
 
 		// Decide what gen sprites to use.
-		var gen = {1:'rby', 2:'gsc', 3:'rse', 4:'dpp', 5:'bw', 6:'xy', 7:'xy'}[Math.max(options.gen, pokemon.gen)];
-		if (Tools.prefs('nopastgens')) gen = 'xy';
-		if (Tools.prefs('bwgfx') && gen === 'xy') gen = 'bw';
-
-		var gen6animationData = null;
-		if (window.BattlePokemonSprites) {
-			gen6animationData = BattlePokemonSprites[pokemon.speciesid];
+		var genNum = Math.max(options.gen, pokemon.gen);
+		if (Tools.prefs('nopastgens')) genNum = 6;
+		if (Tools.prefs('bwgfx') && genNum >= 6) genNum = 5;
+		if (genNum < 5) {
+			if (!spriteData.isBackSprite) {
+				spriteData.w *= 2;
+				spriteData.h *= 2;
+				spriteData.y = -16;
+			} else {
+				spriteData.w *= 2 / 1.5;
+				spriteData.h *= 2 / 1.5;
+				spriteData.y = -11;
+			}
+			if (genNum <= 2) spriteData.y += 2;
 		}
-		var animationData = gen6animationData;
+		var gen = {1:'rby', 2:'gsc', 3:'rse', 4:'dpp', 5:'bw', 6:'xy', 7:'xy'}[genNum];
+
+		var animationData = null;
+		if (window.BattlePokemonSprites) {
+			animationData = BattlePokemonSprites[pokemon.speciesid];
+		}
 		if (gen === 'bw' && window.BattlePokemonSpritesBW) {
 			animationData = BattlePokemonSpritesBW[pokemon.speciesid];
 		}
-		if (!gen6animationData) gen6animationData = {};
 		if (!animationData) animationData = {};
 
-		if (typeof animationData.num !== 'undefined') {
-			var num = '' + animationData.num;
-			if (num.length < 3) num = '0' + num;
-			if (num.length < 3) num = '0' + num;
-			spriteData.cryurl = 'audio/cries/' + num;
-			if (pokemon.isMega || pokemon.forme && (pokemon.forme === 'Sky' || pokemon.forme === 'Therian' || pokemon.forme === 'Black' || pokemon.forme === 'White' || pokemon.forme === 'Super')) {
-				spriteData.cryurl += pokemon.formeid;
+		if (animationData.num > 0) {
+			spriteData.cryurl = 'audio/cries/' + toId(pokemon.baseSpecies);
+			var formeid = pokemon.formeid;
+			if (pokemon.isMega || formeid && (formeid === '-sky' || formeid === '-therian' || formeid === '-primal' || formeid === '-eternal' || pokemon.baseSpecies === 'Kyurem' || formeid === '-super' || formeid === '-unbound' || formeid === '-midnight' || formeid === '-school' || pokemon.baseSpecies === 'Oricorio' || pokemon.baseSpecies === 'Zygarde')) {
+				spriteData.cryurl += formeid;
 			}
-			spriteData.cryurl += '.wav';
+			spriteData.cryurl += (window.nodewebkit ? '.ogg' : '.mp3');
 		}
 
 		if (pokemon.shiny && options.gen > 1) dir += '-shiny';
@@ -1192,23 +1205,21 @@ var Tools = {
 		}
 
 		if (animationData[facing]) {
-			var spriteType = '';
-			if (animationData[facing]['anif'] && pokemon.gender === 'F') {
+			if (animationData[facing + 'f'] && pokemon.gender === 'F') {
 				name += '-f';
-				spriteType += 'f';
+				facing += 'f';
 			}
-			if (!Tools.prefs('noanim') && gen in {'bw': 1, 'xy': 1}) {
-				spriteType = 'ani' + spriteType;
+			if (!Tools.prefs('noanim') && genNum >= 5) {
 				dir = gen + 'ani' + dir;
 
-				spriteData.w = animationData[facing][spriteType].w;
-				spriteData.h = animationData[facing][spriteType].h;
+				spriteData.w = animationData[facing].w;
+				spriteData.h = animationData[facing].h;
 				spriteData.url += dir + '/' + name + '.gif';
+				if (genNum >= 6) spriteData.pixelated = false;
 				return spriteData;
 			}
-		} else if (gen6animationData[facing] && gen6animationData[facing]['anif'] && pokemon.gender === 'F') {
+		} else if (animationData['frontf'] && pokemon.gender === 'F') {
 			name += '-f';
-			spriteType += 'f';
 		}
 
 		// There is no entry or enough data in pokedex-mini.js
@@ -1227,11 +1238,11 @@ var Tools = {
 	getPokemonIcon: function (pokemon, facingLeft) {
 		var num = 0;
 		if (pokemon === 'pokeball') {
-			return 'background:transparent url(' + Tools.resourcePrefix + 'sprites/xyicons-pokeball-sheet.png) no-repeat scroll -0px 4px';
+			return 'background:transparent url(' + Tools.resourcePrefix + 'sprites/smicons-pokeball-sheet.png) no-repeat scroll -0px 4px';
 		} else if (pokemon === 'pokeball-statused') {
-			return 'background:transparent url(' + Tools.resourcePrefix + 'sprites/xyicons-pokeball-sheet.png) no-repeat scroll -40px 4px';
+			return 'background:transparent url(' + Tools.resourcePrefix + 'sprites/smicons-pokeball-sheet.png) no-repeat scroll -40px 4px';
 		} else if (pokemon === 'pokeball-none') {
-			return 'background:transparent url(' + Tools.resourcePrefix + 'sprites/xyicons-pokeball-sheet.png) no-repeat scroll -80px 4px';
+			return 'background:transparent url(' + Tools.resourcePrefix + 'sprites/smicons-pokeball-sheet.png) no-repeat scroll -80px 4px';
 		}
 		var id = toId(pokemon);
 		if (pokemon && pokemon.species) id = toId(pokemon.species);

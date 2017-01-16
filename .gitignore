@@ -8,8 +8,6 @@
 !/data/tpp.js
 !/data/emoteregex.js
 !/data/graphics.js
-!/data/pokedex-mini.js
-!/data/pokedex-mini-bw.js
 !/data/learnsets-g6.js
 !/data/custom/
 node_modules/

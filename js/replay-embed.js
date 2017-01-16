@@ -1,18 +1,18 @@
 document.write('<link rel="stylesheet" href="/style/font-awesome.css?" />');
-document.write('<link rel="stylesheet" href="/style/battle.css?a6" />');
-document.write('<link rel="stylesheet" href="/style/replay.css?a6" />');
+document.write('<link rel="stylesheet" href="/style/battle.css?a7" />');
+document.write('<link rel="stylesheet" href="/style/replay.css?a7" />');
 document.write('<script src="/js/lib/jquery-1.11.0.min.js"></script>');
 document.write('<script src="/js/lib/lodash.compat.js"></script>');
 document.write('<script src="/js/lib/html-sanitizer-minified.js"></script>');
 document.write('<script src="/audio/bgm-index.js"></script>');
 document.write('<script src="/js/webAudioManager.js"></script>');
-document.write('<script src="/js/config.js?a6"></script>');
-document.write('<script src="/js/battledata.js?a6"></script>');
-document.write('<script src="/data/pokedex-mini.js?a6"></script>');
-document.write('<script src="/data/pokedex-mini-bw.js?a6"></script>');
-document.write('<script src="/data/graphics.js?a6"></script>');
-document.write('<script src="/sprites/bgs/bg-index.js?a6"></script>');
-document.write('<script src="/js/battle.js?a6"></script>');
+document.write('<script src="/js/config.js?a7"></script>');
+document.write('<script src="/js/battledata.js?a7"></script>');
+document.write('<script src="/data/pokedex-mini.js?a7"></script>');
+document.write('<script src="/data/pokedex-mini-bw.js?a7"></script>');
+document.write('<script src="/data/graphics.js?a7"></script>');
+document.write('<script src="/sprites/bgs/bg-index.js?a7"></script>');
+document.write('<script src="/js/battle.js?a7"></script>');
 document.write('<script src="/emotes/emoteregex.js"></script>');
 
 var Replays = {
