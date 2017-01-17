@@ -991,5 +991,7 @@ exports.BattlePokemonSprites = {
 	cyclohm:{num:-58},
 	colossoil:{num:-59},
 	krilowatt:{num:-60,front:{ani:{w:47,h:90}},back:{ani:{w:46,h:93}}},
-	voodoom:{num:-61}
+	voodoom:{num:-61},
+	phancero:{num:9001},
+	rb202:{num:-202}
 };
