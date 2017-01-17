@@ -146,10 +146,9 @@ var BattleSoundLibrary = (function () {
 			// suppress crash
 			return (this.bgmCache[url] = this.soundPlaceholder);
 		}
-		// this.bgmCache[url].onposition(loopend, function () {
-		// 	this.setPosition(loopstart);
+		// this.bgmCache[url].onposition(loopend, function (evP) {
+		// 	this.setPosition(this.position - (loopend - loopstart));
 		// });
-		// console.debug("loadBgm : returning: ", this.bgmCache[url]);
 		return this.bgmCache[url];
 	};
 	BattleSoundLibrary.prototype.playBgm = function (url, turnCount) {
@@ -873,6 +872,8 @@ var Sprite = (function () {
 			afd: this.battle.tier === "[Seasonal] Fools Festival",
 			gen: this.battle.gen
 		});
+		this.cryurl = sp.cryurl;
+		var doCry = false;
 		this.sp = sp;
 		var self = this;
 		var battle = this.battle;
@@ -889,8 +890,10 @@ var Sprite = (function () {
 		if (isCustomAnim) {
 			if (species.id === 'kyogreprimal') {
 				BattleOtherAnims.primalalpha.anim(battle, [self]);
+				doCry = true;
 			} else if (species.id === 'groudonprimal') {
 				BattleOtherAnims.primalomega.anim(battle, [self]);
+				doCry = true;
 			} else if (species.id === 'zygardecomplete') {
 				BattleOtherAnims.powerconstruct.anim(battle, [self]);
 			} else if (species.id === 'wishiwashischool' || species.id === 'greninjaash') {
@@ -901,6 +904,7 @@ var Sprite = (function () {
 				// standard animation
 			} else {
 				BattleOtherAnims.megaevo.anim(battle, [self]);
+				doCry = true;
 			}
 		}
 		this.elem.animate(this.battle.pos({
@@ -911,6 +915,10 @@ var Sprite = (function () {
 			xscale: 0,
 			opacity: 0.3
 		}, this.oldsp), 300, function () {
+			if (self.cryurl && doCry) {
+				//self.battle.logConsole('cry: ' + self.cryurl);
+				BattleSound.playEffect(self.cryurl);
+			}
 			self.elem.attr('src', sp.url);
 			self.elem.animate(battle.pos({
 				x: self.x,
@@ -1266,6 +1274,10 @@ var Sprite = (function () {
 			this.elem = null;
 			return;
 		}
+		if (this.cryurl) {
+			//this.battle.logConsole('cry: ' + this.cryurl);
+			BattleSound.playEffect(this.cryurl);
+		}
 		this.anim({
 			y: this.y - 80,
 			opacity: 0
@@ -1430,11 +1442,11 @@ var Side = (function () {
 		for (var i = 0; i < 6; i++) {
 			var poke = this.pokemon[i];
 			if (i >= this.totalPokemon) {
-				pokemonhtml += '<span class="pokemonicon" style="' + Tools.getPokemonIcon('pokeball-none') + '"></span>';
+				pokemonhtml += '<span class="picon" style="' + Tools.getPokemonIcon('pokeball-none') + '"></span>';
 			} else if (!poke) {
-				pokemonhtml += '<span class="pokemonicon" style="' + Tools.getPokemonIcon('pokeball') + '" title="Not revealed"></span>';
+				pokemonhtml += '<span class="picon" style="' + Tools.getPokemonIcon('pokeball') + '" title="Not revealed"></span>';
 			} else {
-				pokemonhtml += '<span class="pokemonicon" style="' + Tools.getPokemonIcon(poke, !this.n) + '" title="' + poke.getFullName(true) + '"></span>';
+				pokemonhtml += '<span class="picon" style="' + Tools.getPokemonIcon(poke, !this.n) + '" title="' + poke.getFullName(true) + '"></span>';
 			}
 			if (i % 3 === 2) pokemonhtml += '</div><div class="teamicons">';
 		}
@@ -1453,9 +1465,9 @@ var Side = (function () {
 			}
 		}
 	};
-	Side.prototype.addSideCondition = function (condition) {
+	Side.prototype.addSideCondition = function (effect) {
 		var elem, curelem;
-		condition = toId(condition);
+		var condition = effect.id;
 		if (this.sideConditions[condition]) {
 			if (condition === 'spikes' || condition === 'toxicspikes') {
 				this.sideConditions[condition][2]++;
@@ -1496,7 +1508,7 @@ var Side = (function () {
 			}
 			return;
 		}
-		// Side conditions work as: [condition, elem, levels, minDuration, maxDuration]
+		// Side conditions work as: [effectName, elem, levels, minDuration, maxDuration]
 		switch (condition) {
 		case 'auroraveil':
 			this.battle.spriteElemsFront[this.n].append('<div class="sidecondition-auroraveil" style="display:none;position:absolute" />');
@@ -1520,7 +1532,7 @@ var Side = (function () {
 				opacity: .3
 			}, 300);
 			elem = curelem;
-			this.sideConditions[condition] = [condition, elem, 1, 5, 8];
+			this.sideConditions[condition] = [effect.name, elem, 1, 5, 8];
 			break;
 		case 'reflect':
 			this.battle.spriteElemsFront[this.n].append('<div class="sidecondition-reflect" style="display:none;position:absolute" />');
@@ -1544,7 +1556,7 @@ var Side = (function () {
 				opacity: .3
 			}, 300);
 			elem = curelem;
-			this.sideConditions[condition] = [condition, elem, 1, 5, this.battle.gen >= 4 ? 8 : 0];
+			this.sideConditions[condition] = [effect.name, elem, 1, 5, this.battle.gen >= 4 ? 8 : 0];
 			break;
 		case 'safeguard':
 			this.battle.spriteElemsFront[this.n].append('<div class="sidecondition-safeguard" style="display:none;position:absolute" />');
@@ -1568,7 +1580,7 @@ var Side = (function () {
 				opacity: .2
 			}, 300);
 			elem = curelem;
-			this.sideConditions[condition] = [condition, elem, 1, 5, 0];
+			this.sideConditions[condition] = [effect.name, elem, 1, 5, 0];
 			break;
 		case 'lightscreen':
 			this.battle.spriteElemsFront[this.n].append('<div class="sidecondition-lightscreen" style="display:none;position:absolute" />');
@@ -1592,7 +1604,7 @@ var Side = (function () {
 				opacity: .3
 			}, 300);
 			elem = curelem;
-			this.sideConditions[condition] = [condition, elem, 1, 5, this.battle.gen >= 4 ? 8 : 0];
+			this.sideConditions[condition] = [effect.name, elem, 1, 5, this.battle.gen >= 4 ? 8 : 0];
 			break;
 		case 'mist':
 			this.battle.spriteElemsFront[this.n].append('<div class="sidecondition-mist" style="display:none;position:absolute" />');
@@ -1616,13 +1628,13 @@ var Side = (function () {
 				opacity: .2
 			}, 300);
 			elem = curelem;
-			this.sideConditions[condition] = [condition, elem, 1, 5, 0];
+			this.sideConditions[condition] = [effect.name, elem, 1, 5, 0];
 			break;
 		case 'tailwind':
-			this.sideConditions[condition] = [condition, null, 1, this.battle.gen >= 5 ? 4 : 3, 0];
+			this.sideConditions[condition] = [effect.name, null, 1, this.battle.gen >= 5 ? 4 : 3, 0];
 			break;
 		case 'luckychant':
-			this.sideConditions[condition] = [condition, null, 1, 5, 0];
+			this.sideConditions[condition] = [effect.name, null, 1, 5, 0];
 			break;
 		case 'stealthrock':
 			this.battle.spriteElemsFront[this.n].append('<img src="' + BattleEffects.rock1.url + '" style="display:none;position:absolute" />');
@@ -1672,7 +1684,7 @@ var Side = (function () {
 				scale: .2
 			}, BattleEffects.rock2));
 			elem = elem.add(curelem);
-			this.sideConditions[condition] = [condition, elem, 1, 0, 0];
+			this.sideConditions[condition] = [effect.name, elem, 1, 0, 0];
 			break;
 		case 'spikes':
 			this.battle.spriteElemsFront[this.n].append('<img src="' + BattleEffects.caltrop.url + '" style="display:none;position:absolute" />');
@@ -1685,7 +1697,7 @@ var Side = (function () {
 				scale: .3
 			}, BattleEffects.caltrop));
 			elem = curelem;
-			this.sideConditions[condition] = [condition, elem, 1, 0, 0];
+			this.sideConditions[condition] = [effect.name, elem, 1, 0, 0];
 			break;
 		case 'toxicspikes':
 			this.battle.spriteElemsFront[this.n].append('<img src="' + BattleEffects.poisoncaltrop.url + '" style="display:none;position:absolute" />');
@@ -1698,7 +1710,7 @@ var Side = (function () {
 				scale: .3
 			}, BattleEffects.poisoncaltrop));
 			elem = curelem;
-			this.sideConditions[condition] = [condition, elem, 1, 0, 0];
+			this.sideConditions[condition] = [effect.name, elem, 1, 0, 0];
 			break;
 		case 'stickyweb':
 			this.battle.spriteElemsFront[this.n].append('<img src="' + BattleEffects.web.url + '" style="display:none;position:absolute" />');
@@ -1712,10 +1724,10 @@ var Side = (function () {
 				scale: 0.7
 			}, BattleEffects.web));
 			elem = curelem;
-			this.sideConditions[condition] = [condition, elem, 1, 0, 0];
+			this.sideConditions[condition] = [effect.name, elem, 1, 0, 0];
 			break;
 		default:
-			this.sideConditions[condition] = [condition, null, 1, 0, 0];
+			this.sideConditions[condition] = [effect.name, null, 1, 0, 0];
 		}
 	};
 	Side.prototype.removeSideCondition = function (condition) {
@@ -2220,9 +2232,9 @@ var Side = (function () {
 		}
 		if (pokemon.volatiles.typechange && pokemon.volatiles.typechange[2]) {
 			var types = pokemon.volatiles.typechange[2].split('/');
-			status += '<img src="' + Tools.resourcePrefix + 'sprites/types/' + types[0].replace(/\?/g, '%3f') + '.png" alt="' + types[0] + '" /> ';
+			status += '<img src="' + Tools.resourcePrefix + 'sprites/types/' + encodeURIComponent(types[0]) + '.png" alt="' + types[0] + '" /> ';
 			if (types[1]) {
-				status += '<img src="' + Tools.resourcePrefix + 'sprites/types/' + types[1].replace(/\?/g, '%3f') + '.png" alt="' + types[1] + '" /> ';
+				status += '<img src="' + Tools.resourcePrefix + 'sprites/types/' + encodeURIComponent(types[1]) + '.png" alt="' + types[1] + '" /> ';
 			}
 		}
 		if (pokemon.volatiles.typeadd) {
@@ -2304,6 +2316,8 @@ var Side = (function () {
 			followme: '<span class="good">Follow&nbsp;Me</span>',
 			instruct: '<span class="neutral">Instruct</span>',
 			beakblast: '<span class="neutral">Beak&nbsp;Blast</span>',
+			laserfocus: '<span class="good">Laser&nbsp;Focus</span>',
+			spotlight: '<span class="neutral">Spotlight</span>',
 			totemaura: '<span class="good">Totem&nbsp;Aura</span>',
 			itemremoved: '',
 			// Gen 1
@@ -3300,7 +3314,7 @@ var Battle = (function () {
 		}
 		if (!kwargs.silent) {
 			if (kwargs.zeffect) {
-				this.message('<small>' + pokemon.getName() + ' unleashes its full force Z-Move!</small>', '');
+				this.message('<small>' + pokemon.getName() + ' unleashes its full-force Z-Move!</small>', '');
 			}
 			switch (fromeffect.id) {
 			case 'snatch':
@@ -3767,6 +3781,10 @@ var Battle = (function () {
 						poke.markAbility(effect.name);
 					}
 					switch (effect.id) {
+					case 'memento':
+					case 'partingshot':
+						actions += "" + poke.getName() + "'s HP was restored by the Z-Power!";
+						break;
 					case 'ingrain':
 						actions += "" + poke.getName() + " absorbed nutrients with its roots!";
 						break;
@@ -4004,6 +4022,8 @@ var Battle = (function () {
 				break;
 			case '-clearpositiveboost':
 				var poke = this.getPokemon(args[1]);
+				var ofpoke = this.getPokemon(args[2]);
+				var effect = Tools.getEffect(args[3]);
 				for (i in poke.boosts) {
 					if (poke.boosts[i] > 0) delete poke.boosts[i];
 				}
@@ -4011,6 +4031,14 @@ var Battle = (function () {
 
 				if (kwargs.silent) {
 					// do nothing
+				} else if (effect.id) {
+					switch (effect.id) {
+					case 'spectralthief':
+						// todo: update StealBoosts so it animates 1st on Spectral Thief
+						if (!this.fastForward) BattleOtherAnims.spectralthiefboost.anim(this, [ofpoke.sprite, poke.sprite]);
+						actions += '' + ofpoke.getName() + ' stole the target\'s boosted stats!';
+						break;
+					}
 				}
 				break;
 			case '-clearnegativeboost':
@@ -4188,6 +4216,7 @@ var Battle = (function () {
 					this.resultAnim(poke, 'Already frozen', 'neutral');
 					actions += "" + poke.getName() + " is already frozen solid!";
 					break;
+				case 'darkvoid':
 				case 'hyperspacefury':
 					if (kwargs.forme) {
 						actions += 'But ' + poke.getLowerName() + ' can\'t use it the way it is now!';
@@ -4877,6 +4906,8 @@ var Battle = (function () {
 						} else if (fromeffect.id === 'reflecttype') {
 							poke.copyTypesFrom(ofpoke);
 							if (!kwargs.silent) actions += "" + poke.getName() + "'s type became the same as " + ofpoke.getLowerName() + "'s type!";
+						} else if (fromeffect.id === 'burnup') {
+							actions += "" + poke.getName() + " burned itself out!";
 						} else if (!kwargs.silent) {
 							actions += "" + poke.getName() + "'s " + fromeffect.name + " made it the " + args[3] + " type!";
 						}
@@ -5095,6 +5126,8 @@ var Battle = (function () {
 				case 'mimic':
 					actions += '' + poke.getName() + ' learned ' + Tools.escapeHTML(args[3]) + '!';
 					break;
+				case 'laserfocus':
+					actions += '' + poke.getName() + ' concentrated intensely!';
 				case 'totemaura':
 					this.resultAnim(poke, 'Totem Aura', 'good');
 					actions += "Totem " + poke.getName() + "'s aura flared to life!";
@@ -5322,6 +5355,7 @@ var Battle = (function () {
 					break;
 				case 'followme':
 				case 'ragepowder':
+				case 'spotlight':
 					if (kwargs.zeffect) {
 						actions += '' + poke.getName() + ' became the center of attention using its Z-Power!';
 					} else {
@@ -5371,6 +5405,9 @@ var Battle = (function () {
 					poke.markAbility(effect.name);
 				}
 				switch (effect.id) {
+				case 'healreplacement':
+					actions += "" + poke.getName() + " will restore its replacement's HP using its Z-Power!";
+					break;
 				case 'confusion':
 					actions += "" + poke.getName() + " is confused!";
 					break;
@@ -5564,6 +5601,9 @@ var Battle = (function () {
 				case 'guardsplit':
 					actions += '' + poke.getName() + ' shared its guard with the target!';
 					break;
+				case 'speedswap':
+					actions += '' + poke.getName() + ' switched Speed with its target!';
+					break;
 				case 'ingrain':
 					actions += '' + poke.getName() + ' anchored itself with its roots!';
 					break;
@@ -5652,6 +5692,17 @@ var Battle = (function () {
 				case 'sweetveil':
 					actions += '' + ofpoke.getName() + ' surrounded itself with a veil of sweetness!';
 					break;
+				case 'battlebond':
+					actions += '' + poke.getName() + ' became fully charged due to its bond with its Trainer!';
+					break;
+				case 'disguise':
+					actions += 'Its disguise served it as a decoy!';
+					break;
+				case 'powerconstruct':
+					actions += 'You sense the presence of many!';
+					break;
+
+				// weather activations
 				case 'deltastream':
 					actions += "The mysterious strong winds weakened the attack!";
 					break;
@@ -5686,7 +5737,7 @@ var Battle = (function () {
 			case '-sidestart':
 				var side = this.getSide(args[1]);
 				var effect = Tools.getEffect(args[2]);
-				side.addSideCondition(effect.name);
+				side.addSideCondition(effect);
 
 				switch (effect.id) {
 				case 'stealthrock':
@@ -6578,6 +6629,13 @@ var Battle = (function () {
 			}
 			poke.side.updateStatbar(poke, true);
 			poke.side.updateSidebar();
+			if (toId(newSpecies) === 'greninjaash') {
+				this.message('<small>' + poke.getName() + ' became Ash-Greninja!</small>');
+			} else if (toId(newSpecies) === 'mimikyubusted') {
+				this.message('<small>' + poke.getName() + "'s disguise was busted!</small>");
+			} else if (toId(newSpecies) === 'zygardecomplete') {
+				this.message('<small>' + poke.getName() + ' transformed into its Complete Forme!</small>');
+			}
 			break;
 		case 'teampreview':
 			this.teamPreview(true);
