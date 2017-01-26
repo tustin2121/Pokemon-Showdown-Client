@@ -1064,7 +1064,9 @@
 					var teambuilderFormatName = '';
 					if (isTeambuilderFormat) {
 						teambuilderFormatName = name;
-						if (id.slice(0, 3) !== 'gen') {
+						if (id.slice(0, 9) === 'tppleague') {
+							teambuilderFormatName = name;
+						} else if (id.slice(0, 3) !== 'gen') {
 							teambuilderFormatName = '[Gen 6] ' + name;
 						}
 						var parenPos = teambuilderFormatName.indexOf('(');

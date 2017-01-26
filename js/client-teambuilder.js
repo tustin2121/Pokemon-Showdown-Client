@@ -241,6 +241,7 @@
 				case 'gen5': format = 'C' + format.slice(4); break;
 				case 'gen6': format = 'B' + format.slice(4); break;
 				case 'gen7': format = 'A' + format.slice(4); break;
+				case 'tppl': format = '!' + format; break;
 				default: format = 'X' + format; break;
 				}
 				folders.push(format);
@@ -260,6 +261,7 @@
 				case 'C': newGen = '5'; break;
 				case 'B': newGen = '6'; break;
 				case 'A': newGen = '7'; break;
+				case '!': newGen = '7'; break;
 				case 'X': newGen = 'X'; break;
 				case 'Z': newGen = '/'; break;
 				}
@@ -291,6 +293,9 @@
 				var formatName = format.slice(1);
 				if (formatName === '~') formatName = '';
 				format = 'gen' + newGen + formatName;
+				if (formatName === 'tppleague' && newGen === '7') {
+					format = 'tppleague';
+				}
 				if (format.length === 4) formatName = '(uncategorized)';
 				// folders are <div>s rather than <button>s because in theory it has
 				// less weird interactions with HTML5 drag-and-drop
@@ -831,7 +836,7 @@
 			} else {
 				if (format.slice(-1) === '/') {
 					format = format.slice(0, -1);
-					if (format && format.slice(0, 3) !== 'gen') format = 'gen6' + format;
+					format = toFormatId(format);
 					team.folder = format;
 					edited = true;
 				}
@@ -973,7 +978,7 @@
 					var bracketIndex = name.indexOf(']');
 					if (bracketIndex >= 0) {
 						format = name.substr(1, bracketIndex - 1);
-						if (format && format.slice(0, 3) !== 'gen') format = 'gen6' + format;
+						format = toFormatId(format);
 						name = $.trim(name.substr(bracketIndex + 1));
 					}
 					Storage.teams.push({

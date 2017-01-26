@@ -1475,6 +1475,12 @@
 			this.$joinLeave.html('<small style="color: #555555">' + message + '</small>');
 		},
 		addChat: function (name, message, pm, msgTime) {
+			var alias = undefined;
+			if (name.indexOf('{') > 0) {
+				alias = name.substring(name.indexOf('{')+1);
+				name = name.substring(0, name.indexOf('{'));
+				alias = Tools.escapeHTML(alias);
+			}
 			var userid = toUserid(name);
 
 			if (app.ignore[userid] && (name.charAt(0) === ' ' || name.charAt(0) === '+')) return;
@@ -1495,7 +1501,7 @@
 				var clickableName = '<span class="username" data-name="' + Tools.escapeHTML(name) + '">' + Tools.escapeHTML(name.substr(1)) + '</span>';
 				this.$chat.append(
 					'<div class="chat chatmessage-' + toId(name) + '">' + ChatRoom.getTimestamp('lobby', msgTime) +
-					'<strong style="' + hashColor(userid) + '">' + clickableName + ':</strong>' +
+					'<strong style="' + hashColor(userid) + '"'+(alias?' title="'+alias+'"':'')+'>' + clickableName + ':</strong>' +
 					'<span class="message-pm"><i class="pmnote" data-name="' + Tools.escapeHTML(oName) + '">(Private to ' + Tools.escapeHTML(pm) + ')</i> ' + Tools.parseMessage(message) + '</span>' +
 					'</div>'
 				);

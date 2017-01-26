@@ -487,7 +487,7 @@ Storage.unpackAllTeams = function (buffer) {
 		// old format
 		return JSON.parse(buffer).map(function (oldTeam) {
 			var format = oldTeam.format || '';
-			if (format && format.slice(0, 3) !== 'gen') format = 'gen6' + format;
+			format = toFormatId(format);
 			return {
 				name: oldTeam.name || '',
 				format: format,
@@ -506,7 +506,7 @@ Storage.unpackAllTeams = function (buffer) {
 		var slashIndex = line.lastIndexOf('/', pipeIndex);
 		if (slashIndex < 0) slashIndex = bracketIndex; // line.slice(slashIndex + 1, pipeIndex) will be ''
 		var format = bracketIndex > 0 ? line.slice(0, bracketIndex) : '';
-		if (format && format.slice(0, 3) !== 'gen') format = 'gen6' + format;
+		format = toFormatId(format);
 		return {
 			name: line.slice(slashIndex + 1, pipeIndex),
 			format: format,
@@ -935,7 +935,7 @@ Storage.importTeam = function (text, teams) {
 			var bracketIndex = line.indexOf(']');
 			if (bracketIndex >= 0) {
 				format = line.substr(1, bracketIndex - 1);
-				if (format && format.slice(0, 3) !== 'gen') format = 'gen6' + format;
+				format = toFormatId(format);
 				line = $.trim(line.substr(bracketIndex + 1));
 			}
 			if (teams.length) {
@@ -1320,7 +1320,7 @@ Storage.nwLoadTeamFile = function (filename, localApp) {
 		format = line.slice(1, bracketIndex);
 		line = $.trim(line.slice(bracketIndex + 1));
 	}
-	if (format && format.slice(0, 3) !== 'gen') format = 'gen6' + format;
+	format = toFormatId(format);
 	fs.readFile(this.dir + 'Teams/' + filename, function (err, data) {
 		if (!err) {
 			self.teams.push({

@@ -813,7 +813,7 @@ exports.BattlePokemonSpritesBW = {
 	genesectchill:{num:649,front:{w:60,h:71},back:{w:69,h:70}},
 	chespin:{num:650},
 	quilladin:{num:651},
-	chesnaught:{num:652,front:{w:96,h:96},back:{w:96,h:96}},
+	chesnaught:{num:652},
 	fennekin:{num:653,front:{w:96,h:96},back:{w:96,h:96}},
 	braixen:{num:654},
 	delphox:{num:655},
@@ -917,7 +917,7 @@ exports.BattlePokemonSpritesBW = {
 	bergmite:{num:712},
 	avalugg:{num:713},
 	noibat:{num:714},
-	noivern:{num:715,front:{w:96,h:96}},
+	noivern:{num:715},
 	xerneas:{num:716},
 	yveltal:{num:717},
 	zygarde:{num:718,front:{w:96,h:96},back:{w:96,h:96}},
@@ -1063,5 +1063,7 @@ exports.BattlePokemonSpritesBW = {
 	cyclohm:{num:-58},
 	colossoil:{num:-59},
 	krilowatt:{num:-60},
-	voodoom:{num:-61}
+	voodoom:{num:-61},
+	phancero:{num:9001},
+	rb202:{num:-202}
 };

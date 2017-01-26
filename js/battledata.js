@@ -132,6 +132,14 @@ function toUserid(text) {
 	return toId(text);
 }
 
+function toFormatId(format) {
+	if (format) {
+		// if (format.slice(0, 9) === 'tppleague') return 'gen7' + format;
+		if (format.slice(0, 3) !== 'gen') return 'gen6' + format;
+	}
+	return format;
+}
+
 function toName(name) {
 	if (typeof name !== 'string' && typeof name !== 'number') return '';
 	name = ('' + name).replace(/[\|\s\[\]\,\u202e]+/g, ' ').trim();
