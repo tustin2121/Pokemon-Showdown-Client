@@ -584,7 +584,7 @@
 					gymlist.append(self.renderGymPanel(nick, settings, !!data.info.badges[settings.badge]));
 				});
 				
-				if (badges.length > 8) {
+				if (badges.length >= 8) {
 					scrn.append("<h3>Elite Members:</h3>");
 					var singles = [];
 					var doubles = [];
