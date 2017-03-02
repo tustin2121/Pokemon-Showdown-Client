@@ -599,7 +599,7 @@
 							var move = Tools.getMove(moveData.move);
 							var moveType = this.tooltips.getMoveType(move, this.battle.mySide.active[pos] || this.myPokemon[pos]);
 							if (canZMove[i]) {
-								movebuttons += '<button class="type-' + moveType + '" name="chooseMove" value="' + (i + 1) + '" data-move="' + Tools.escapeHTML(canZMove[i].move) + '" data-target="' + Tools.escapeHTML(canZMove[i].target) + '"' + this.tooltips.tooltipAttrs(canZMove[i].move, 'move') + '>';
+								movebuttons += '<button class="type-' + moveType + '" name="chooseMove" value="' + (i + 1) + '" data-move="' + Tools.escapeHTML(canZMove[i].move) + '" data-target="' + Tools.escapeHTML(canZMove[i].target) + '"' + this.tooltips.tooltipAttrs(moveData.move, 'zmove') + '>';
 								movebuttons += canZMove[i].move + '<br /><small class="type">' + (moveType ? Tools.getType(moveType).name : "Unknown") + '</small> <small class="pp">1/1</small>&nbsp;</button> ';
 							} else {
 								movebuttons += '<button disabled="disabled">&nbsp;</button>';
@@ -1247,8 +1247,8 @@
 			this.battle = data.battle;
 			this.room = data.room;
 			var buf = '<p><strong>In this battle</strong></p>';
-			buf += '<p><label class="optlabel"><input type="checkbox" name="ignorespects" /> Ignore Spectators</label></p>';
-			buf += '<p><label class="optlabel"><input type="checkbox" name="ignoreopp" /> Ignore Opponent</label></p>';
+			buf += '<p><label class="optlabel"><input type="checkbox" name="ignorespects"' + (this.battle.ignoreSpects ? ' checked' : '') + '/> Ignore Spectators</label></p>';
+			buf += '<p><label class="optlabel"><input type="checkbox" name="ignoreopp"' + (this.battle.ignoreOpponent ? ' checked' : '') + '/> Ignore Opponent</label></p>';
 			if (this.battle.stadiumRequest && this.room.side) {
 				//stadium request is available, and we're a player
 				buf += '<p><label class="optlabel">Battle Field: <select name="battlefield">';
@@ -1287,7 +1287,7 @@
 		toggleIgnoreSpects: function (e) {
 			this.battle.ignoreSpects = !!e.currentTarget.checked;
 			this.battle.add('Spectators ' + (this.battle.ignoreSpects ? '' : 'no longer ') + 'ignored.');
-			var $messages = $('.battle-log').find('.chat').not('small:contains(\u2605)');
+			var $messages = $('.battle-log').find('.chat').has('small').not(':contains(\u2605), :contains(\u2606)');
 			if (!$messages.length) return;
 			if (this.battle.ignoreSpects) {
 				$messages.hide();
