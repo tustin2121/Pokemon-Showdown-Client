@@ -113,9 +113,10 @@ var BattleTooltips = (function () {
 		var text = '';
 		switch (type) {
 		case 'move':
+		case 'zmove':
 			var move = Tools.getMove(thing);
 			if (!move) return;
-			text = this.showMoveTooltip(move);
+			text = this.showMoveTooltip(move, type === 'zmove');
 			break;
 
 		case 'pokemon':
@@ -176,7 +177,28 @@ var BattleTooltips = (function () {
 		BattleTooltips.hideTooltip();
 	};
 
-	BattleTooltips.prototype.showMoveTooltip = function (move) {
+	BattleTooltips.prototype.zMoveTable = {
+		Poison: "Acid Downpour",
+		Fighting: "All-Out Pummeling",
+		Dark: "Black Hole Eclipse",
+		Grass: "Bloom Doom",
+		Normal: "Breakneck Blitz",
+		Rock: "Continental Crush",
+		Steel: "Corkscrew Crash",
+		Dragon: "Devastating Drake",
+		Electric: "Gigavolt Havoc",
+		Water: "Hydro Vortex",
+		Fire: "Inferno Overdrive",
+		Ghost: "Never-Ending Nightmare",
+		Bug: "Savage Spin-Out",
+		Psychic: "Shattered Psyche",
+		Ice: "Subzero Slammer",
+		Flying: "Supersonic Skystrike",
+		Ground: "Tectonic Rage",
+		Fairy: "Twinkle Tackle",
+	};
+
+	BattleTooltips.prototype.showMoveTooltip = function (move, isZ) {
 		var text = '';
 		var basePower = move.basePower;
 		var basePowerText = '';
@@ -184,6 +206,24 @@ var BattleTooltips = (function () {
 		var yourActive = this.battle.yourSide.active;
 		var pokemon = this.battle.mySide.active[this.room.choice.choices.length];
 		var pokemonData = this.room.myPokemon[pokemon.slot];
+
+		if (isZ) {
+			var item = Tools.getItem(pokemonData.item);
+			if (item.zMoveFrom == move.name) {
+				move = Tools.getMove(item.zMove);
+			} else if (move.category === 'Status') {
+				move = JSON.parse(JSON.stringify(move));
+				move.name = 'Z-' + move.name;
+				// TODO: show zMoveBoost/Effect
+			} else {
+				var zmove = Tools.getMove(this.zMoveTable[item.zMoveType]);
+				zmove = JSON.parse(JSON.stringify(zmove));
+				zmove.category = move.category;
+				zmove.basePower = move.zMovePower;
+				move = zmove;
+				// TODO: Weather Ball type-changing shenanigans
+			}
+		}
 
 		// Check if there are more than one active Pokémon to check for multiple possible BPs.
 		if (yourActive.length > 1) {
@@ -430,6 +470,7 @@ var BattleTooltips = (function () {
 					text += '<p>Possible abilities: ' + Tools.getAbility(ability0).name;
 					if (template.abilities['1']) text += ', ' + Tools.getAbility(template.abilities['1']).name;
 					if (this.battle.gen > 4 && template.abilities['H']) text += ', ' + Tools.getAbility(template.abilities['H']).name;
+					if (this.battle.gen > 6 && template.abilities['S']) text += ', ' + Tools.getAbility(template.abilities['S']).name;
 					text += '</p>';
 				}
 			} else if (pokemon.ability) {
@@ -751,24 +792,28 @@ var BattleTooltips = (function () {
 	// Functions to calculate speed ranges of an opponent.
 	BattleTooltips.prototype.getTemplateMinSpeed = function (template, level) {
 		var baseSpe = template.baseStats['spe'];
-		if (this.battle.gen < 7) {
-			var overrideStats = BattleTeambuilderTable['gen' + this.battle.gen].overrideStats[template.id];
+		var tier = this.battle.tier;
+		var gen = this.battle.gen;
+		if (gen < 7) {
+			var overrideStats = BattleTeambuilderTable['gen' + gen].overrideStats[template.id];
 			if (overrideStats && 'spe' in overrideStats) baseSpe = overrideStats['spe'];
 		}
 
-		var nature = (this.battle.tier.indexOf('Random Battle') >= 0 || this.battle.gen < 3) ? 1 : 0.9;
+		var nature = (tier.indexOf('Random Battle') >= 0 || (tier.indexOf('Random') >= 0 && tier.indexOf('Battle') >= 0 && gen >= 7) || gen < 3) ? 1 : 0.9;
 		return Math.floor(Math.floor(2 * baseSpe * level / 100 + 5) * nature);
 	};
 	BattleTooltips.prototype.getTemplateMaxSpeed = function (template, level) {
 		var baseSpe = template.baseStats['spe'];
-		if (this.battle.gen < 7) {
-			var overrideStats = BattleTeambuilderTable['gen' + this.battle.gen].overrideStats[template.id];
+		var tier = this.battle.tier;
+		var gen = this.battle.gen;
+		if (gen < 7) {
+			var overrideStats = BattleTeambuilderTable['gen' + gen].overrideStats[template.id];
 			if (overrideStats && 'spe' in overrideStats) baseSpe = overrideStats['spe'];
 		}
 
-		var iv = (this.battle.gen < 3) ? 30 : 31;
-		var value = iv + ((this.battle.tier.indexOf('Random Battle') >= 0 && this.battle.gen >= 3) ? 21 : 63);
-		var nature = (this.battle.tier.indexOf('Random Battle') >= 0 || this.battle.gen < 3) ? 1 : 1.1;
+		var iv = (gen < 3) ? 30 : 31;
+		var value = iv + (((tier.indexOf('Random') >= 0 && tier.indexOf('Battle') >= 0 && gen >= 7) || (tier.indexOf('Random Battle') >= 0 && gen >= 3)) ? 21 : 63);
+		var nature = (this.battle.tier.indexOf('Random Battle') >= 0 || gen < 3) ? 1 : 1.1;
 		return Math.floor(Math.floor(Math.floor(2 * baseSpe + value) * level / 100 + 5) * nature);
 	};
 

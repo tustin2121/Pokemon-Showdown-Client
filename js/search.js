@@ -585,6 +585,7 @@
 					if (!(learnsetid in BattleTeambuilderTable.learnsets)) {
 						learnsetid = toId(BattlePokedex[learnsetid].baseSpecies);
 					}
+					if (!learnsetid) continue; // Pokestar Pokemon
 					while (true) {
 						var learnset = BattleTeambuilderTable.learnsets[learnsetid];
 						if (learnset && (filters[i][1] in learnset) && learnset[filters[i][1]].indexOf(genChar) >= 0) {
@@ -810,11 +811,9 @@
 			var tierSet = table.tierSet;
 			var slices = table.formatSlices;
 			var agTierSet = [];
-			if (this.gen === 6) agTierSet = [['header', "AG"], ['pokemon', 'rayquazamega']];
+			if (this.gen >= 6) agTierSet = [['header', "AG"], ['pokemon', 'rayquazamega']];
 			if (format === 'ubers' || format === 'uber') tierSet = tierSet.slice(slices.Uber);
-			else if (this.gen === 7 && format === 'vgc2017') tierSet = tierSet.slice(slices.Legal);
-			else if (this.gen === 7 && (format === 'pokebankubers' || format === 'pokebankanythinggoes')) tierSet = tierSet.slice(slices.Uber);
-			else if (this.gen === 7 && (format === 'ou' || format === 'pokebankou')) tierSet = tierSet.slice(slices.OU);
+			else if (format === 'vgc2017') tierSet = tierSet.slice(slices.Legal);
 			else if (format === 'ou') tierSet = tierSet.slice(slices.OU);
 			else if (format === 'uu') tierSet = tierSet.slice(slices.UU);
 			else if (format === 'ru') tierSet = tierSet.slice(slices.RU);
@@ -824,7 +823,6 @@
 			else if (format === 'cap') tierSet = tierSet.slice(0, slices.Uber).concat(tierSet.slice(slices.OU));
 			else if (format === 'anythinggoes' || format === 'ag') tierSet = agTierSet.concat(tierSet.slice(slices.Uber));
 			else if (format === 'balancedhackmons' || format === 'bh') tierSet = agTierSet.concat(tierSet.slice(slices.Uber));
-			else if (this.gen === 7) tierSet = tierSet.slice(slices.Uber);
 			else if (format === 'doublesou') tierSet = tierSet.slice(slices.DOU);
 			else if (format === 'doublesuu') tierSet = tierSet.slice(slices.DUU);
 			else if (format === 'doublesnu') tierSet = tierSet.slice(slices.DNU);

@@ -868,9 +868,12 @@
 
 			case 'avatar':
 				var parts = target.split(',');
-				var avatar = parseInt(parts[0], 10);
+				var avatarString = toId(parts[0]);
+				var avatar = parseInt(avatarString, 10);
 				if (avatar) {
 					Tools.prefs('avatar', avatar);
+				} else if (['bw2elesa', 'teamrocket', 'yellow', 'zinnia', 'clemont'].indexOf(avatarString) > -1) { // custom avatar exceptions
+					Tools.prefs('avatar', '#' + avatarString);
 				}
 				return text; // Send the /avatar command through to the server.
 
@@ -1483,7 +1486,9 @@
 			}
 			var userid = toUserid(name);
 
-			if (app.ignore[userid] && (name.charAt(0) === ' ' || name.charAt(0) === '+')) return;
+			var speakerHasAuth = " +\u2606".indexOf(name.charAt(0)) < 0;
+			var readerHasAuth = this.users && " +\u2606".indexOf((this.users[app.user.get('userid')] || ' ').charAt(0)) < 0;
+			if (app.ignore[userid] && !speakerHasAuth && !readerHasAuth) return;
 
 			// Add this user to the list of people who have spoken recently.
 			this.markUserActive(userid);
@@ -1617,6 +1622,7 @@
 			'@': 1,
 			'%': 1,
 			'*': 1,
+			'\u2606': 1,
 			'\u2605': 1,
 			'+': 1,
 			' ': 0,
@@ -1631,12 +1637,13 @@
 			'@': 4,
 			'%': 5,
 			'*': 6,
-			'\u2605': 7,
-			'+': 8,
-			' ': 9,
-			'!': 10,
-			'✖': 11,
-			'‽': 12
+			'\u2606': 7,
+			'\u2605': 8,
+			'+': 9,
+			' ': 10,
+			'!': 11,
+			'✖': 12,
+			'‽': 13
 		},
 		toggleUserlist: function (e) {
 			e.preventDefault();

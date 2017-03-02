@@ -937,6 +937,7 @@ var Sprite = (function () {
 	Sprite.prototype.removeTransform = function (species) {
 		if (this.oldsp) {
 			var sp = this.oldsp;
+			this.cryurl = sp.cryurl;
 			this.sp = sp;
 			this.oldsp = null;
 			this.elem.attr('src', sp.url);
@@ -6488,8 +6489,8 @@ var Battle = (function () {
 			var name = args[1].slice(0, pipeIndex);
 			var rank = name.charAt(0);
 			if (this.ignoreSpects && (rank === ' ' || rank === '+')) break;
-			if (this.ignoreOpponent && rank === '\u2605' && toUserid(name) !== app.user.get('userid')) break;
-			if (window.app && app.ignore && app.ignore[toUserid(name)] && (rank === ' ' || rank === '+' || rank === '\u2605')) break;
+			if (this.ignoreOpponent && (rank === '\u2605' || rank === '\u2606') && toUserid(name) !== app.user.get('userid')) break;
+			if (window.app && app.ignore && app.ignore[toUserid(name)] && (rank === ' ' || rank === '+' || rank === '\u2605' || rank === '\u2606')) break;
 			var message = args[1].slice(pipeIndex + 1);
 			var isHighlighted = window.app && app.rooms && app.rooms[this.roomid].getHighlight(message);
 			var parsedMessage = Tools.parseChatMessage(message, name, '', isHighlighted);
