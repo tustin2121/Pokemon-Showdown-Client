@@ -341,8 +341,6 @@
 				}
 			}
 
-			buf += '<div class="storage-warning"></div>';
-
 			var newButtonText = "New Team";
 			if (filterFolder) newButtonText = "New Team in folder";
 			if (filterFormat && filterFormat !== 'gen7') {
@@ -424,12 +422,6 @@
 				buf += '<p><strong>Clearing your cookies (specifically, <code>localStorage</code>) will delete your teams.</strong></p>';
 				buf += '<button name="backup" class="button"><i class="fa fa-upload"></i> Backup/Restore all teams</button>';
 				buf += '<p>If you want to clear your cookies or <code>localStorage</code>, you can use the Backup/Restore feature to save your teams as text first.</p>';
-				var self = this;
-				if (navigator.storage && navigator.storage.persisted) {
-					navigator.storage.persisted().then(function (state) {
-						self.updatePersistence(state);
-					});
-				}
 			} else {
 				buf += '<button name="backup" class="button"><i class="fa fa-upload"></i> Restore teams from backup</button>';
 			}
@@ -442,13 +434,6 @@
 				$pane.scrollTop(this.teamScrollPos);
 				this.teamScrollPos = 0;
 			}
-		},
-		updatePersistence: function (state) {
-			if (state) {
-				this.$('.storage-warning').html('');
-				return;
-			}
-			this.$('.storage-warning').html('');
 		},
 		greeting: function (answer, button) {
 			var buf = '<p><strong>' + $(button).html() + '</p></strong>';
@@ -692,25 +677,7 @@
 			}
 			this.back();
 		},
-		"new": function (atTop) {
-			var newTeam = this.createTeam();
-
-			teams.push(newTeam);
-			this.edit(teams.length - 1);
-		},
-		newTop: function () {
-			var newTeam = this.createTeam();
-
-			teams.unshift(newTeam);
-			for (var room in app.rooms) {
-				var selection = app.rooms[room].$('button.teamselect').val();
-				if (!selection || selection === 'random') continue;
-				var obj = app.rooms[room].id === "" ? app.rooms[room] : app.rooms[room].tournamentBox;
-				obj.curTeamIndex++;
-			}
-			this.edit(0);
-		},
-		createTeam: function () {
+		"new": function () {
 			var format = this.curFolder;
 			var folder = '';
 			if (format && format.charAt(format.length - 1) === '/') {
@@ -724,15 +691,31 @@
 				folder: folder,
 				iconCache: ''
 			};
-
-			if (navigator.storage && navigator.storage.persist) {
-				var self = this;
-				navigator.storage.persist().then(function (state) {
-					self.updatePersistence(state);
-				});
+			teams.push(newTeam);
+			this.edit(teams.length - 1);
+		},
+		newTop: function () {
+			var format = this.curFolder;
+			var folder = '';
+			if (format && format.charAt(format.length - 1) === '/') {
+				folder = format.slice(0, -1);
+				format = '';
 			}
-
-			return newTeam;
+			var newTeam = {
+				name: 'Untitled ' + (teams.length + 1),
+				format: format,
+				team: '',
+				folder: folder,
+				iconCache: ''
+			};
+			teams.unshift(newTeam);
+			for (var room in app.rooms) {
+				var selection = app.rooms[room].$('button.teamselect').val();
+				if (!selection || selection === 'random') continue;
+				var obj = app.rooms[room].id === "" ? app.rooms[room] : app.rooms[room].tournamentBox;
+				obj.curTeamIndex++;
+			}
+			this.edit(0);
 		},
 		"import": function () {
 			if (this.exportMode) return this.back();
