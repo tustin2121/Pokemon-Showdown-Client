@@ -1479,9 +1479,11 @@
 		},
 		addChat: function (name, message, pm, msgTime) {
 			var alias = undefined;
+			var nameid = name;
 			if (name.indexOf('{') > 0) {
-				alias = name.substring(name.indexOf('{')+1);
+				alias = nameid = name.substring(name.indexOf('{')+1);
 				name = name.substring(0, name.indexOf('{'));
+				if (alias === '[OC]') nameid = name;
 				alias = Tools.escapeHTML(alias);
 			}
 			var userid = toUserid(name);
@@ -1505,8 +1507,8 @@
 				var oName = pmuserid === app.user.get('userid') ? name : pm;
 				var clickableName = '<span class="username" data-name="' + Tools.escapeHTML(name) + '">' + Tools.escapeHTML(name.substr(1)) + '</span>';
 				this.$chat.append(
-					'<div class="chat chatmessage-' + toId(name) + '">' + ChatRoom.getTimestamp('lobby', msgTime) +
-					'<strong style="' + hashColor(userid) + '"'+(alias?' title="'+alias+'"':'')+'>' + clickableName + ':</strong>' +
+					'<div class="chat chatmessage-' + toId(nameid) + '">' + ChatRoom.getTimestamp('lobby', msgTime) +
+					'<strong style="' + hashColor(userid) + '"'+(alias?' title="'+alias+'" alt="'+alias+'"':'')+'>' + clickableName + ':</strong>' +
 					'<span class="message-pm"><i class="pmnote" data-name="' + Tools.escapeHTML(oName) + '">(Private to ' + Tools.escapeHTML(pm) + ')</i> ' + Tools.parseMessage(message) + '</span>' +
 					'</div>'
 				);
@@ -1528,7 +1530,7 @@
 			}
 
 			var isHighlighted = userid !== app.user.get('userid') && this.getHighlight(message);
-			var parsedMessage = Tools.parseChatMessage(message, name, ChatRoom.getTimestamp('chat', msgTime), isHighlighted);
+			var parsedMessage = Tools.parseChatMessage(message, { name:name, alias:alias, nameid:nameid }, ChatRoom.getTimestamp('chat', msgTime), isHighlighted);
 			if (!$.isArray(parsedMessage)) parsedMessage = [parsedMessage];
 			for (var i = 0; i < parsedMessage.length; i++) {
 				if (!parsedMessage[i]) continue;
@@ -1537,7 +1539,9 @@
 
 			if (mayNotify && isHighlighted) {
 				if (!Tools.prefs('mute') && Tools.prefs('notifvolume')) {
+					try {
 					soundManager.getSoundById('notif').setVolume(Tools.prefs('notifvolume')).play();
+					} catch (e) { console.error(`Can't play notify sound:`, e); }
 				}
 				var $lastMessage = this.$chat.children().last();
 				var notifyTitle = "Mentioned by " + name + (this.id === 'lobby' ? '' : " in " + this.title);

@@ -72,7 +72,7 @@ function combineInherited(...objs) {
 	index = index.concat(Object.keys(Tools.data.TypeChart).map(x => toId(x) + ' type'));
 	index = index.concat(['physical', 'special', 'status'].map(x => toId(x) + ' category'));
 	index = index.concat(['monster', 'water1', 'bug', 'flying', 'field', 'fairy', 'grass', 'humanlike', 'water3', 'mineral', 'amorphous', 'water2', 'ditto', 'dragon', 'undiscovered'].map(x => toId(x) + ' egggroup'));
-	index = index.concat(['ou', 'uu', 'ru', 'nu', 'pu', 'fu', 'lc', 'nfe', 'uber', 'bl', 'bl2', 'bl3', 'bl4', 'cap', 'prism', 'glitch'].map(x => toId(x) + ' tier'));
+	index = index.concat(['ou', 'uu', 'ru', 'nu', 'pu', 'fu', 'lc', 'nfe', 'uber', 'bl', 'bl2', 'bl3', 'bl4', 'cap', 'tppleague', 'prism', 'glitch'].map(x => toId(x) + ' tier'));
 
 	try {
 		for (const file of fs.readdirSync(path.resolve(rootDir, '../dex.pokemonshowdown.com/articles/'))) {
@@ -401,7 +401,7 @@ process.stdout.write("Building `data/teambuilder-tables.js`... ");
 			if (isDoubles) {
 				return ["DUber", "DOU", "DUU", "DNU", "NFE"];
 			}
-			return ["CAP", "Prism", "Glitch", "Uber", "OU", "BL", "(OU)", "UU", "BL2", "RU", "BL3", "NU", "BL4", "PU", "FU", "NFE", "LC Uber", "LC"];
+			return ["CAP", "TPPLeague", "Prism", "Glitch", "Uber", "OU", "BL", "(OU)", "UU", "BL2", "RU", "BL3", "NU", "BL4", "PU", "FU", "NFE", "LC Uber", "LC"];
 		})();
 
 		for (const tier of tierOrder) {

@@ -439,6 +439,13 @@ var Tools = {
 		return Tools.escapeHTML(formatid);
 	},
 	parseChatMessage: function (message, name, timestamp, isHighlighted) {
+		var alias, nameid = name;
+		if ($.isPlainObject(name)) {
+			alias = name.alias;
+			nameid = name.nameid;
+			name = name.name;
+		}
+		
 		var showMe = !((Tools.prefs('chatformatting') || {}).hideme);
 		var group = ' ';
 		if (!/[A-Za-z0-9]/.test(name.charAt(0))) {
@@ -446,10 +453,16 @@ var Tools = {
 			group = name.charAt(0);
 			name = name.substr(1);
 		}
+		if (!/[A-Za-z0-9]/.test(nameid.charAt(0))) nameid = nameid.substr(1);
+		if (nameid !== name) group = ' '; // Remove group when speaking as alias
 		var color = hashColor(toId(name));
-		var clickableName = '<small>' + Tools.escapeHTML(group) + '</small><span class="username" data-name="' + Tools.escapeHTML(name) + '">' + Tools.escapeHTML(name) + '</span>';
+		var clickableName = '<small>' + Tools.escapeHTML(group) + '</small><span class="username" data-name="' + Tools.escapeHTML(nameid) + '">' + Tools.escapeHTML(name) + (nameid!==name?'<small>*</small>':'') + '</span>';
 		var hlClass = isHighlighted ? ' highlighted' : '';
-		var mineClass = (window.app && app.user && app.user.get('name') === name ? ' mine' : '');
+		var mineClass = (window.app && app.user && app.user.get('name') === nameid ? ' mine' : '');
+		
+		if (alias) {
+			color += '" title="'+alias+'" alt="'+alias; //Insert this onto the end of the style css
+		}
 
 		var cmd = '';
 		var target = '';
@@ -465,11 +478,11 @@ var Tools = {
 
 		switch (cmd) {
 		case 'me':
-			if (!showMe) return '<div class="chat chatmessage-' + toId(name) + hlClass + mineClass + '">' + timestamp + '<strong style="' + color + '">' + clickableName + ':</strong> <em>' + Tools.parseMessage(' ' + target).slice(1) + '</em></div>';
-			return '<div class="chat chatmessage-' + toId(name) + hlClass + mineClass + '">' + timestamp + '<strong style="' + color + '">&bull;</strong> <em>' + clickableName + ' <i>' + Tools.parseMessage(' ' + target).slice(1) + '</i></em></div>';
+			if (!showMe) return '<div class="chat chatmessage-' + toId(nameid) + hlClass + mineClass + '">' + timestamp + '<strong style="' + color + '">' + clickableName + ':</strong> <em>' + Tools.parseMessage(' ' + target).slice(1) + '</em></div>';
+			return '<div class="chat chatmessage-' + toId(nameid) + hlClass + mineClass + '">' + timestamp + '<strong style="' + color + '">&bull;</strong> <em>' + clickableName + ' <i>' + Tools.parseMessage(' ' + target).slice(1) + '</i></em></div>';
 		case 'mee':
-			if (!showMe) return '<div class="chat chatmessage-' + toId(name) + hlClass + mineClass + '">' + timestamp + '<strong style="' + color + '">' + clickableName + ':</strong> <em>' + Tools.parseMessage(' ' + target).slice(1) + '</em></div>';
-			return '<div class="chat chatmessage-' + toId(name) + hlClass + mineClass + '">' + timestamp + '<strong style="' + color + '">&bull;</strong> <em>' + clickableName + '<i>' + Tools.parseMessage(' ' + target).slice(1) + '</i></em></div>';
+			if (!showMe) return '<div class="chat chatmessage-' + toId(nameid) + hlClass + mineClass + '">' + timestamp + '<strong style="' + color + '">' + clickableName + ':</strong> <em>' + Tools.parseMessage(' ' + target).slice(1) + '</em></div>';
+			return '<div class="chat chatmessage-' + toId(nameid) + hlClass + mineClass + '">' + timestamp + '<strong style="' + color + '">&bull;</strong> <em>' + clickableName + '<i>' + Tools.parseMessage(' ' + target).slice(1) + '</i></em></div>';
 		case 'invite':
 			var roomid = toRoomid(target);
 			return [
@@ -477,9 +490,9 @@ var Tools = {
 				'<div class="notice"><button name="joinRoom" value="' + roomid + '">Join ' + roomid + '</button></div>'
 			];
 		case 'announce':
-			return '<div class="chat chatmessage-' + toId(name) + hlClass + mineClass + '">' + timestamp + '<strong style="' + color + '">' + clickableName + ':</strong> <span class="message-announce">' + Tools.parseMessage(target) + '</span></div>';
+			return '<div class="chat chatmessage-' + toId(nameid) + hlClass + mineClass + '">' + timestamp + '<strong style="' + color + '">' + clickableName + ':</strong> <span class="message-announce">' + Tools.parseMessage(target) + '</span></div>';
 		case 'log':
-			return '<div class="chat chatmessage-' + toId(name) + hlClass + mineClass + '">' + timestamp + '<span class="message-log">' + Tools.parseMessage(target) + '</span></div>';
+			return '<div class="chat chatmessage-' + toId(nameid) + hlClass + mineClass + '">' + timestamp + '<span class="message-log">' + Tools.parseMessage(target) + '</span></div>';
 		case 'data-pokemon':
 			var buf = '<li class="result">';
 			var template = Tools.getTemplate(target);
@@ -533,7 +546,7 @@ var Tools = {
 		case 'error':
 			return '<div class="chat message-error">' + Tools.escapeHTML(target) + '</div>';
 		case 'html':
-			return '<div class="chat chatmessage-' + toId(name) + hlClass + mineClass + '">' + timestamp + '<strong style="' + color + '">' + clickableName + ':</strong> <em>' + Tools.sanitizeHTML(target) + '</em></div>';
+			return '<div class="chat chatmessage-' + toId(nameid) + hlClass + mineClass + '">' + timestamp + '<strong style="' + color + '">' + clickableName + ':</strong> <em>' + Tools.sanitizeHTML(target) + '</em></div>';
 		case 'raw':
 			return '<div class="chat">' + Tools.sanitizeHTML(target) + '</div>';
 		default:
@@ -541,7 +554,7 @@ var Tools = {
 			if (!name) {
 				return '<div class="chat' + hlClass + '">' + timestamp + '<em>' + Tools.parseMessage(message) + '</em></div>';
 			}
-			return '<div class="chat chatmessage-' + toId(name) + hlClass + mineClass + '">' + timestamp + '<strong style="' + color + '">' + clickableName + ':</strong> <em>' + Tools.parseMessage(message) + '</em></div>';
+			return '<div class="chat chatmessage-' + toId(nameid) + hlClass + mineClass + '">' + timestamp + '<strong style="' + color + '">' + clickableName + ':</strong> <em>' + Tools.parseMessage(message) + '</em></div>';
 		}
 	},
 

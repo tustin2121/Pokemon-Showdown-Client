@@ -148,11 +148,20 @@
 		 *********************************************************/
 
 		addPM: function (name, message, target) {
+			var cName = name;
+			var alias = undefined;
+			var nameid = name;
+			if (name.indexOf('{') > 0) {
+				alias = nameid = name.substring(name.indexOf('{')+1);
+				name = name.substring(0, name.indexOf('{'));
+				if (alias === '[OC]') nameid = name;
+				alias = Tools.escapeHTML(alias);
+			}
 			var userid = toUserid(name);
 			if (app.ignore[userid] && name.substr(0, 1) in {' ': 1, '!': 1, '✖': 1, '‽': 1}) return;
 
-			var isSelf = (toId(name) === app.user.get('userid'));
-			var oName = isSelf ? target : name;
+			var isSelf = (toId(nameid) === app.user.get('userid'));
+			var oName = isSelf ? target : nameid;
 			Storage.logChat('pm-' + toId(oName), '' + name + ': ' + message);
 
 			var $pmWindow = this.openPM(oName, true);
@@ -161,7 +170,7 @@
 
 			var autoscroll = ($chatFrame.scrollTop() + 60 >= $chat.height() - $chatFrame.height());
 
-			var parsedMessage = Tools.parseChatMessage(message, name, ChatRoom.getTimestamp('pms'));
+			var parsedMessage = Tools.parseChatMessage(message, {name:name, alias:alias, nameid:nameid}, ChatRoom.getTimestamp('pms'));
 			if (!$.isArray(parsedMessage)) parsedMessage = [parsedMessage];
 			for (var i = 0; i < parsedMessage.length; i++) {
 				if (!parsedMessage[i]) continue;
@@ -171,7 +180,7 @@
 			var $lastMessage = $chat.children().last();
 			var textContent = $lastMessage.html().indexOf('<span class="spoiler">') >= 0 ? '(spoiler)' : $lastMessage.children().last().text();
 			if (textContent && app.curSideRoom && app.curSideRoom.addPM && Tools.prefs('inchatpm')) {
-				app.curSideRoom.addPM(name, textContent, target);
+				app.curSideRoom.addPM(cName, textContent, target);
 			}
 
 			if (!isSelf && textContent) {
@@ -182,7 +191,7 @@
 				$chatFrame.scrollTop($chat.height());
 			}
 
-			if (!$pmWindow.hasClass('focused') && name.substr(1) !== app.user.get('name')) {
+			if (!$pmWindow.hasClass('focused') && nameid.substr(1) !== app.user.get('name')) {
 				$pmWindow.find('h3').addClass('pm-notifying');
 			}
 		},

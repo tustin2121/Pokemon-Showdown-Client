@@ -6487,13 +6487,21 @@ var Battle = (function () {
 		case 'c':
 			var pipeIndex = args[1].indexOf('|');
 			var name = args[1].slice(0, pipeIndex);
+			var alias = undefined;
+			var nameid = name;
+			if (name.indexOf('{') > 0) {
+				alias = nameid = name.substring(name.indexOf('{')+1);
+				name = name.substring(0, name.indexOf('{'));
+				if (alias === '[OC]') nameid = name;
+				alias = Tools.escapeHTML(alias);
+			}
 			var rank = name.charAt(0);
 			if (this.ignoreSpects && (rank === ' ' || rank === '+')) break;
 			if (this.ignoreOpponent && (rank === '\u2605' || rank === '\u2606') && toUserid(name) !== app.user.get('userid')) break;
 			if (window.app && app.ignore && app.ignore[toUserid(name)] && (rank === ' ' || rank === '+' || rank === '\u2605' || rank === '\u2606')) break;
 			var message = args[1].slice(pipeIndex + 1);
 			var isHighlighted = window.app && app.rooms && app.rooms[this.roomid].getHighlight(message);
-			var parsedMessage = Tools.parseChatMessage(message, name, '', isHighlighted);
+			var parsedMessage = Tools.parseChatMessage(message, {name:name, alias:alias, nameid:nameid}, '', isHighlighted);
 			if (!$.isArray(parsedMessage)) parsedMessage = [parsedMessage];
 			for (var i = 0; i < parsedMessage.length; i++) {
 				if (!parsedMessage[i]) continue;
