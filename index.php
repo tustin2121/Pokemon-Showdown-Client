@@ -70,7 +70,7 @@
 			soundManager.setup({url: 'swf/'});
 		</script>
 		<script src="js/lib/html-css-sanitizer-minified.js"></script>
-		<script src="js/lib/lodash.compat.js"></script>
+		<script src="js/lib/lodash.core.js"></script>
 		<script src="js/lib/backbone.js"></script>
 		<script src="js/lib/d3.v3.min.js"></script>
 
@@ -78,7 +78,7 @@
 			document.getElementById('loading-message').innerHTML += ' DONE<br />Loading data...';
 		</script>
 
-		<script src="js/config.js"></script>
+		<script src="config/config.js"></script>
 		<script src="js/battledata.js"></script>
 		<script src="data/pokedex-mini.js"></script>
 		<script src="data/typechart.js"></script>

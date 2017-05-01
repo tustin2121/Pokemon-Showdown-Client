@@ -345,13 +345,13 @@ var linkRegex = new RegExp(
 			'/' +
 			'(?:' +
 				'(?:' +
-					'[^\\s()&]|&amp;|&quot;' +
+					'[^\\s()&<>]|&amp;|&quot;' +
 					'|' + parenthesisRegex +
 				')*' +
 				// URLs usually don't end with punctuation, so don't allow
 				// punctuation symbols that probably aren't related to URL.
 				'(?:' +
-					'[^\\s`()\\[\\]{}\'".,!?;:&]' +
+					'[^\\s`()\\[\\]{}\'".,!?;:&<>]' +
 					'|' + parenthesisRegex +
 				')' +
 			')?' +
@@ -645,6 +645,9 @@ var Tools = {
 			});
 			// [[blah]]
 			str = str.replace(/\[\[(?![< ])(?:(?:(youtube|yt|wiki)\: ?)?([^<`]*?[^< ])?)\]\]/g, function (match, p1, p2) {
+				if (match === '[[]]') {
+					return (p1 ? p1 : '') + match + (p2 ? p2 : '');
+				}
 				var query = p2;
 				if (p1 === 'wiki') {
 					query = Tools.escapeHTML(encodeURIComponent(Tools.unescapeHTML(query)));
@@ -1160,6 +1163,7 @@ var Tools = {
 			w: 96,
 			h: 96,
 			url: Tools.resourcePrefix + 'sprites/',
+			pixelated: true,
 			isBackSprite: false,
 			cryurl: '',
 			shiny: pokemon.shiny
@@ -1220,22 +1224,25 @@ var Tools = {
 			return spriteData;
 		}
 
-		if (animationData[facing]) {
-			if (animationData[facing + 'f'] && pokemon.gender === 'F') {
-				name += '-f';
-				facing += 'f';
-			}
-			if (!Tools.prefs('noanim') && genNum >= 5) {
-				dir = gen + 'ani' + dir;
+		// Gender differences don't exist prior to Gen 4
+		if (genNum >= 4) {
+			if (animationData[facing]) {
+				if (animationData[facing + 'f'] && pokemon.gender === 'F') {
+					name += '-f';
+					facing += 'f';
+				}
+				if (!Tools.prefs('noanim') && genNum >= 5) {
+					dir = gen + 'ani' + dir;
 
-				spriteData.w = animationData[facing].w;
-				spriteData.h = animationData[facing].h;
-				spriteData.url += dir + '/' + name + '.gif';
-				if (genNum >= 6) spriteData.pixelated = false;
-				return spriteData;
+					spriteData.w = animationData[facing].w;
+					spriteData.h = animationData[facing].h;
+					spriteData.url += dir + '/' + name + '.gif';
+					if (genNum >= 6) spriteData.pixelated = false;
+					return spriteData;
+				}
+			} else if (animationData['frontf'] && pokemon.gender === 'F') {
+				name += '-f';
 			}
-		} else if (animationData['frontf'] && pokemon.gender === 'F') {
-			name += '-f';
 		}
 
 		// There is no entry or enough data in pokedex-mini.js
@@ -1464,7 +1471,23 @@ var Tools = {
 			naviathan: 1140 + 19,
 			crucibelle: 1140 + 20,
 			crucibellemega: 1140 + 21,
-			kerfluffle: 1140 + 22
+			kerfluffle: 1140 + 22,
+
+			syclar: 1164 + 0,
+			embirch: 1164 + 1,
+			flarelm: 1164 + 2,
+			breezi: 1164 + 3,
+			scratchet: 1164 + 4,
+			necturine: 1164 + 5,
+			cupra: 1164 + 6,
+			argalis: 1164 + 7,
+			brattler: 1164 + 8,
+			cawdet: 1164 + 9,
+			volkritter: 1164 + 10,
+			snugglow: 1164 + 11,
+			floatoy: 1164 + 12,
+			caimanoe: 1164 + 13,
+			pluffle: 1164 + 14
 		};
 
 		if (altNums[id]) {
