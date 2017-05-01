@@ -203,7 +203,7 @@ Storage.prefs = function (prop, value, save) {
 	// set preference
 	if (value === null) {
 		delete this.prefs.data[prop];
-	} else if (this.prefs.data[prop] === value) {
+	} else if (this.prefs.data[prop] === value && typeof value !== 'object') {
 		return false; // no need to save
 	} else {
 		this.prefs.data[prop] = value;
@@ -995,9 +995,6 @@ Storage.importTeam = function (text, teams) {
 		} else if (line.substr(0, 11) === 'Happiness: ') {
 			line = line.substr(11);
 			curSet.happiness = +line;
-		} else if (line.substr(0, 9) === 'Ability: ') {
-			line = line.substr(9);
-			curSet.ability = line;
 		} else if (line.substr(0, 5) === 'EVs: ') {
 			line = line.substr(5);
 			var evLines = line.split('/');

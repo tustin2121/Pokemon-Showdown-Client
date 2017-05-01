@@ -134,16 +134,10 @@
 			} else if (e.keyCode === 34) { // Pg Dn key
 				this.$chatFrame.scrollTop(this.$chatFrame.scrollTop() + this.$chatFrame.height() - 60);
 			} else if (e.keyCode === 9 && !e.ctrlKey) { // Tab key
-				if (!e.shiftKey) {
-					if (this.handleTabComplete(this.$chatbox, false)) {
-						e.preventDefault();
-						e.stopPropagation();
-					}
-				} else { // Shift + Tab
-					if (this.handleTabComplete(this.$chatbox, true)) {
-						e.preventDefault();
-						e.stopPropagation();
-					}
+				var reverse = !!e.shiftKey; // Shift+Tab reverses direction
+				if (this.handleTabComplete(this.$chatbox, reverse)) {
+					e.preventDefault();
+					e.stopPropagation();
 				}
 			} else if (e.keyCode === 38 && !e.shiftKey && !e.altKey) { // Up key
 				if (this.chatHistoryUp(this.$chatbox, e)) {
@@ -152,6 +146,11 @@
 				}
 			} else if (e.keyCode === 40 && !e.shiftKey && !e.altKey) { // Down key
 				if (this.chatHistoryDown(this.$chatbox, e)) {
+					e.preventDefault();
+					e.stopPropagation();
+				}
+			} else if (e.keyCode === 27 && !e.shiftKey && !e.altKey) { // Esc key
+				if (this.undoTabComplete(this.$chatbox)) {
 					e.preventDefault();
 					e.stopPropagation();
 				}
@@ -280,8 +279,9 @@
 			var users = this.users || (app.rooms['lobby'] ? app.rooms['lobby'].users : {});
 
 			var text = $textbox.val();
+			var prefix = text.substr(0, idx);
 
-			if (this.tabComplete.cursor !== null && text.substr(0, idx) === this.tabComplete.cursor) {
+			if (this.tabComplete.cursor !== null && prefix === this.tabComplete.cursor) {
 				// The user is cycling through the candidate names.
 				if (reverse) {
 					this.tabComplete.index--;
@@ -294,11 +294,11 @@
 				// This is a new tab completion.
 
 				// There needs to be non-whitespace to the left of the cursor.
-				var m1 = /^(.*?)([A-Za-z0-9][^, ]*)$/.exec(text.substr(0, idx));
-				var m2 = /^(.*?)([A-Za-z0-9][^, ]* [^, ]*)$/.exec(text.substr(0, idx));
+				var m1 = /^([\s\S]*?)([A-Za-z0-9][^, \n]*)$/.exec(prefix);
+				var m2 = /^([\s\S]*?)([A-Za-z0-9][^, \n]* [^, ]*)$/.exec(prefix);
 				if (!m1 && !m2) return true;
 
-				this.tabComplete.prefix = text;
+				this.tabComplete.prefix = prefix;
 				var idprefix = (m1 ? toId(m1[2]) : '');
 				var spaceprefix = (m2 ? m2[2].replace(/[^A-Za-z0-9 ]+/g, '').toLowerCase() : '');
 				var candidates = []; // array of [candidate userid, prefix length]
@@ -355,6 +355,13 @@
 			this.tabComplete.cursor = fullPrefix;
 			return true;
 		},
+		undoTabComplete: function ($textbox) {
+			var cursorPosition = $textbox.prop('selectionEnd');
+			if (!this.tabComplete.cursor || $textbox.val().substr(0, cursorPosition) !== this.tabComplete.cursor) return false;
+			$textbox.val(this.tabComplete.prefix + $textbox.val().substr(cursorPosition));
+			$textbox.prop('selectionEnd', this.tabComplete.prefix.length);
+			return true;
+		},
 
 		// command parsing
 
@@ -377,7 +384,10 @@
 			switch (cmd.toLowerCase()) {
 			case 'chall':
 			case 'challenge':
-				var targets = target.split(',').map($.trim);
+				var targets = target.split(',');
+				for (var i = 0; i < targets.length; i++) {
+					targets[i] = $.trim(targets[i]);
+				}
 
 				var self = this;
 				var challenge = function (targets) {
@@ -747,8 +757,14 @@
 				var targets = target.split(',');
 				var formatTargeting = false;
 				var formats = {};
+				var gens = {};
 				for (var i = 1, len = targets.length; i < len; i++) {
-					formats[toId(targets[i])] = 1;
+					targets[i] = $.trim(targets[i]);
+					if (targets[i].length === 4 && targets[i].substr(0, 3) === 'gen') {
+						gens[targets[i]] = 1;
+					} else {
+						formats[toId(targets[i])] = 1;
+					}
 					formatTargeting = true;
 				}
 
@@ -771,7 +787,7 @@
 						var row = data[i];
 						if (!row) return self.add('|raw|Error: corrupted ranking data');
 						var formatId = toId(row.formatid);
-						if (!formatTargeting || formats[formatId]) {
+						if (!formatTargeting || formats[formatId] || gens[formatId.slice(0, 4)] || (gens['gen6'] && formatId.substr(0, 3) !== 'gen')) {
 							buffer += '<tr>';
 						} else {
 							buffer += '<tr class="hidden">';
@@ -1518,15 +1534,17 @@
 			var lastMessageDates = Tools.prefs('logtimes') || (Tools.prefs('logtimes', {}), Tools.prefs('logtimes'));
 			if (!lastMessageDates[Config.server.id]) lastMessageDates[Config.server.id] = {};
 			var lastMessageDate = lastMessageDates[Config.server.id][this.id] || 0;
-			var mayNotify = msgTime > lastMessageDate && userid !== app.user.get('userid');
+			// because the time offset to the server can vary slightly, subtract it to not have it affect comparisons between dates
+			var serverMsgTime = msgTime - (this.timeOffset || 0);
+			var mayNotify = serverMsgTime > lastMessageDate && userid !== app.user.get('userid');
 
 			if (app.focused && (this === app.curSideRoom || this === app.curRoom)) {
 				this.lastMessageDate = 0;
-				lastMessageDates[Config.server.id][this.id] = msgTime;
+				lastMessageDates[Config.server.id][this.id] = serverMsgTime;
 				Storage.prefs.save();
 			} else {
 				// To be saved on focus
-				this.lastMessageDate = Math.max(this.lastMessageDate || 0, msgTime);
+				this.lastMessageDate = Math.max(this.lastMessageDate || 0, serverMsgTime);
 			}
 
 			var isHighlighted = userid !== app.user.get('userid') && this.getHighlight(message);

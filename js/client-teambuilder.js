@@ -124,7 +124,7 @@
 		update: function () {
 			teams = Storage.teams;
 			if (this.curTeam) {
-				this.ignoreEVLimits = (this.curTeam.gen < 3);
+				this.ignoreEVLimits = (this.curTeam.gen < 3 || this.curTeam.format === 'gen7balancedhackmons');
 				if (this.curSet) {
 					return this.updateSetView();
 				}
@@ -2121,7 +2121,7 @@
 
 				if (set.evs[stat] !== val || natureChange) {
 					set.evs[stat] = val;
-					if (this.curTeam.gen <= 2) {
+					if (this.ignoreEVLimits) {
 						if (set.evs['hp'] === undefined) set.evs['hp'] = 252;
 						if (set.evs['atk'] === undefined) set.evs['atk'] = 252;
 						if (set.evs['def'] === undefined) set.evs['def'] = 252;
@@ -2227,7 +2227,7 @@
 			if (val !== originalVal) slider.o.pointers[0].set(val);
 
 			if (!set.evs) set.evs = {};
-			if (this.curTeam.gen <= 2) {
+			if (this.ignoreEVLimits) {
 				if (set.evs['hp'] === undefined) set.evs['hp'] = 252;
 				if (set.evs['atk'] === undefined) set.evs['atk'] = 252;
 				if (set.evs['def'] === undefined) set.evs['def'] = 252;
@@ -2304,13 +2304,13 @@
 
 			if (this.curTeam.gen > 1) {
 				buf += '<div class="formrow"><label class="formlabel">Gender:</label><div>';
-				if (template.gender && this.curTeam.format !== 'balancedhackmons') {
+				if (template.gender && this.curTeam.format.indexOf('hackmons') < 0) {
 					var genderTable = {'M': "Male", 'F': "Female", 'N': "Genderless"};
 					buf += genderTable[template.gender];
 				} else {
 					buf += '<label><input type="radio" name="gender" value="M"' + (set.gender === 'M' ? ' checked' : '') + ' /> Male</label> ';
 					buf += '<label><input type="radio" name="gender" value="F"' + (set.gender === 'F' ? ' checked' : '') + ' /> Female</label> ';
-					if (this.curTeam.format !== 'balancedhackmons') {
+					if (this.curTeam.format.indexOf('hackmons') < 0) {
 						buf += '<label><input type="radio" name="gender" value="N"' + (!set.gender ? ' checked' : '') + ' /> Random</label>';
 					} else {
 						buf += '<label><input type="radio" name="gender" value="N"' + (set.gender === 'N' ? ' checked' : '') + ' /> Genderless</label>';
@@ -2344,6 +2344,7 @@
 
 			// happiness
 			var happiness = parseInt(this.$chart.find('input[name=happiness]').val(), 10);
+			if (isNaN(happiness)) happiness = 255;
 			if (happiness > 255) happiness = 255;
 			if (happiness < 0) happiness = 255;
 			set.happiness = happiness;
@@ -2658,7 +2659,7 @@
 				}
 			}
 			var resetSpeed = false;
-			if (moveName === 'Gyro Ball' || moveName === 'Trick Room') {
+			if (moveName === 'Gyro Ball') {
 				resetSpeed = true;
 			}
 			this.chooseMove('', resetSpeed);
@@ -2706,7 +2707,7 @@
 				this.curSet.happiness = 255;
 			} else if (moveName === 'Frustration') {
 				this.curSet.happiness = 0;
-			} else if (moveName === 'Gyro Ball' || moveName === 'Trick Room') {
+			} else if (moveName === 'Gyro Ball') {
 				minSpe = true;
 			}
 
@@ -2726,7 +2727,7 @@
 				} else if (move.id === 'metronome' || move.id === 'assist' || move.id === 'copycat' || move.id === 'mefirst') {
 					minAtk = false;
 				}
-				if (minSpe === false && (moveName === 'Gyro Ball' || moveName === 'Trick Room')) {
+				if (minSpe === false && moveName === 'Gyro Ball') {
 					minSpe = undefined;
 				}
 			}
@@ -2771,14 +2772,14 @@
 				if (baseFormat.substr(0, 8) === 'pokebank') baseFormat = baseFormat.substr(8);
 				if (this.curTeam && this.curTeam.format) {
 					if (baseFormat.substr(0, 10) === 'battlespot' || baseFormat.substr(0, 3) === 'vgc') set.level = 50;
-					if (baseFormat.substr(0, 2) === 'lc') set.level = 5;
+					if (baseFormat.substr(0, 2) === 'lc' || baseFormat.substr(0, 5) === 'caplc') set.level = 5;
 				}
 			}
 			if (set.gender) delete set.gender;
 			if (template.gender && template.gender !== 'N') set.gender = template.gender;
 			if (set.happiness) delete set.happiness;
 			if (set.shiny) delete set.shiny;
-			if (this.curTeam.format !== 'balancedhackmons') {
+			if (this.curTeam.format.indexOf('hackmons') < 0) {
 				set.item = (template.requiredItem || '');
 			} else {
 				set.item = '';
@@ -2810,8 +2811,8 @@
 			var moveCount = {
 				'Physical': 0,
 				'Special': 0,
-				'PhysicalOffense': 0,
-				'SpecialOffense': 0,
+				'PhysicalAttack': 0,
+				'SpecialAttack': 0,
 				'PhysicalSetup': 0,
 				'SpecialSetup': 0,
 				'Support': 0,
@@ -2837,6 +2838,9 @@
 				if (move.category === 'Status') {
 					if (move.id === 'batonpass' || move.id === 'healingwish' || move.id === 'lunardance') {
 						moveCount['Support']++;
+					} else if (move.id === 'metronome' || move.id === 'assist' || move.id === 'copycat' || move.id === 'mefirst') {
+						moveCount['Physical'] += 0.5;
+						moveCount['Special'] += 0.5;
 					} else if (move.id === 'naturepower') {
 						moveCount['Special']++;
 					} else if (move.id === 'protect' || move.id === 'detect' || move.id === 'spikyshield' || move.id === 'kingsshield') {
@@ -3122,6 +3126,8 @@
 
 			if (this.curTeam && this.ignoreEVLimits) {
 				evs = {hp:252, atk:252, def:252, spa:252, spd:252, spe:252};
+				if (!moveCount['PhysicalAttack']) delete evs.atk;
+				if (!moveCount['SpecialAttack']) delete evs.spa;
 				if (hasMove['gyroball'] || hasMove['trickroom']) delete evs.spe;
 				if (this.curTeam.gen === 1) delete evs.spd;
 				if (this.curTeam.gen < 3) return evs;
@@ -3245,10 +3251,16 @@
 				minusStat = 'spe';
 			} else if (!moveCount['PhysicalAttack']) {
 				minusStat = 'atk';
-			} else if (moveCount['SpecialAttack'] < 1) {
-				minusStat = 'spa';
-			} else if (moveCount['PhysicalAttack'] < 1) {
+			} else if (moveCount['SpecialAttack'] < 1 && !evs['spa']) {
+				if (moveCount['SpecialAttack'] < moveCount['PhysicalAttack']) {
+					minusStat = 'spa';
+				} else if (!evs['atk']) {
+					minusStat = 'atk';
+				}
+			} else if (moveCount['PhysicalAttack'] < 1 && !evs['atk']) {
 				minusStat = 'atk';
+			} else if (stats.def > stats.spe && stats.spd > stats.spe && !evs['spe']) {
+				minusStat = 'spe';
 			} else if (stats.def > stats.spd) {
 				minusStat = 'spd';
 			} else {

@@ -639,9 +639,8 @@
 		connect: function () {
 			if (this.down) return;
 
-			var bannedHosts = ['cool.jit.su'];
-			if (Config.server.banned || bannedHosts.indexOf(Config.server.host) >= 0) {
-				this.addPopupMessage("This server has been deleted for breaking US laws or impersonating PS global staff.");
+			if (Config.server.banned || (Config.bannedHosts && Config.bannedHosts.indexOf(Config.server.host) >= 0)) {
+				this.addPopupMessage("This server has been deleted for breaking US laws, impersonating PS global staff, or other major rulebreaking.");
 				return;
 			}
 
@@ -1107,6 +1106,8 @@
 					if (BattleFormats[id] && BattleFormats[id].isTeambuilderFormat) {
 						isTeambuilderFormat = true;
 					}
+					// make sure formats aren't out-of-order
+					if (BattleFormats[id]) delete BattleFormats[id];
 					BattleFormats[id] = {
 						id: id,
 						name: name,
@@ -1316,8 +1317,13 @@
 				if (this.curSideRoom === oldRoom) this.curSideRoom = room;
 				if (this.sideRoom === oldRoom) this.sideRoom = room;
 			}
-			if (type === BattleRoom) this.roomList.push(room);
-			if (type === ChatRoom || type === BattlesRoom) this.sideRoomList.push(room);
+			if (['', 'teambuilder', 'ladder', 'rooms'].indexOf(room.id) < 0) {
+				if (room.isSideRoom) {
+					this.sideRoomList.push(room);
+				} else {
+					this.roomList.push(room);
+				}
+			}
 			return room;
 		},
 		focusRoom: function (id) {
