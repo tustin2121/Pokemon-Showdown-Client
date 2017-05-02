@@ -90,7 +90,8 @@
 			'lcsuspecttest': 9,
 			'gen7doublesoususpecttest': 14.5,
 			'gen7balancedhackmonssuspecttest': 11,
-			'gen7mixandmegasuspecttest': 6,
+			'gen7monotypesuspecttest': 14,
+			'gen7mixandmegasuspecttest': 10.5,
 			'gen7almostanyabilitysuspecttest': 6,
 			'gen7sketchmonssuspecttest': 6
 		}

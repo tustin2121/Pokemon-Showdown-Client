@@ -396,7 +396,7 @@ process.stdout.write("Building `data/teambuilder-tables.js`... ");
 				return ["CAP", "Uber", "OU", "BL", "UU", "BL2", "RU", "BL3", "NU", "NFE", "LC Uber", "LC"];
 			}
 			if (gen === 'gen7') {
-				return ["CAP", "Uber", "OU", "BL", "UU", "BL2", "New", "TPPLeague", "Touhou", "Prism", "Glitch", "Unreleased", "NFE", "LC Uber", "LC"];
+				return ["CAP", "Uber", "OU", "BL", "(OU)", "UU", "BL2", "RU", "BL3", "NU", "BL4", "PU", "TPPLeague", "Touhou", "Prism", "Glitch", "New", "Unreleased", "NFE", "LC Uber", "LC"];
 			}
 			if (isDoubles) {
 				return ["DUber", "DOU", "DUU", "DNU", "NFE"];
