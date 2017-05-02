@@ -869,7 +869,7 @@ var Sprite = (function () {
 		if (!this.oldsp) this.oldsp = this.sp;
 		if (species.volatiles && species.volatiles.formechange) species = species.volatiles.formechange[2];
 		var sp = Tools.getSpriteData(species, this.isBackSprite ? 0 : 1, {
-			afd: this.battle.tier === "[Seasonal] Fools Festival",
+			afd: Config.server.afd, //this.battle.tier === "[Seasonal] Fools Festival",
 			gen: this.battle.gen
 		});
 		this.cryurl = sp.cryurl;
@@ -951,7 +951,7 @@ var Sprite = (function () {
 	};
 	Sprite.prototype.animSub = function () {
 		var subsp = Tools.getSpriteData('substitute', this.siden, {
-			afd: this.battle.tier === "[Seasonal] Fools Festival",
+			afd: Config.server.afd, //this.battle.tier === "[Seasonal] Fools Festival",
 			gen: this.battle.gen
 		});
 		this.subsp = subsp;
@@ -1405,7 +1405,7 @@ var Side = (function () {
 			var poke = this.pokemon[i];
 			poke.sprite.destroy();
 			poke.sprite = new Sprite(Tools.getSpriteData(poke, this.n, {
-				afd: this.battle.tier === "[Seasonal] Fools Festival",
+				afd: Config.server.afd, //this.battle.tier === "[Seasonal] Fools Festival",
 				gen: this.battle.gen
 			}), this.x, this.y, this.z, this.battle, this.n);
 		}
@@ -1757,7 +1757,7 @@ var Side = (function () {
 		poke.id = id;
 		poke.reset();
 		poke.sprite = new Sprite(Tools.getSpriteData(poke, this.n, {
-			afd: this.battle.tier === "[Seasonal] Fools Festival",
+			afd: Config.server.afd, //this.battle.tier === "[Seasonal] Fools Festival",
 			gen: this.battle.gen
 		}), this.x, this.y, this.z, this.battle, this.n);
 
@@ -2509,11 +2509,12 @@ var Battle = (function () {
 			gen = Math.max(gen, 1);
 			gen = Math.min(gen, 6);
 		}
+		var img = this.backdropImage;
 		if (this.backdropImage === null) { //spcifically null, choose randomly
-			this.backdropImage = BattleBackdrops.getRandomBG(gen);
+			img = BattleBackdrops.getRandomBG(gen);
 		}
 		
-		if (this.bgElem) this.bgElem.css('background-image', 'url(' + Tools.resourcePrefix + this.backdropImage + ')');
+		if (this.bgElem) this.bgElem.css('background-image', 'url(' + Tools.resourcePrefix + img + ')');
 	};
 	Battle.prototype.reset = function (dontResetSound) {
 		// battle state
@@ -3386,17 +3387,17 @@ var Battle = (function () {
 				} else if (window.Config && Config.server && Config.server.afd && move.id === 'stealthrock') {
 					var srNames = ['Sneaky Pebbles', 'Sly Rubble', 'Subtle Sediment', 'Buried Bedrock', 'Camouflaged Cinnabar', 'Clandestine Cobblestones', 'Cloaked Clay', 'Concealed Ore', 'Covert Crags', 'Crafty Coal', 'Discreet Bricks', 'Disguised Debris', 'Espionage Pebbles', 'Furtive Fortress', 'Hush-Hush Hardware', 'Incognito Boulders', 'Invisible Quartz', 'Masked Minerals', 'Mischievous Masonry', 'Obscure Ornaments', 'Private Paragon', 'Secret Solitaire', 'Sheltered Sand', 'Surreptitious Sapphire', 'Undercover Ultramarine'];
 					this.message(pokemon.getName() + ' used <strong>' + srNames[Math.floor(Math.random() * srNames.length)] + '</strong>!');
-				// } else if (window.Config && Config.server && Config.server.afd && (move.id === 'metronome' || move.id === 'sleeptalk' || move.id === 'assist')) {
-				// 	this.message(pokemon.getName() + ' used <strong>' + move.name + '</strong>!');
-				// 	var buttons = ["A", "B", "START", "SELECT", "UP", "DOWN", "LEFT", "RIGHT", "DEMOCRACY", "ANARCHY"];
-				// 	var people = ["Zarel", "The Immortal", "Diatom", "Nani Man", "shaymin", "apt-get", "sirDonovan", "Arcticblast", "Trickster"];
-				// 	var button;
-				// 	for (var i = 0; i < 10; i++) {
-				// 		var name = people[Math.floor(Math.random() * people.length)];
-				// 		if (!button) button = buttons[Math.floor(Math.random() * buttons.length)];
-				// 		this.log('<div class="chat"><strong style="' + hashColor(toUserid(name)) + '" class="username" data-name="' + Tools.escapeHTML(name) + '">' + Tools.escapeHTML(name) + ':</strong> <em>' + button + '</em></div>');
-				// 		button = (name === 'Diatom' ? "thanks diatom" : null);
-				// 	}
+				} else if (window.Config && Config.server && Config.server.afd && (move.id === 'metronome' || move.id === 'sleeptalk' || move.id === 'assist')) {
+					this.message(pokemon.getName() + ' used <strong>' + move.name + '</strong>!');
+					var buttons = ["A", "B", "START", "SELECT", "UP", "DOWN", "LEFT", "RIGHT", "DEMOCRACY", "ANARCHY"];
+					var people = ["tustin2121", "azum4roll", "BigFatMantis", "darkfiregamer", "Xinc", "MegaCharizard", "Cerebral_Harlot", "MasterLeoZangetsu", "Sajiuq", "Natsugan", "GroundCtrl27", "Whatevs4", "Coryn216", "Kooma9", "PokemonGod777", "Flagg", "sohippy", "Abyll", "blahalb09", "Boolrex", "Deadinsky", "Hazor", "Kelcyus", "Lyca", "Tadpole_Of_Doom"];
+					var button;
+					for (var i = 0; i < 10; i++) {
+						var name = people[Math.floor(Math.random() * people.length)];
+						if (!button) button = buttons[Math.floor(Math.random() * buttons.length)];
+						this.log('<div class="chat"><strong style="' + hashColor(toUserid(name)) + '" class="username" data-name="' + Tools.escapeHTML(name) + '">' + Tools.escapeHTML(name) + ':</strong> <em>' + button + '</em></div>');
+						button = (name === 'Diatom' ? "thanks diatom" : null);
+					}
 				} else {
 					this.message(pokemon.getName() + ' used <strong>' + move.name + '</strong>!');
 				}
@@ -6379,7 +6380,7 @@ var Battle = (function () {
 				var pokemon = this.sides[k].pokemon[i];
 
 				var spriteData = Tools.getSpriteData(pokemon, k, {
-					afd: this.tier === "[Seasonal] Fools Festival",
+					afd: Config.server.afd, //this.tier === "[Seasonal] Fools Festival",
 					gen: this.gen
 				});
 				var y = 0;

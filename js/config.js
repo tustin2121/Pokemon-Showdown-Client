@@ -18,3 +18,5 @@ Config.customcolors = {
     'xinc' : { color : "#006633" },
     'pokemongod777' : { color: "#FD01E9" },
 };
+
+// Config.server = Config.server || {};

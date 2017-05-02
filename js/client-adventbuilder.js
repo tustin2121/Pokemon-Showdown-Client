@@ -512,7 +512,17 @@
 				var gymlist = $("<ul>").addClass("gymList").appendTo(scrn);
 				
 				var self = this;
-				Object.keys(data.league.gyms).forEach(function(nick){
+				var gymOrder = Object.keys(data.league.gyms);
+				gymOrder.sort((a, b)=>{
+					var o = ["trial", "doubles", "singles"];
+					var i = o.indexOf(data.league.gyms[a].battletype) - o.indexOf(data.league.gyms[b].battletype);
+					if (i === 0) {
+						if (a < b) return -1;
+						if (b < a) return 1;
+						return 0;
+					} else return i;
+				});
+				gymOrder.forEach(function(nick){
 					var settings = data.league.gyms[nick];
 					gymlist.append(self.renderGymPanel(nick, settings, true, true));
 				});
