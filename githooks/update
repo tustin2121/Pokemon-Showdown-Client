@@ -20,7 +20,7 @@ const thisFile = __filename;
 const thisDir = __dirname;
 const rootDir = path.resolve(thisDir, '..');
 
-const Tools = require('../data/Pokemon-Showdown/tools').includeData();
+const Tools = require('../../server/tools').includeData();
 const toId = Tools.getId;
 
 // update version
@@ -224,7 +224,7 @@ try {
 	// Couldn't find learnsets.js, but that's not the end of the world: skip to next task.
 	console.error("Couldn't find `data/learnsets.js`. Task aborted.");
 	learnsetsG6ToUpdate = false;
-	if (!--pendingFiles) updateIndex();
+	// if (!--pendingFiles) updateIndex();
 }
 if (learnsetsG6ToUpdate) {
 	try {
@@ -236,7 +236,7 @@ if (learnsetsG6ToUpdate) {
 			// Any other error is unacceptable for learnsets-g6.js update: skip to next task.
 			console.error("Failed to read `data/learnsets-g6.js`. Task aborted.");
 			learnsetsG6ToUpdate = false;
-			if (!--pendingFiles) updateIndex();
+			// if (!--pendingFiles) updateIndex();
 		}
 	}
 }
@@ -252,9 +252,9 @@ if (learnsetsG6ToUpdate && (!indexStats || !learnsetsG6Stats || indexMTime < upd
 		} else {
 			console.log("DONE");
 		}
-		if (!--pendingFiles) updateIndex();
+		// if (!--pendingFiles) updateIndex();
 	});
 } else {
 	console.log("CACHED");
-	if (!--pendingFiles) updateIndex();
+	// if (!--pendingFiles) updateIndex();
 }

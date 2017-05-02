@@ -8,11 +8,11 @@ const child_process = require("child_process");
 const rootDir = path.resolve(__dirname, '..');
 const dataDir = path.resolve(rootDir, 'data');
 
-process.stdout.write("Syncing data from Git repository... "+path.resolve('../../server/')+" ");
-child_process.execSync('git pull', {
-	cwd: path.resolve('../../server/'),
-});
-console.log("DONE");
+// process.stdout.write("Syncing data from Git repository... "+path.resolve('../../server/')+" ");
+// child_process.execSync('git pull', {
+// 	cwd: path.resolve('../../server/'),
+// });
+// console.log("DONE");
 
 const Tools = require('../../server/tools');
 const toId = Tools.getId;
