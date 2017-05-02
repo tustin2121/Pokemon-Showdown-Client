@@ -164,5 +164,6 @@ var Replays = {
 };
 
 window.onload = function () {
+	Config.server = Config.server || {};
 	Replays.init((this.$('script.battle-log-data').text() || '').replace(/\\\//g, '/'));
 };

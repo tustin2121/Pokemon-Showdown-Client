@@ -2,8 +2,8 @@
 // address bar is `Config.origindomain`.
 Config.defaultserver = {
 	id: 'showdown',
-	//host: 'www.tppleague.me',
-	host: 'new.tppleague.me',
+	host: 'www.tppleague.me',
+	// host: 'new.tppleague.me',
 	port: 443,
 	registered: true
 };
