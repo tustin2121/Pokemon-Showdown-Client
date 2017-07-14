@@ -86,7 +86,7 @@
 			case 'battles':
 				return buf + '><i class="fa fa-caret-square-o-right"></i> <span>Battles</span></a><button class="closebutton" name="closeRoom" value="battles"><i class="fa fa-times-circle"></i></button></li>';
 			case 'rooms':
-				return buf + '><i class="fa fa-plus" style="margin:7px auto -6px auto"></i> <span>&nbsp;</span></a></li>';
+				return buf + ' aria-label="Join chatroom"><i class="fa fa-plus" style="margin:7px auto -6px auto"></i> <span>&nbsp;</span></a></li>';
 			default:
 				if (id.substr(0, 7) === 'battle-') {
 					var name = Tools.escapeHTML(room.title);
@@ -102,9 +102,9 @@
 							name = '(empty room)';
 						}
 					}
-					return buf + ' draggable="true"><i class="text">' + Tools.escapeFormat(formatid) + '</i><span>' + name + '</span></a><button class="closebutton" name="closeRoom" value="' + id + '"><i class="fa fa-times-circle"></i></a></li>';
+					return buf + ' draggable="true"><i class="text">' + Tools.escapeFormat(formatid) + '</i><span>' + name + '</span></a><button class="closebutton" name="closeRoom" value="' + id + '" aria-label="Close"><i class="fa fa-times-circle"></i></a></li>';
 				} else {
-					return buf + ' draggable="true"><i class="fa fa-comment-o"></i> <span>' + (Tools.escapeHTML(room.title) || (id === 'lobby' ? 'Lobby' : id)) + '</span></a><button class="closebutton" name="closeRoom" value="' + id + '"><i class="fa fa-times-circle"></i></a></li>';
+					return buf + ' draggable="true"><i class="fa fa-comment-o"></i> <span>' + (Tools.escapeHTML(room.title) || (id === 'lobby' ? 'Lobby' : id)) + '</span></a><button class="closebutton" name="closeRoom" value="' + id + '" aria-label="Close"><i class="fa fa-times-circle"></i></a></li>';
 				}
 			}
 		},
@@ -173,7 +173,7 @@
 				overflow = offset.left + width + 166 - $(window).width();
 			}
 			if (offset.top >= 37 || overflow > 0) {
-				this.$tabbar.append('<div class="overflow"><button name="tablist" class="button"><i class="fa fa-caret-down"></i></button></div>');
+				this.$tabbar.append('<div class="overflow" aria-hidden="true"><button name="tablist" class="button" aria-label="More"><i class="fa fa-caret-down"></i></button></div>');
 			}
 
 			if (app.rooms['']) app.rooms[''].updateRightMenu();
@@ -361,47 +361,31 @@
 		initialize: function (data) {
 			var buf = '';
 			var muted = !!Tools.prefs('mute');
-			buf += '<p class="effect-volume"><label class="optlabel">Effect volume:</label>' + (muted ? '<em>(muted)</em>' : '<input type="slider" name="effectvolume" value="' + (Tools.prefs('effectvolume') || 50) + '" />') + '</p>';
-			buf += '<p class="music-volume"><label class="optlabel">Music volume:</label>' + (muted ? '<em>(muted)</em>' : '<input type="slider" name="musicvolume" value="' + (Tools.prefs('musicvolume') || 50) + '" />') + '</p>';
-			buf += '<p class="notif-volume"><label class="optlabel">Notification volume:</label>' + (muted ? '<em>(muted)</em>' : '<input type="slider" name="notifvolume" value="' + (Tools.prefs('notifvolume') || 50) + '" />') + '</p>';
+			buf += '<p class="effect-volume"><label class="optlabel">Effect volume:</label>' + (muted ? '<em>(muted)</em>' : '<input type="range" min="0" max="100" step="1" name="effectvolume" value="' + (Tools.prefs('effectvolume') || 50) + '" />') + '</p>';
+			buf += '<p class="music-volume"><label class="optlabel">Music volume:</label>' + (muted ? '<em>(muted)</em>' : '<input type="range" min="0" max="100" step="1" name="musicvolume" value="' + (Tools.prefs('musicvolume') || 50) + '" />') + '</p>';
+			buf += '<p class="notif-volume"><label class="optlabel">Notification volume:</label>' + (muted ? '<em>(muted)</em>' : '<input type="range" min="0" max="100" step="1" name="notifvolume" value="' + (Tools.prefs('notifvolume') || 50) + '" />') + '</p>';
 			buf += '<p><label class="optlabel"><input type="checkbox" name="muted"' + (muted ? ' checked' : '') + ' /> Mute sounds</label></p>';
 			this.$el.html(buf).css('min-width', 160);
 		},
 		events: {
-			'change input[name=muted]': 'setMute'
+			'change input[name=muted]': 'setMute',
+			'change input[type=range]': 'updateVolume',
+			'keyup input[type=range]': 'updateVolume',
+			'input input[type=range]': 'updateVolume'
 		},
-		domInitialize: function () {
-			var self = this;
-			this.$('.effect-volume input').slider({
-				from: 0,
-				to: 100,
-				step: 1,
-				dimension: '%',
-				skin: 'round_plastic',
-				onstatechange: function (val) {
-					self.setEffectVolume(val);
-				}
-			});
-			this.$('.music-volume input').slider({
-				from: 0,
-				to: 100,
-				step: 1,
-				dimension: '%',
-				skin: 'round_plastic',
-				onstatechange: function (val) {
-					self.setMusicVolume(val);
-				}
-			});
-			this.$('.notif-volume input').slider({
-				from: 0,
-				to: 100,
-				step: 1,
-				dimension: '%',
-				skin: 'round_plastic',
-				onstatechange: function (val) {
-					self.setNotifVolume(val);
-				}
-			});
+		updateVolume: function (e) {
+			var val = Number(e.currentTarget.value);
+			switch (e.currentTarget.name) {
+			case 'effectvolume':
+				this.setEffectVolume(val);
+				break;
+			case 'musicvolume':
+				this.setMusicVolume(val);
+				break;
+			case 'notifvolume':
+				this.setNotifVolume(val);
+				break;
+			}
 		},
 		setMute: function (e) {
 			var muted = !!e.currentTarget.checked;
@@ -409,10 +393,9 @@
 			BattleSound.setMute(muted);
 
 			if (!muted) {
-				this.$('.effect-volume').html('<label class="optlabel">Effect volume:</label><input type="slider" name="effectvolume" value="' + (Tools.prefs('effectvolume') || 50) + '" />');
-				this.$('.music-volume').html('<label class="optlabel">Music volume:</label><input type="slider" name="musicvolume" value="' + (Tools.prefs('musicvolume') || 50) + '" />');
-				this.$('.notif-volume').html('<label class="optlabel">Notification volume:</label><input type="slider" name="notifvolume" value="' + (Tools.prefs('notifvolume') || 50) + '" />');
-				this.domInitialize();
+				this.$('.effect-volume').html('<label class="optlabel">Effect volume:</label><input type="range" min="0" max="100" step="1" name="effectvolume" value="' + (Tools.prefs('effectvolume') || 50) + '" />');
+				this.$('.music-volume').html('<label class="optlabel">Music volume:</label><input type="range" min="0" max="100" step="1" name="musicvolume" value="' + (Tools.prefs('musicvolume') || 50) + '" />');
+				this.$('.notif-volume').html('<label class="optlabel">Notification volume:</label><input type="range" min="0" max="100" step="1" name="notifvolume" value="' + (Tools.prefs('notifvolume') || 50) + '" />');
 			} else {
 				this.$('.effect-volume').html('<label class="optlabel">Effect volume:</label><em>(muted)</em>');
 				this.$('.music-volume').html('<label class="optlabel">Music volume:</label><em>(muted)</em>');
@@ -452,6 +435,7 @@
 			'change select[name=bg]': 'setBg',
 			'change select[name=timestamps-lobby]': 'setTimestampsLobby',
 			'change select[name=timestamps-pms]': 'setTimestampsPMs',
+			'change select[name=onepanel]': 'setOnePanel',
 			'change input[name=logchat]': 'setLogChat',
 			'change input[name=selfhighlight]': 'setSelfHighlight',
 			'click img': 'avatars'
@@ -474,6 +458,10 @@
 
 			buf += '<hr />';
 			buf += '<p><strong>Graphics</strong></p>';
+			var onePanel = !!Tools.prefs('onepanel');
+			if ($(window).width() >= 660) {
+				buf += '<p><label class="optlabel">Layout: <select name="onepanel"><option value=""' + (!onePanel ? ' selected="selected"' : '') + '>&#x25EB; Left and right panels</option><option value="1"' + (onePanel ? ' selected="selected"' : '') + '>&#x25FB; Single panel</option></select></label></p>';
+			}
 			buf += '<p><label class="optlabel">Background: <button name="background">Change background</button></label></p>';
 			buf += '<p><label class="optlabel"><input type="checkbox" name="dark"' + (Tools.prefs('dark') ? ' checked' : '') + ' /> Dark mode (beta)</label></p>';
 			buf += '<p><label class="optlabel"><input type="checkbox" name="noanim"' + (Tools.prefs('noanim') ? ' checked' : '') + ' /> Disable animations</label></p>';
@@ -565,6 +553,11 @@
 		},
 		background: function (e) {
 			app.addPopup(CustomBackgroundPopup);
+		},
+		setOnePanel: function (e) {
+			app.singlePanelMode = !!e.currentTarget.value;
+			Tools.prefs('onepanel', !!e.currentTarget.value);
+			app.updateLayout();
 		},
 		setTimestampsLobby: function (e) {
 			this.timestamps.lobby = e.currentTarget.value;
@@ -804,6 +797,9 @@
 			var name = (data.name || '');
 			if (!name && app.user.get('named')) name = app.user.get('name');
 			buf += '<p><label class="label">Username: <small class="preview" style="' + hashColor(toUserid(name)) + '">(color)</small><input class="textbox autofocus" type="text" name="username" value="' + Tools.escapeHTML(name) + '"></label></p>';
+			if (name) {
+				buf += '<p><small>Note: Other users will be able to see your name change. To change name privately, log out and back in instead.</small></p>';
+			}
 			buf += '<p class="buttonbar"><button type="submit"><strong>Choose name</strong></button> <button name="close">Cancel</button></p>';
 
 			buf += '</form>';

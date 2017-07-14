@@ -708,12 +708,13 @@
 				folder: folder,
 				iconCache: ''
 			};
-			teams.unshift(newTeam);
-			for (var room in app.rooms) {
-				var selection = app.rooms[room].$('button.teamselect').val();
-				if (!selection || selection === 'random') continue;
-				var obj = app.rooms[room].id === "" ? app.rooms[room] : app.rooms[room].tournamentBox;
-				obj.curTeamIndex++;
+
+			// work around Opera 42-45 crashing when persist() is called
+			if (navigator.storage && navigator.storage.persist && !/ OPR\/4[0-5]/.test(navigator.userAgent)) {
+				var self = this;
+				navigator.storage.persist().then(function (state) {
+					self.updatePersistence(state);
+				});
 			}
 			this.edit(0);
 		},
@@ -1103,7 +1104,9 @@
 			buf += itemicon;
 			buf += '</div>';
 			buf += '<div class="setcell setcell-typeicons">';
-			var types = Tools.getTemplate(set.species).types;
+			var types = template.types;
+			var table = (this.curTeam.gen < 7 ? BattleTeambuilderTable['gen' + this.curTeam.gen] : null);
+			if (table && template.id in table.overrideType) types = table.overrideType[template.id].split('/');
 			if (types) {
 				for (var i = 0; i < types.length; i++) buf += Tools.getTypeIcon(types[i]);
 			}
@@ -1509,7 +1512,7 @@
 				var set = this.curSetList[i];
 				var pokemonicon = '<span class="picon pokemonicon-' + i + '" style="' + Tools.getPokemonIcon(set) + '"></span>';
 				if (!set.species) {
-					buf += '<button disabled="disabled" class="addpokemon"><i class="fa fa-plus"></i></button> ';
+					buf += '<button disabled="disabled" class="addpokemon" aria-label="Add Pok&eacute;mon"><i class="fa fa-plus"></i></button> ';
 					isAdd = true;
 				} else if (i == this.curSetLoc) {
 					buf += '<button disabled="disabled" class="pokemon">' + pokemonicon + Tools.escapeHTML(set.name || Tools.getTemplate(set.species).baseSpecies || '<i class="fa fa-plus"></i>') + '</button> ';
@@ -1739,7 +1742,7 @@
 		getBaseStats: function (template) {
 			var baseStats = template.baseStats;
 			var gen = this.curTeam.gen;
-			if (gen < 6) {
+			if (gen < 7) {
 				var overrideStats = BattleTeambuilderTable['gen' + gen].overrideStats[template.id];
 				if (overrideStats || gen === 1) {
 					baseStats = {
@@ -2714,6 +2717,7 @@
 			if (this.curTeam.format === 'gen7hiddentype') return;
 
 			var minAtk = true;
+			if (set.ability === 'Battle Bond') minAtk = false; // only available through an event with 31 Atk IVs
 			var hpModulo = (this.curTeam.gen >= 6 ? 2 : 4);
 			var hasHiddenPower = false;
 			var moves = set.moves;
@@ -2768,11 +2772,15 @@
 			if (set.level) delete set.level;
 			if (this.curTeam && this.curTeam.format) {
 				var baseFormat = this.curTeam.format;
+				var format = window.BattleFormats && window.BattleFormats[baseFormat];
 				if (baseFormat.substr(0, 3) === 'gen') baseFormat = baseFormat.substr(4);
 				if (baseFormat.substr(0, 8) === 'pokebank') baseFormat = baseFormat.substr(8);
 				if (this.curTeam && this.curTeam.format) {
 					if (baseFormat.substr(0, 10) === 'battlespot' || baseFormat.substr(0, 3) === 'vgc') set.level = 50;
 					if (baseFormat.substr(0, 2) === 'lc' || baseFormat.substr(0, 5) === 'caplc') set.level = 5;
+					if (format && format.teambuilderLevel) {
+						set.level = format.teambuilderLevel;
+					}
 				}
 			}
 			if (set.gender) delete set.gender;

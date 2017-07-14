@@ -96,7 +96,7 @@
 					'<div class="tournament-bracket"></div>' +
 					'<div class="tournament-tools">' +
 						'<div class="tournament-team"></div>' +
-						'<button class="button tournament-join">Join</button><button class="button tournament-leave">Leave</button>' +
+						'<button class="button tournament-join">Join</button><button class="button tournament-validate"><i class="fa fa-check"></i> Validate</button><button class="button tournament-leave">Leave</button>' +
 						'<div class="tournament-nomatches">Waiting for battles to become available...</div>' +
 						'<div class="tournament-challenge">' +
 							'<div class="tournament-challenge-user"></div>' +
@@ -125,6 +125,7 @@
 			this.$leave = $wrapper.find('.tournament-leave');
 			this.$noMatches = $wrapper.find('.tournament-nomatches');
 			this.$teamSelect = $wrapper.find('.tournament-team');
+			this.$validate = $wrapper.find('.tournament-validate');
 			this.$challenge = $wrapper.find('.tournament-challenge');
 			this.$challengeUser = $wrapper.find('.tournament-challenge-user');
 			this.$challengeUserMenu = $wrapper.find('.tournament-challenge-user-menu');
@@ -176,6 +177,10 @@
 			this.$challengeCancel.on('click', function () {
 				self.room.send('/tournament cancelchallenge');
 			});
+			this.$validate.on('click', function () {
+				app.sendTeam(Storage.teams[self.$teamSelect.children().val()]);
+				self.room.send('/tournament vtm');
+			});
 
 			app.user.on('saveteams', this.updateTeams, this);
 		}
@@ -197,8 +202,8 @@
 			}
 		};
 		TournamentBox.prototype.updateTeams = function () {
-			var forceFormatChange = (this.info.format !== this.teamSelectFormat);
-			this.teamSelectFormat = this.info.format;
+			var forceFormatChange = (this.info.teambuilderFormat !== this.teamSelectFormat);
+			this.teamSelectFormat = this.info.teambuilderFormat;
 
 			if (!this.info.isJoined) {
 				this.$teamSelect.hide();
@@ -212,10 +217,12 @@
 				if (isNaN(teamIndex)) teamIndex = -1;
 			}
 
-			this.$teamSelect.html(app.rooms[''].renderTeams.call(this, this.info.format, teamIndex));
+			this.$teamSelect.html(app.rooms[''].renderTeams.call(this, this.info.teambuilderFormat, teamIndex));
 			this.$teamSelect.children().data('type', 'teamSelect');
 			this.$teamSelect.children().attr('name', 'tournamentButton');
 			this.$teamSelect.show();
+			var val = this.$teamSelect.children().val();
+			this.$validate.toggleClass('disabled', !val || !val.length || val === 'random');
 		};
 
 		TournamentBox.prototype.isBoxVisible = function () {
@@ -302,7 +309,7 @@
 					this.room.closeNotification('tournament-create');
 					if (!this.info.isJoined) {
 						this.toggleBoxVisibility(false);
-					} else if (this.info.format.substr(0, 4) === 'gen5' && !Tools.loadedSpriteData['bw']) {
+					} else if (this.info.teambuilderFormat.substr(0, 4) === 'gen5' && !Tools.loadedSpriteData['bw']) {
 						Tools.loadSpriteData('bw');
 					}
 					this.room.$chat.append("<div class=\"notice tournament-message-start\">The tournament has started!</div>");
@@ -355,8 +362,12 @@
 						this.info.isActive = true;
 					}
 
-					if ('format' in this.updates || 'isJoined' in this.updates) {
+					if ('format' in this.updates || 'teambuilderFormat' in this.updates) {
+						if (!this.info.teambuilderFormat) this.info.teambuilderFormat = this.info.format;
 						this.$format.text(window.BattleFormats && BattleFormats[this.info.format] ? BattleFormats[this.info.format].name : this.info.format);
+						this.updateTeams();
+					}
+					if ('isJoined' in this.updates) {
 						this.updateTeams();
 					}
 					if ('generator' in this.updates)
@@ -369,6 +380,7 @@
 					if ('isStarted' in this.updates || 'isJoined' in this.updates) {
 						this.$join.toggleClass('active', !this.info.isStarted && !this.info.isJoined);
 						this.$leave.toggleClass('active', !this.info.isStarted && this.info.isJoined);
+						this.$validate.toggleClass('active', this.info.isJoined && !this.info.challenging && !this.info.challenged && !(this.info.challenges && this.info.challenges.length));
 						this.$tools.toggleClass('active', !this.info.isStarted || this.info.isJoined);
 					}
 
@@ -781,7 +793,7 @@
 		};
 
 		TournamentBox.prototype.teamSelect = function (team, button) {
-			app.addPopup(TeamPopup, {team: team, format: this.info.format, sourceEl: button, room: this.room.id});
+			app.addPopup(TeamPopup, {team: team, format: this.info.teambuilderFormat, sourceEl: button, room: this.room.id});
 		};
 
 		return TournamentBox;
