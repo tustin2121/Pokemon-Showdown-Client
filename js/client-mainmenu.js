@@ -111,7 +111,7 @@
 			options.append = options.append || false;
 			options.noMinimize = options.noMinimize || false;
 
-			this.$pmBox[options.append ? 'append' : 'prepend']('<div class="pm-window ' + options.cssClass + '" ' + options.attributes + '><h3><button class="closebutton" tabindex="-1"><i class="fa fa-times-circle"></i></button>' + (!options.noMinimize ? '<button class="minimizebutton" tabindex="-1"><i class="fa fa-minus-circle"></i></button>' : '') + options.title + '</h3><div class="pm-log" style="overflow:visible;height:' + (typeof options.height === 'number' ? options.height + 'px' : options.height) + ';' + (parseInt(options.height, 10) ? 'max-height:none' : (options.maxHeight ? 'max-height:' + (typeof options.maxHeight === 'number' ? options.maxHeight + 'px' : options.maxHeight) : '')) + '">' +
+			this.$pmBox[options.append ? 'append' : 'prepend']('<div class="pm-window ' + options.cssClass + '" ' + options.attributes + '><h3><button class="closebutton" tabindex="-1" aria-label="Close"><i class="fa fa-times-circle"></i></button>' + (!options.noMinimize ? '<button class="minimizebutton" tabindex="-1" aria-label="Minimize"><i class="fa fa-minus-circle"></i></button>' : '') + options.title + '</h3><div class="pm-log" style="overflow:visible;height:' + (typeof options.height === 'number' ? options.height + 'px' : options.height) + ';' + (parseInt(options.height, 10) ? 'max-height:none' : (options.maxHeight ? 'max-height:' + (typeof options.maxHeight === 'number' ? options.maxHeight + 'px' : options.maxHeight) : '')) + '">' +
 				options.html +
 				'</div></div>');
 		},
@@ -180,7 +180,7 @@
 			var $lastMessage = $chat.children().last();
 			var textContent = $lastMessage.html().indexOf('<span class="spoiler">') >= 0 ? '(spoiler)' : $lastMessage.children().last().text();
 			if (textContent && app.curSideRoom && app.curSideRoom.addPM && Tools.prefs('inchatpm')) {
-				app.curSideRoom.addPM(cName, textContent, target);
+				app.curSideRoom.addPM(name, message, target);
 			}
 
 			if (!isSelf && textContent) {
@@ -206,10 +206,10 @@
 					group = '<small>' + Tools.escapeHTML(group) + '</small>';
 				}
 				var buf = '<div class="pm-window pm-window-' + userid + '" data-userid="' + userid + '" data-name="' + name + '">';
-				buf += '<h3><button class="closebutton" href="' + app.root + 'teambuilder" tabindex="-1"><i class="fa fa-times-circle"></i></button>';
-				buf += '<button class="minimizebutton" href="' + app.root + 'teambuilder" tabindex="-1"><i class="fa fa-minus-circle"></i></button>';
+				buf += '<h3><button class="closebutton" href="' + app.root + 'teambuilder" tabindex="-1" aria-label="Close"><i class="fa fa-times-circle"></i></button>';
+				buf += '<button class="minimizebutton" href="' + app.root + 'teambuilder" tabindex="-1" aria-label="Minimize"><i class="fa fa-minus-circle"></i></button>';
 				buf += group + Tools.escapeHTML(name.substr(1)) + '</h3>';
-				buf += '<div class="pm-log"><div class="inner"></div></div>';
+				buf += '<div class="pm-log"><div class="inner" role="log"></div></div>';
 				buf += '<div class="pm-log-add"><form class="chatbox nolabel"><textarea class="textbox" type="text" size="70" autocomplete="off" name="message"></textarea></form></div></div>';
 				$pmWindow = $(buf).prependTo(this.$pmBox);
 				$pmWindow.find('textarea').autoResize({
@@ -1019,6 +1019,7 @@
 
 			this.team = data.team;
 			this.format = data.format;
+			this.room = data.room;
 
 			var format = BattleFormats[data.format];
 
@@ -1076,8 +1077,9 @@
 			var sourceEl = this.sourceEl;
 			var team = this.team;
 			var format = this.format;
+			var room = this.room;
 			this.close();
-			app.addPopup(TeamPopup, {team: team, format: format, sourceEl: sourceEl, moreTeams: true});
+			app.addPopup(TeamPopup, {team: team, format: format, sourceEl: sourceEl, room: room, moreTeams: true});
 		},
 		teambuilder: function () {
 			var teamFormat = this.teamFormat;
@@ -1096,8 +1098,7 @@
 				app.rooms[''].curTeamIndex = i;
 				app.rooms[''].curTeamFormat = formatid;
 			} else if (this.sourceEl[0].offsetParent.className === 'tournament-box active') {
-				var room = app.dispatchingPopup.options.room;
-				app.rooms[room].tournamentBox.curTeamIndex = i;
+				app.rooms[this.room].tournamentBox.curTeamIndex = i;
 			}
 			this.close();
 		}
@@ -1141,7 +1142,8 @@
 			buf += '<li><p><strong>Hugh Gordon</strong> [V4] <small>&ndash; Research (game mechanics), Development</small></p></li>';
 			buf += '<li><p><a href="http://www.juanmaserrano.com/" target="_blank" class="subtle"><strong>Juanma Serrano</strong> [Joim]</a> <small>&ndash; Development, Sysadmin</small></p></li></ul>';
 			buf += '<h2>Major Contributors</h2>';
-			buf += '<ul><li><p><strong>Kevin Lau</strong> [Ascriptmaster] <small>&ndash; Development, Art (battle animations)</small></p></li>';
+			buf += '<ul><li><p><strong>Bär Halberkamp</strong> [bumbadadabum] <small>&ndash; Development</small></p></li>';
+			buf += '<li><p><strong>Kevin Lau</strong> [Ascriptmaster] <small>&ndash; Development, Art (battle animations)</small></p></li>';
 			buf += '<li><p><strong>Konrad Borowski</strong> [xfix] <small>&ndash; Development</small></p></li>';
 			buf += '<li><p><strong>Quinton Lee</strong> [sirDonovan] <small>&ndash; Development</small></p></li></ul>';
 			buf += '<h2>More</h2>';

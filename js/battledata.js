@@ -313,6 +313,7 @@ var baseSpeciesChart = [
 	'meowstic',
 	'hoopa',
 	'zygarde',
+	'lycanroc',
 	'wishiwashi',
 	'minior',
 	'mimikyu',
@@ -330,12 +331,11 @@ var baseSpeciesChart = [
 var domainRegex = '[a-z0-9\\-]+(?:[.][a-z0-9\\-]+)*';
 var parenthesisRegex = '[(](?:[^\\s()<>&]|&amp;)*[)]';
 var linkRegex = new RegExp(
-	'\\b' +
 	'(?:' +
 		'(?:' +
 			// When using www. or http://, allow any-length TLD (like .museum)
-			'(?:https?://|www[.])' + domainRegex +
-			'|' + domainRegex + '[.]' +
+			'(?:https?://|\\bwww[.])' + domainRegex +
+			'|\\b' + domainRegex + '[.]' +
 				// Allow a common TLD, or any 2-3 letter TLD followed by : or /
 				'(?:com?|org|net|edu|info|us|jp|[a-z]{2,3}(?=[:/]))' +
 		')' +
@@ -646,7 +646,7 @@ var Tools = {
 			// [[blah]]
 			str = str.replace(/\[\[(?![< ])(?:(?:(youtube|yt|wiki)\: ?)?([^<`]*?[^< ])?)\]\]/g, function (match, p1, p2) {
 				if (match === '[[]]') {
-					return (p1 ? p1 : '') + match + (p2 ? p2 : '');
+					return (p1 || '') + match + (p2 || '');
 				}
 				var query = p2;
 				if (p1 === 'wiki') {
@@ -735,14 +735,14 @@ var Tools = {
 				throw new Error('sanitizeHTML requires caja');
 			};
 		}
-		// Add <marquee> and <blink> to the whitelist.
-		// See https://developer.mozilla.org/en-US/docs/Web/HTML/Element/marquee
-		// for the list of attributes.
+		// Add <marquee> <blink> <psicon> to the whitelist.
 		$.extend(html4.ELEMENTS, {
 			'marquee': 0,
-			'blink': 0
+			'blink': 0,
+			'psicon': html4.eflags['OPTIONAL_ENDTAG'] | html4.eflags['EMPTY']
 		});
 		$.extend(html4.ATTRIBS, {
+			// See https://developer.mozilla.org/en-US/docs/Web/HTML/Element/marquee
 			'marquee::behavior': 0,
 			'marquee::bgcolor': 0,
 			'marquee::direction': 0,
@@ -753,7 +753,9 @@ var Tools = {
 			'marquee::scrolldelay': 0,
 			'marquee::truespeed': 0,
 			'marquee::vspace': 0,
-			'marquee::width': 0
+			'marquee::width': 0,
+			'psicon::pokemon': 0,
+			'psicon::item': 0
 		});
 
 		var uriRewriter = function (uri) {
@@ -793,8 +795,47 @@ var Tools = {
 						}
 					}
 				}
+			} else if (tagName === 'psicon') {
+				// <psicon> is a custom element which supports a set of mutually incompatible attributes:
+				// <psicon pokemon> and <psicon item>
+				var classValueIndex = -1;
+				var styleValueIndex = -1;
+				var iconAttrib = null;
+				for (var i = 0; i < attribs.length - 1; i += 2) {
+					if (attribs[i] === 'pokemon' || attribs[i] === 'item') {
+						// If declared more than once, use the later.
+						iconAttrib = attribs.slice(i, i + 2);
+					} else if (attribs[i] === 'class') {
+						classValueIndex = i + 1;
+					} else if (attribs[i] === 'style') {
+						styleValueIndex = i + 1;
+					}
+				}
+				tagName = 'span';
+
+				if (iconAttrib) {
+					if (classValueIndex < 0) {
+						attribs.push('class', '');
+						classValueIndex = attribs.length - 1;
+					}
+					if (styleValueIndex < 0) {
+						attribs.push('style', '');
+						styleValueIndex = attribs.length - 1;
+					}
+
+					// Prepend all the classes and styles associated to the custom element.
+					if (iconAttrib[0] === 'pokemon') {
+						attribs[classValueIndex] = attribs[classValueIndex] ? 'picon ' + attribs[classValueIndex] : 'picon';
+						attribs[styleValueIndex] = attribs[styleValueIndex] ? Tools.getPokemonIcon(iconAttrib[1]) + '; ' + attribs[styleValueIndex] : Tools.getPokemonIcon(iconAttrib[1]);
+					} else if (iconAttrib[0] === 'item') {
+						attribs[classValueIndex] = attribs[classValueIndex] ? 'itemicon ' + attribs[classValueIndex] : 'itemicon';
+						attribs[styleValueIndex] = attribs[styleValueIndex] ? Tools.getItemIcon(iconAttrib[1]) + '; ' + attribs[styleValueIndex] : Tools.getItemIcon(iconAttrib[1]);
+					}
+				}
 			}
+
 			attribs = html.sanitizeAttribs(tagName, attribs, uriRewriter);
+
 			if (dataUri && tagName === 'img') {
 				attribs[srcIdx + 1] = dataUri;
 			}
@@ -806,7 +847,7 @@ var Tools = {
 					attribs.push('_blank');
 				}
 			}
-			return {attribs: attribs};
+			return {tagName: tagName, attribs: attribs};
 		};
 		return function (input) {
 			return html.sanitizeWithPolicy(getString(input), tagPolicy);

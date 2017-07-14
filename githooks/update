@@ -20,7 +20,7 @@ const thisFile = __filename;
 const thisDir = __dirname;
 const rootDir = path.resolve(thisDir, '..');
 
-const Tools = require('../../server/tools').includeData();
+const Tools = require('../../server/sim/dex');
 const toId = Tools.getId;
 
 // update version

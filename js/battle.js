@@ -563,11 +563,17 @@ var Pokemon = (function () {
 		this.clearTurnstatuses();
 		this.clearMovestatuses();
 	};
-	Pokemon.prototype.markMove = function (moveName, pp) {
+	Pokemon.prototype.markMove = function (moveName, pp, recursionSource) {
+		if (recursionSource === this.ident) return;
 		if (pp === undefined) pp = 1;
 		moveName = Tools.getMove(moveName).name;
 		if (moveName === 'Struggle') return;
-		if (this.volatiles.transform) moveName = '*' + moveName;
+		if (this.volatiles.transform) {
+			// make sure there is no infinite recursion if both Pokemon are transformed into each other
+			if (!recursionSource) recursionSource = this.ident;
+			this.volatiles.transform[2].markMove(moveName, 0, recursionSource);
+			moveName = '*' + moveName;
+		}
 		for (var i = 0; i < this.moveTrack.length; i++) {
 			if (moveName === this.moveTrack[i][0]) {
 				this.moveTrack[i][1] += pp;
@@ -742,7 +748,11 @@ var Pokemon = (function () {
 			var template = Tools.getTemplate(pokemon.volatiles.formechange[2]);
 			this.volatiles.typechange[2] = template.types ? template.types.join('/') : '';
 		} else {
-			this.volatiles.typechange[2] = pokemon.types ? pokemon.types.join('/') : '';
+			this.volatiles.typechange[2] = (
+				window.BattleTeambuilderTable &&
+				window.BattleTeambuilderTable['gen' + this.side.battle.gen] &&
+				window.BattleTeambuilderTable['gen' + this.side.battle.gen].overrideType[toId(pokemon.species)]
+			) || (pokemon.types ? pokemon.types.join('/') : '');
 		}
 		if (pokemon.volatiles.typeadd) {
 			this.addVolatile('typeadd');
@@ -950,7 +960,7 @@ var Sprite = (function () {
 			}, sp));
 		}
 	};
-	Sprite.prototype.animSub = function () {
+	Sprite.prototype.animSub = function (instant) {
 		var subsp = Tools.getSpriteData('substitute', this.siden, {
 			afd: Config.server.afd, //this.battle.tier === "[Seasonal] Fools Festival",
 			gen: this.battle.gen
@@ -958,25 +968,26 @@ var Sprite = (function () {
 		this.subsp = subsp;
 		this.iw = subsp.w;
 		this.ih = subsp.h;
-		this.battle.spriteElemsFront[this.siden].append('<img src="' + subsp.url + '" style="display:none;position:absolute" />');
+		this.battle.spriteElemsFront[this.siden].append('<img src="' + subsp.url + '" style="display:none;position:absolute"' + (subsp.pixelated ? ' class="pixelated"' : '') + ' />');
 		this.subElem = this.battle.spriteElemsFront[this.siden].children().last();
 
 		//temp//this.subElem.css({position: 'absolute', display: 'block'});
-		this.selfAnim({}, 500);
 		this.subElem.css({
 			position: 'absolute',
 			opacity: 0,
 			display: 'block'
 		});
-		if (this.battle.fastForward) {
+		if (instant || this.battle.fastForward) {
 			this.subElem.css(this.battle.pos({
 				x: this.x,
 				y: this.y,
 				z: this.z,
 				opacity: 1
 			}, subsp));
+			this.animReset();
 			return;
 		}
+		this.selfAnim({}, 500);
 		this.subElem.css(this.battle.pos({
 			x: this.x,
 			y: this.y + 50,
@@ -1969,6 +1980,9 @@ var Side = (function () {
 			oldpokemon.sprite.animUnsummon(true);
 		}
 		pokemon.sprite.animSummon(slot, true);
+		if (pokemon.hasVolatile('substitute')) {
+			pokemon.sprite.animSub(true);
+		}
 		if (oldpokemon) {
 			oldpokemon.statbarElem.remove();
 			oldpokemon.statbarElem = null;
@@ -2537,7 +2551,7 @@ var Battle = (function () {
 		} else {
 			this.logFrameElem.html('<div class="battle-options"></div>');
 			this.optionsElem = this.logFrameElem.children().last();
-			this.logFrameElem.append('<div class="inner"></div>');
+			this.logFrameElem.append('<div class="inner" role="log"></div>');
 			this.logElem = this.logFrameElem.children().last();
 			this.logFrameElem.append('<div class="inner-preempt"></div>');
 			this.logPreemptElem = this.logFrameElem.children().last();
@@ -2569,16 +2583,16 @@ var Battle = (function () {
 		this.spriteElem.append('<div></div>');
 		this.spriteElems[0] = this.spriteElem.children().last();
 
-		this.elem.append('<div></div>');
+		this.elem.append('<div role="complementary" aria-label="Active Pokemon"></div>');
 		this.statElem = this.elem.children().last();
 
 		this.elem.append('<div></div>');
 		this.fxElem = this.elem.children().last();
 
-		this.elem.append('<div class="leftbar"></div>');
+		this.elem.append('<div class="leftbar" role="complementary" aria-label="Your Team"></div>');
 		this.leftbarElem = this.elem.children().last();
 
-		this.elem.append('<div class="rightbar"></div>');
+		this.elem.append('<div class="rightbar" role="complementary" aria-label="Opponent\'s Team"></div>');
 		this.rightbarElem = this.elem.children().last();
 
 		this.elem.append('<div></div>');
@@ -3137,16 +3151,7 @@ var Battle = (function () {
 		if (typeof weather === 'undefined') {
 			weather = this.weather;
 		}
-		if (weather === '' || weather === 'none' || weather === 'pseudo') {
-			weather = (this.pseudoWeather.length ? 'pseudo' : '');
-		}
-
-		var oldweather = this.weather;
-		this.weather = weather;
-
-		if (this.fastForward) return;
-
-		if (instant) oldweather = true;
+		var isIntense = false;
 		var weatherNameTable = {
 			sunnyday: 'Sun',
 			desolateland: 'Intense Sun',
@@ -3156,10 +3161,35 @@ var Battle = (function () {
 			hail: 'Hail',
 			deltastream: 'Strong Winds'
 		};
+		if (!(weather in weatherNameTable)) {
+			weather = (this.pseudoWeather.length ? 'pseudo' : '');
+			for (var i = 0; i < this.pseudoWeather.length; i++) {
+				var pwid = toId(this.pseudoWeather[i][0]);
+				switch (pwid) {
+				case 'electricterrain':
+				case 'grassyterrain':
+				case 'mistyterrain':
+				case 'psychicterrain':
+					weather = pwid;
+					isIntense = true;
+					break;
+				}
+			}
+		}
+		if (weather === 'desolateland' || weather === 'primordialsea' || weather === 'deltastream') {
+			isIntense = true;
+		}
+
+		var oldweather = this.weather;
+		this.weather = weather;
+
+		if (this.fastForward) return;
+
+		if (instant) oldweather = true;
 
 		var weatherhtml = '';
 		if (weather) {
-			if (weather !== 'pseudo') {
+			if (weather in weatherNameTable) {
 				weatherhtml += '<br />' + weatherNameTable[weather] + this.weatherLeft();
 			}
 			for (var i = 0; i < this.pseudoWeather.length; i++) {
@@ -3178,11 +3208,11 @@ var Battle = (function () {
 				this.weatherElem.attr('class', 'weather');
 			}
 			this.weatherElem.html('<em>' + weatherhtml + '</em>');
-			this.weatherElem.css({opacity: 0.5});
+			this.weatherElem.css({opacity: isIntense ? 0.9 : .5});
 			if (weather && !instant) this.weatherElem.animate({
 				opacity: 1.0
 			}, 400).animate({
-				opacity: .5
+				opacity: isIntense ? 0.9 : .5
 			}, 400);
 			return;
 		}
@@ -3194,7 +3224,7 @@ var Battle = (function () {
 				}, 300, function () {
 					self.weatherElem.attr('class', 'weather ' + weather + 'weather');
 					self.weatherElem.html('<em>' + weatherhtml + '</em>');
-					self.weatherElem.css({opacity: 0.5});
+					self.weatherElem.css({opacity: isIntense ? 0.9 : 0.5});
 				});
 			} else {
 				this.weatherElem.animate({
@@ -3212,7 +3242,7 @@ var Battle = (function () {
 			this.weatherElem.animate({
 				opacity: 1.0
 			}, 400).animate({
-				opacity: .5
+				opacity: isIntense ? 0.9 : .5
 			}, 400);
 		}
 	};
@@ -4817,6 +4847,10 @@ var Battle = (function () {
 				poke.copyTypesFrom(tpoke);
 				poke.ability = tpoke.ability;
 				poke.volatiles.formechange[2] = (tpoke.volatiles.formechange ? tpoke.volatiles.formechange[2] : tpoke.species);
+				poke.volatiles.transform[2] = tpoke;
+				for (var i = 0; i < tpoke.moveTrack.length; i++) {
+					poke.markMove(tpoke.moveTrack[i][0], 0);
+				}
 				this.resultAnim(poke, 'Transformed', 'good');
 				break;
 			case '-formechange':
@@ -4871,7 +4905,7 @@ var Battle = (function () {
 					actions += "" + Tools.escapeHTML(poke.side.name) + "'s fervent wish has reached " + poke.getLowerName() + "!";
 				} else {
 					poke.item = item.name;
-					actions += "" + poke.getName() + "'s " + item.name + " is reacting to " + Tools.escapeHTML(poke.side.name) + "'s Mega Bracelet!";
+					actions += "" + poke.getName() + "'s " + item.name + " is reacting to " + (this.gen >= 7 ? "the Key Stone" : Tools.escapeHTML(poke.side.name) + "'s Mega Bracelet") + "!";
 				}
 				actions += "<br />" + poke.getName() + " has Mega Evolved into Mega " + args[2] + "!";
 				break;
@@ -5245,6 +5279,7 @@ var Battle = (function () {
 				case 'illusion':
 					this.resultAnim(poke, 'Illusion ended', 'bad');
 					actions += "" + poke.getName() + "'s illusion wore off!";
+					poke.markAbility('Illusion');
 					break;
 				case 'slowstart':
 					this.resultAnim(poke, 'Slow Start ended', 'good');
@@ -5881,10 +5916,13 @@ var Battle = (function () {
 				}
 				var maxTimeLeft = 0;
 				if (effect.id in {'electricterrain': 1, 'grassyterrain': 1, 'mistyterrain': 1, 'psychicterrain': 1}) {
-					this.removePseudoWeather('Electric Terrain');
-					this.removePseudoWeather('Grassy Terrain');
-					this.removePseudoWeather('Misty Terrain');
-					this.removePseudoWeather('Psychic Terrain');
+					for (var i = this.pseudoWeather.length - 1; i >= 0; i--) {
+						var pwName = this.pseudoWeather[i][0];
+						if (pwName === 'Electric Terrain' || pwName === 'Grassy Terrain' || pwName === 'Misty Terrain' || pwName === 'Psychic Terrain') {
+							this.pseudoWeather.splice(i, 1);
+							continue;
+						}
+					}
 					if (this.gen > 6) maxTimeLeft = 8;
 				}
 				this.addPseudoWeather(effect.name, 5, maxTimeLeft);
@@ -6518,18 +6556,15 @@ var Battle = (function () {
 			}
 			break;
 		case 'chatmsg':
-			args.shift();
-			this.log('<div class="chat">' + Tools.escapeHTML(args.join('|')) + '</div>', preempt);
+			this.log('<div class="chat">' + Tools.escapeHTML(args[1]) + '</div>', preempt);
 			break;
 		case 'chatmsg-raw':
 		case 'raw':
 		case 'html':
-			args.shift();
-			this.log('<div class="chat">' + Tools.sanitizeHTML(args.join('|')) + '</div>', preempt);
+			this.log('<div class="chat">' + Tools.sanitizeHTML(args[1]) + '</div>', preempt);
 			break;
 		case 'error':
-			args.shift();
-			this.log('<div class="chat message-error">' + Tools.escapeHTML(args.join('|')) + '</div>', preempt);
+			this.log('<div class="chat message-error">' + Tools.escapeHTML(args[1]) + '</div>', preempt);
 			break;
 		case 'pm':
 			this.log('<div class="chat"><strong>' + Tools.escapeHTML(args[1]) + ':</strong> <span class="message-pm"><i style="cursor:pointer" onclick="selectTab(\'lobby\');rooms.lobby.popupOpen(\'' + Tools.escapeHTML(args[2], true) + '\')">(Private to ' + Tools.escapeHTML(args[3]) + ')</i> ' + Tools.parseMessage(args[4], args[1]) + '</span>');
@@ -6539,25 +6574,23 @@ var Battle = (function () {
 			break;
 		case 'inactive':
 			if (!this.kickingInactive) this.kickingInactive = true;
-			args.shift();
-			if (args[0].slice(0, 9) === "You have ") {
+			if (args[1].slice(0, 9) === "You have ") {
 				// this is ugly but parseInt is documented to work this way
 				// so I'm going to be lazy and not chop off the rest of the
 				// sentence
-				this.kickingInactive = parseInt(args[0].slice(9), 10) || true;
+				this.kickingInactive = parseInt(args[1].slice(9), 10) || true;
 				return;
-			} else if (args[0].slice(-14) === ' seconds left.') {
-				var hasIndex = args[0].indexOf(' has ');
-				if (toId(args[0].slice(0, hasIndex)) === app.user.get('userid')) {
-					this.kickingInactive = parseInt(args[0].slice(hasIndex + 5), 10) || true;
+			} else if (args[1].slice(-14) === ' seconds left.') {
+				var hasIndex = args[1].indexOf(' has ');
+				if (toId(args[1].slice(0, hasIndex)) === app.user.get('userid')) {
+					this.kickingInactive = parseInt(args[1].slice(hasIndex + 5), 10) || true;
 				}
 			}
-			this.log('<div class="chat message-error">' + Tools.escapeHTML(args.join('|')) + '</div>', preempt);
+			this.log('<div class="chat message-error">' + Tools.escapeHTML(args[1]) + '</div>', preempt);
 			break;
 		case 'inactiveoff':
 			this.kickingInactive = false;
-			args.shift();
-			this.log('<div class="chat message-error">' + Tools.escapeHTML(args.join('|')) + '</div>', preempt);
+			this.log('<div class="chat message-error">' + Tools.escapeHTML(args[1]) + '</div>', preempt);
 			break;
 		case 'timer':
 			break;
@@ -6585,6 +6618,10 @@ var Battle = (function () {
 		case 'player':
 			this.getSide(args[1]).setName(args[2]);
 			this.getSide(args[1]).setSprite(args[3]);
+			break;
+		case 'teamsize':
+			this.getSide(args[1]).totalPokemon = parseInt(args[2], 10);
+			this.getSide(args[1]).updateSidebar();
 			break;
 		case 'win':
 			this.winner(args[1]);
@@ -6718,8 +6755,7 @@ var Battle = (function () {
 			if (this.ended || this.endPrevAction()) return;
 			break;
 		case 'warning':
-			args.shift();
-			this.message('<strong>Warning:</strong> ' + Tools.escapeHTML(args.join('|')));
+			this.message('<strong>Warning:</strong> ' + Tools.escapeHTML(args[1]));
 			this.message('Bug? Report it to <a href="http://www.smogon.com/forums/showthread.php?t=3453192">the replay viewer\'s Smogon thread</a>');
 			this.activityWait(1000);
 			break;
@@ -6769,69 +6805,78 @@ var Battle = (function () {
 		if (str.charAt(0) !== '|' || str.substr(0, 2) === '||') {
 			if (str.charAt(0) === '|') str = str.substr(2);
 			this.log('<div class="chat">' + Tools.escapeHTML(str) + '</div>', preempt);
-		} else {
-			var args = ['done'], kwargs = {};
-			if (str !== '|') {
-				args = str.substr(1).split('|');
-			}
-			if (args[0] === 'c' || args[0] === 'chat' || args[0] === 'bchat' || args[0] === 'error' || args[0] === 'html') {
-				// chat is preserved untouched
-				args = [args[0], str.slice(args[0].length + 2)];
-			} else while (args[args.length - 1] && args[args.length - 1].substr(0, 1) === '[') {
-				var bracketPos = args[args.length - 1].indexOf(']');
+			return;
+		}
+		var args = ['done'], kwargs = {};
+		if (str !== '|') {
+			args = str.substr(1).split('|');
+		}
+		switch (args[0]) {
+		case 'c': case 'chat': case 'bchat':
+		case 'chatmsg': case 'chatmsg-raw': case 'raw': case 'error': case 'html':
+		case 'inactive': case 'inactiveoff': case 'warning':
+			// chat is preserved untouched
+			args = [args[0], str.slice(args[0].length + 2)];
+			break;
+		default:
+			// parse kwargs
+			while (args.length) {
+				var argstr = args[args.length - 1];
+				if (argstr.substr(0, 1) !== '[') break;
+				var bracketPos = argstr.indexOf(']');
 				if (bracketPos <= 0) break;
-				var argstr = args.pop();
 				// default to '.' so it evaluates to boolean true
 				kwargs[argstr.substr(1, bracketPos - 1)] = ($.trim(argstr.substr(bracketPos + 1)) || '.');
+				args.pop();
 			}
+		}
 
-			// parse the next line if it's a minor: runMinor needs it parsed to determine when to merge minors
-			var nextLine = '', nextArgs = [''], nextKwargs = {};
-			nextLine = this.activityQueue[this.activityStep + 1] || '';
-			if (nextLine && nextLine.substr(0, 2) === '|-') {
-				nextLine = $.trim(nextLine.substr(1));
-				nextArgs = nextLine.split('|');
-				while (nextArgs[nextArgs.length - 1] && nextArgs[nextArgs.length - 1].substr(0, 1) === '[') {
-					var bracketPos = nextArgs[nextArgs.length - 1].indexOf(']');
-					if (bracketPos <= 0) break;
-					var argstr = nextArgs.pop();
-					// default to '.' so it evaluates to boolean true
-					nextKwargs[argstr.substr(1, bracketPos - 1)] = ($.trim(argstr.substr(bracketPos + 1)) || '.');
-				}
+		// parse the next line if it's a minor: runMinor needs it parsed to determine when to merge minors
+		var nextLine = '', nextArgs = [''], nextKwargs = {};
+		nextLine = this.activityQueue[this.activityStep + 1] || '';
+		if (nextLine && nextLine.substr(0, 2) === '|-') {
+			nextLine = $.trim(nextLine.substr(1));
+			nextArgs = nextLine.split('|');
+			while (nextArgs[nextArgs.length - 1] && nextArgs[nextArgs.length - 1].substr(0, 1) === '[') {
+				var bracketPos = nextArgs[nextArgs.length - 1].indexOf(']');
+				if (bracketPos <= 0) break;
+				var argstr = nextArgs.pop();
+				// default to '.' so it evaluates to boolean true
+				nextKwargs[argstr.substr(1, bracketPos - 1)] = ($.trim(argstr.substr(bracketPos + 1)) || '.');
 			}
+		}
 
-			if (this.debug) {
-				if (args[0].substr(0, 1) === '-') {
-					this.runMinor(args, kwargs, preempt, nextArgs, nextKwargs);
-				} else {
-					this.runMajor(args, kwargs, preempt);
-				}
-			} else try {
-				if (args[0].substr(0, 1) === '-') {
-					this.runMinor(args, kwargs, preempt, nextArgs, nextKwargs);
-				} else {
-					this.runMajor(args, kwargs, preempt);
-				}
-			} catch (e) {
-				this.log('<div class="chat">Error parsing: ' + Tools.escapeHTML(str) + ' (' + Tools.escapeHTML('' + e) + ')</div>', preempt);
-				if (e.stack) {
-					var stack = Tools.escapeHTML('' + e.stack).split('\n');
-					for (var i = 0; i < stack.length; i++) {
-						if (/\brun\b/.test(stack[i])) {
-							stack.length = i;
-							break;
-						}
+		if (this.debug) {
+			if (args[0].substr(0, 1) === '-') {
+				this.runMinor(args, kwargs, preempt, nextArgs, nextKwargs);
+			} else {
+				this.runMajor(args, kwargs, preempt);
+			}
+		} else try {
+			if (args[0].substr(0, 1) === '-') {
+				this.runMinor(args, kwargs, preempt, nextArgs, nextKwargs);
+			} else {
+				this.runMajor(args, kwargs, preempt);
+			}
+		} catch (e) {
+			this.log('<div class="chat">Error parsing: ' + Tools.escapeHTML(str) + ' (' + Tools.escapeHTML('' + e) + ')</div>', preempt);
+			if (e.stack) {
+				var stack = Tools.escapeHTML('' + e.stack).split('\n');
+				for (var i = 0; i < stack.length; i++) {
+					if (/\brun\b/.test(stack[i])) {
+						stack.length = i;
+						break;
 					}
-					this.log('<div class="chat">' + stack.join('<br>') + '</div>', preempt);
 				}
-				if (this.errorCallback) this.errorCallback(this);
+				this.log('<div class="chat">' + stack.join('<br>') + '</div>', preempt);
 			}
+			if (this.errorCallback) this.errorCallback(this);
+		}
 
-			if (this.fastForward > 0 && this.fastForward < 1) {
-				if (nextLine.substr(0, 6) === '|start') {
-					this.fastForwardOff();
-					if (this.endCallback) this.endCallback(this);
-				}
+		if (this.fastForward > 0 && this.fastForward < 1) {
+			if (nextLine.substr(0, 6) === '|start') {
+				this.fastForwardOff();
+				if (this.endCallback) this.endCallback(this);
 			}
 		}
 	};

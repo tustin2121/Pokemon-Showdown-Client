@@ -203,7 +203,7 @@
 		 *     triggered if the login server did not return a response
 		 */
 		finishRename: function (name, assertion) {
-			if (assertion.slice(0, 14) === '<!DOCTYPE html') {
+			if (assertion.slice(0, 14).toLowerCase() === '<!doctype html') {
 				// some sort of MitM proxy; ignore it
 				var endIndex = assertion.indexOf('>');
 				if (endIndex > 0) assertion = assertion.slice(endIndex + 1);
@@ -216,6 +216,7 @@
 					return;
 				}
 				app.addPopupMessage("Something is interfering with our connection to the login server.");
+				assertion = assertion.replace(/[\r\n]+/g, ' ');
 				// send to server anyway in case server knows how to deal with it
 				app.send('/trn ' + name + ',0,' + assertion);
 				return;
@@ -424,6 +425,11 @@
 					} else {
 						debugStyle.innerHTML = onCSS;
 					}
+				}
+
+				if (Tools.prefs('onepanel')) {
+					self.singlePanelMode = true;
+					self.updateLayout();
 				}
 
 				if (Tools.prefs('bwgfx') || Tools.prefs('noanim')) {
@@ -762,7 +768,7 @@
 		receive: function (data) {
 			var roomid = '';
 			var autojoined = false;
-			if (data.substr(0, 1) === '>') {
+			if (data.charAt(0) === '>') {
 				var nlIndex = data.indexOf('\n');
 				if (nlIndex < 0) return;
 				roomid = toRoomid(data.substr(1, nlIndex - 1));
@@ -863,6 +869,16 @@
 			}
 
 			switch (parts[0]) {
+			case 'customgroups':
+				var nlIndex = data.indexOf('\n');
+				if (nlIndex > 0) {
+					this.receive(data.substr(nlIndex + 1));
+				}
+
+				var tarRow = data.slice(14, nlIndex);
+				this.parseGroups(tarRow);
+				break;
+
 			case 'challstr':
 				if (parts[2]) {
 					this.user.receiveChallstr(parts[1] + '|' + parts[2]);
@@ -1016,6 +1032,35 @@
 				break;
 			}
 		},
+		parseGroups: function (groupsList) {
+			var data = null;
+			try {
+				data = JSON.parse(groupsList);
+			} catch (e) {}
+			if (!data) return; // broken JSON - keep default ranks
+
+			var groups = {};
+			// process the data and sort into the three auth tiers, 0, 1, and 2
+			for (var i = 0; i < data.length; i++) {
+				var entry = data[i];
+				if (!entry) continue;
+
+				var symbol = entry.symbol || ' ';
+				var groupName = entry.name;
+				var groupType = entry.type || 'user';
+
+				if (groupType === 'normal' && !Config.defaultOrder) Config.defaultOrder = i + 0.5; // this is where any undeclared groups will be positioned in userlist
+				if (!groupName) Config.defaultGroup = symbol;
+
+				groups[symbol] = {
+					name: groupName ? Tools.escapeHTML(groupName + ' (' + symbol + ')') : null,
+					type: groupType,
+					order: i + 1,
+				};
+			}
+
+			Config.groups = groups; // if nothing from above crashes (malicious json), then the client will use the new custom groups
+		},
 		parseFormats: function (formatsList) {
 			var isSection = false;
 			var section = '';
@@ -1046,6 +1091,7 @@
 					var challengeShow = true;
 					var tournamentShow = true;
 					var team = null;
+					var teambuilderLevel = null;
 					var lastCommaIndex = name.lastIndexOf(',');
 					var code = lastCommaIndex >= 0 ? parseInt(name.substr(lastCommaIndex + 1), 16) : NaN;
 					if (!isNaN(code)) {
@@ -1054,6 +1100,7 @@
 						if (!(code & 2)) searchShow = false;
 						if (!(code & 4)) challengeShow = false;
 						if (!(code & 8)) tournamentShow = false;
+						if (code & 16) teambuilderLevel = 50;
 					} else {
 						// Backwards compatibility: late 0.9.0 -> 0.10.0
 						if (name.substr(name.length - 2) === ',#') { // preset teams
@@ -1118,6 +1165,7 @@
 						challengeShow: challengeShow,
 						tournamentShow: tournamentShow,
 						rated: searchShow && id.substr(0, 7) !== 'unrated',
+						teambuilderLevel: teambuilderLevel,
 						teambuilderFormat: teambuilderFormat,
 						isTeambuilderFormat: isTeambuilderFormat,
 						effectType: 'Format'
@@ -1415,8 +1463,12 @@
 			// If we don't have any right rooms at all, just show the left
 			// room in full. Home is a left room, so we'll always have a
 			// left room.
-			if (!this.sideRoom) {
+			if (!this.sideRoom || this.singlePanelMode) {
 				this.curRoom.show('full');
+				if (this.curSideRoom) {
+					this.curSideRoom.hide();
+					this.curSideRoom = null;
+				}
 				if (this.curRoom.id === '') {
 					if ($(window).width() < this.curRoom.bestWidth) {
 						this.curRoom.$el.addClass('tiny-layout');
@@ -2189,6 +2241,73 @@
 		}
 	});
 
+	Config.groups = Config.groups || {
+		'~': {
+			name: "Administrator (~)",
+			type: 'leadership',
+			order: 10001,
+		},
+		'#': {
+			name: "Room Owner (#)",
+			type: 'leadership',
+			order: 10002,
+		},
+		'&': {
+			name: "Leader (&amp;)",
+			type: 'leadership',
+			order: 10003,
+		},
+		'@': {
+			name: "Moderator (@)",
+			type: 'staff',
+			order: 10004,
+		},
+		'%': {
+			name: "Driver (%)",
+			type: 'staff',
+			order: 10005,
+		},
+		'*': {
+			name: "Bot (*)",
+			type: 'normal',
+			order: 10006,
+		},
+		'\u2606': {
+			name: "Player (\u2606)",
+			type: 'normal',
+			order: 10007,
+		},
+		'\u2605': {
+			name: "Player (\u2605)",
+			type: 'normal',
+			order: 10008,
+		},
+		'+': {
+			name: "Voice (+)",
+			type: 'normal',
+			order: 10009,
+		},
+		' ': {
+			type: 'normal',
+			order: 10010,
+		},
+		'!': {
+			name: "<span style='color:#777777'>Muted (!)</span>",
+			type: 'punishment',
+			order: 10011,
+		},
+		'✖': {
+			name: "<span style='color:#777777'>Namelocked (✖)</span>",
+			type: 'punishment',
+			order: 10012,
+		},
+		'‽': {
+			name: "<span style='color:#777777'>Locked (‽)</span>",
+			type: 'punishment',
+			order: 10013,
+		}
+	};
+
 	var UserPopup = this.UserPopup = Popup.extend({
 		initialize: function (data) {
 			data.userid = toId(data.name);
@@ -2214,22 +2333,8 @@
 			var userid = data.userid;
 			var name = data.name;
 			var avatar = data.avatar || '';
-			var groupDetails = {
-				'#': "Room Owner (#)",
-				'~': "Administrator (~)",
-				'&': "Leader (&amp;)",
-				'@': "Moderator (@)",
-				'%': "Driver (%)",
-				'*': "Bot (*)",
-				'\u2606': "Player (\u2606)",
-				'\u2605': "Player (\u2605)",
-				'+': "Voice (+)",
-				'‽': "<span style='color:#777777'>Locked (‽)</span>",
-				'✖': "<span style='color:#777777'>Namelocked (✖)</span>",
-				'!': "<span style='color:#777777'>Muted (!)</span>"
-			};
-			var group = (groupDetails[name.substr(0, 1)] || '');
-			var globalgroup = (groupDetails[(data.group || '').charAt(0)] || '');
+			var group = ((Config.groups[name.charAt(0)] || {}).name || '');
+			var globalgroup = ((Config.groups[(data.group || Config.defaultGroup || ' ')] || {}).name || '');
 			if (globalgroup) {
 				if (!group || group === globalgroup) {
 					group = "Global " + globalgroup;

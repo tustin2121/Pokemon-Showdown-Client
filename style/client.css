@@ -86,6 +86,10 @@ button {
 button:disabled {
 	cursor: default;
 }
+select {
+	font-size: 9pt;
+	font-family: Verdana, Helvetica, Arial, sans-serif;
+}
 
 .dark a {
 	color: #4488EE;
@@ -1581,11 +1585,13 @@ a.ilink.yours {
 }
 
 .tournament-join,
-.tournament-leave {
+.tournament-leave,
+.tournament-validate {
 	display: none;
 }
 .tournament-join.active,
-.tournament-leave.active {
+.tournament-leave.active,
+.tournament-validate.active {
 	display: inline;
 }
 
@@ -2470,6 +2476,9 @@ a.ilink.yours {
 	border-color: #AAAAAA;
 	opacity: .5;
 	cursor: default;
+}
+.teambar .picon {
+	display: block;
 }
 .teamchart,
 .teamchart li {
@@ -3416,19 +3425,17 @@ a.ilink.yours {
 .effect-volume,
 .music-volume,
 .notif-volume {
-	height: 39px;
+	min-height: 34px;
 }
 .effect-volume label,
 .music-volume label,
 .notif-volume label {
-	padding-bottom: 12px;
 	font-size: 8pt;
 }
 .effect-volume em,
 .music-volume em,
 .notif-volume em {
 	display: block;
-	margin-top: -6px;
 	font-size: 9pt;
 	padding-left: 5px;
 	color: #555555;
