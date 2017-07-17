@@ -31,6 +31,10 @@ SoundManager.prototype = {
         return (this.soundBank[config.id] = new Sound(config));
     },
     
+    getSoundById : function(id) {
+        return this.soundBank[id];
+    },
+    
     destroySound : function(id) {
         this.soundBank[id].stop();
         this.soundBank[id].unload();
@@ -39,8 +43,8 @@ SoundManager.prototype = {
         return true;
     },
     
-    onready : function() {
-        // compatibility.  
+    onready : function(fn) {
+        $(fn);
     },
 };
 
@@ -353,6 +357,10 @@ SoundManager.prototype = {
     },
     /** Creates and returns a sound clip. */
     createSound : function(config) {
+        console.warn("Could not create sound: no WebAudio context.");
+        return new Sound();
+    },
+    getSoundById : function(id) {
         console.warn("Could not create sound: no WebAudio context.");
         return new Sound();
     },

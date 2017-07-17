@@ -1151,7 +1151,9 @@
 				this.$chatFrame.scrollTop(this.$chat.height());
 			}
 			if (!app.focused && !Tools.prefs('mute') && Tools.prefs('notifvolume')) {
+				try {
 				soundManager.getSoundById('notif').setVolume(Tools.prefs('notifvolume')).play();
+				} catch (e) { console.error(`Can't play notify sound:`, e); }
 			}
 		},
 		addRow: function (line) {
@@ -1257,7 +1259,9 @@
 
 				case 'notify':
 					if (!Tools.prefs('mute') && Tools.prefs('notifvolume')) {
+						try {
 						soundManager.getSoundById('notif').setVolume(Tools.prefs('notifvolume')).play();
+						} catch (e) { console.error(`Can't play notify sound:`, e); }
 					}
 					this.notifyOnce(row[1], row.slice(2).join('|'), 'highlight');
 					break;

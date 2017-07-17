@@ -20,7 +20,7 @@ const dataDir = path.resolve(rootDir, 'data');
 // child_process.execSync('git pull', {cwd: repositoryDir});
 // console.log("DONE");
 
-const Tools = require('../data/Pokemon-Showdown/sim/dex');
+const Tools = require('../../server/sim/dex');
 const toId = Tools.getId;
 process.stdout.write("Loading gen 6 data... ");
 Tools.includeData();
