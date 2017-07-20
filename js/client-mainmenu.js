@@ -46,7 +46,7 @@
 			buf += '<div class="menugroup">';
 			buf += '<p><button class="button mainmenu2" name="joinRoom" value="teambuilder">Teambuilder</button></p>';
 			buf += '<p><button class="button mainmenu3" name="joinRoom" value="ladder">Ladder</button></p>';
-			buf += '<p><button class="button mainmenu4" name="joinRoom" value="adventbuilder">TPPLeague</button></p>';
+			buf += '<p><button class="button mainmenu4" name="joinRoom" value="leaguetool">TPPLeague</button></p>';
 			buf += '</div>';
 			
 			buf += '<div class="menugroup">';

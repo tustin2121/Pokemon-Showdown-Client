@@ -129,14 +129,14 @@
 	}
 	
 	/* global app, BattleBackdrops, musicTable */
-	var AdventbuilderRoom = exports.AdventbuilderRoom = exports.Room.extend({
-		type: 'adventbuilder',
+	var LeagueToolRoom = exports.LeagueToolRoom = exports.Room.extend({
+		type: 'leaguetool',
 		title: 'TPPLeague',
 		initialize: function () {
 			this.$el.addClass('ps-room-light scrollable tpp');
 			
-			app.on('response:adventbuilder', this.update, this);
-			app.send('/adventbuilder request options');
+			app.on('response:leaguetool', this.update, this);
+			app.send('/leaguetool request options');
 			this.update();
 		},
 		events: {
@@ -835,13 +835,13 @@
 		},
 		
 		openMainMenu: function(){
-			app.send('/adventbuilder request options');
+			app.send('/leaguetool request options');
 		},
 		openView: function(id, element) {
 			if (id.slice(-4) === ":new") {
-				app.send('/adventbuilder new '+id.slice(0, -4));
+				app.send('/leaguetool new '+id.slice(0, -4));
 			} else {
-				app.send('/adventbuilder request '+id);
+				app.send('/leaguetool request '+id);
 			}
 		},
 		
@@ -927,7 +927,7 @@
 				types: map2array(this.$(".typeList").data('types')),
 				banlist: this.$("input[name=banlist]").val().trim().split(/, ?/i),
 			};
-			app.send('/adventbuilder commit elite '+JSON.stringify(json));
+			app.send('/leaguetool commit elite '+JSON.stringify(json));
 		},
 		commitGym: function() {
 			var json = {
@@ -940,7 +940,7 @@
 				trialdesc: this.$("textarea[name=trialdesc]").val().trim().substr(0, 1000),
 				banlist: this.$("input[name=banlist]").val().trim().split(/, ?/i),
 			};
-			app.send('/adventbuilder commit gym '+JSON.stringify(json));
+			app.send('/leaguetool commit gym '+JSON.stringify(json));
 		},
 		
 		openBadgeCase: function(){
@@ -1032,31 +1032,31 @@
 				titleRename: this.$("[name=titleRename]").is(":checked"),
 				gymRename: this.$("[name=gymRename]").is(":checked"),
 			};
-			app.send('/adventbuilder commit leagueopts '+JSON.stringify(opts));
+			app.send('/leaguetool commit leagueopts '+JSON.stringify(opts));
 		},
 		adminRemoveBadge: function(el) {
 			
 		},
 		adminRemoveChallenger: function(nick){
-			app.send('/adventbuilder commit rmchal '+nick);
+			app.send('/leaguetool commit rmchal '+nick);
 		},
 		adminAddGym: function(){
-			app.send('/adventbuilder commit addgym '+ this.$("input[name=addgym]").val())
+			app.send('/leaguetool commit addgym '+ this.$("input[name=addgym]").val())
 		},
 		adminRemoveGym: function(nick){
-			app.send('/adventbuilder commit rmgym '+nick);
+			app.send('/leaguetool commit rmgym '+nick);
 		},
 		adminAddElite: function() {
-			app.send('/adventbuilder commit addelite '+ this.$("input[name=addelite]").val())
+			app.send('/leaguetool commit addelite '+ this.$("input[name=addelite]").val())
 		},
 		adminRemoveElite: function(nick) {
-			app.send('/adventbuilder commit rmelite '+nick);
+			app.send('/leaguetool commit rmelite '+nick);
 		},
 		adminPromoteChamp: function(nick) {
-			app.send('/adventbuilder commit promotechamp '+nick);
+			app.send('/leaguetool commit promotechamp '+nick);
 		},
 		adminDemoteChamp: function(nick) {
-			app.send('/adventbuilder commit demotechamp '+nick);
+			app.send('/leaguetool commit demotechamp '+nick);
 		},
 		
 		openHelpPopup: function(topic) {

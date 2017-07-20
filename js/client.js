@@ -1325,7 +1325,7 @@
 			}
 			var roomTable = {
 				'': MainMenuRoom,
-				'adventbuilder': AdventbuilderRoom,
+				'leaguetool': LeagueToolRoom,
 				'teambuilder': TeambuilderRoom,
 				'rooms': RoomsRoom,
 				'battles': BattlesRoom,

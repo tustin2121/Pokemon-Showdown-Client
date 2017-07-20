@@ -79,8 +79,8 @@
 				return buf + '><i class="fa fa-home"></i> <span>Home</span></a></li>';
 			case 'teambuilder':
 				return buf + '><i class="fa fa-pencil-square-o"></i> <span>Teambuilder</span></a><button class="closebutton" name="closeRoom" value="teambuilder"><i class="fa fa-times-circle"></i></button></li>';
-			case 'adventbuilder':
-				return buf + '><i class="fa fa-sitemap"></i> <span>TPPLeague</span></a><button class="closebutton" name="closeRoom" value="adventbuilder"><i class="fa fa-times-circle"></i></button></li>';
+			case 'leaguetool':
+				return buf + '><i class="fa fa-sitemap"></i> <span>TPPLeague</span></a><button class="closebutton" name="closeRoom" value="leaguetool"><i class="fa fa-times-circle"></i></button></li>';
 			case 'ladder':
 				return buf + '><i class="fa fa-list-ol"></i> <span>Ladder</span></a><button class="closebutton" name="closeRoom" value="ladder"><i class="fa fa-times-circle"></i></button></li>';
 			case 'battles':
@@ -116,7 +116,7 @@
 			var curId = (app.curRoom ? app.curRoom.id : '');
 			var curSideId = (app.curSideRoom ? app.curSideRoom.id : '');
 
-			var buf = '<ul>' + this.renderRoomTab(app.rooms['']) + this.renderRoomTab(app.rooms['teambuilder']) + this.renderRoomTab(app.rooms['ladder']) /*+ this.renderRoomTab(app.rooms['adventbuilder'])*/ + '</ul>';
+			var buf = '<ul>' + this.renderRoomTab(app.rooms['']) + this.renderRoomTab(app.rooms['teambuilder']) + this.renderRoomTab(app.rooms['ladder']) /*+ this.renderRoomTab(app.rooms['leaguetool'])*/ + '</ul>';
 			var sideBuf = '';
 
 			var notificationCount = app.rooms[''].notifications ? 1 : 0;
