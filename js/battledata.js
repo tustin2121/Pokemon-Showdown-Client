@@ -8,7 +8,7 @@ License: MIT License
 if (!window.exports) window.exports = window;
 
 if (window.soundManager) {
-	soundManager.setup({url:'https://play.pokemonshowdown.com/swf/'});
+	soundManager.setup({url:'https://tppleague.me/swf/'});
 	if (window.Replays) soundManager.onready(window.Replays.soundReady);
 	soundManager.onready(function () {
 		soundManager.createSound({
@@ -365,13 +365,13 @@ var Tools = {
 
 	resourcePrefix: (function () {
 		var prefix = '/';
-		if (document.location.protocol === 'file:') prefix = 'https://play.pokemonshowdown.com/';
+		if (document.location.protocol === 'file:') prefix = 'https://tppleague.me/';
 		return prefix;
 	})(),
 
 	fxPrefix: (function () {
 		if (document.location.protocol === 'file:') {
-			if (window.Replays) return 'https://play.pokemonshowdown.com/fx/';
+			if (window.Replays) return 'https://tppleague.me/fx/';
 			return 'fx/';
 		}
 		return '/fx/';
@@ -1764,7 +1764,7 @@ var Tools = {
 		buf += '<div class="battle-log battle-log-inline"><div class="inner">' + battle.logElem.html() + '</div></div>\n';
 		buf += '</div>\n';
 		buf += '<script>\n';
-		buf += 'var daily = Math.floor(Date.now()/1000/60/60/24);document.write(\'<script src="https://play.pokemonshowdown.com/js/replay-embed.js?version\'+daily+\'"></\'+\'script>\');\n';
+		buf += 'var daily = Math.floor(Date.now()/1000/60/60/24);document.write(\'<script src="https://tppleague.me/js/replay-embed.js?version\'+daily+\'"></\'+\'script>\');\n';
 		buf += '</script>\n';
 		return buf;
 	},

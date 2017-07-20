@@ -341,6 +341,8 @@
 				}
 			}
 
+			buf += '<div class="storage-warning"></div>';
+
 			var newButtonText = "New Team";
 			if (filterFolder) newButtonText = "New Team in folder";
 			if (filterFormat && filterFormat !== 'gen7') {
@@ -422,6 +424,12 @@
 				buf += '<p><strong>Clearing your cookies (specifically, <code>localStorage</code>) will delete your teams.</strong></p>';
 				buf += '<button name="backup" class="button"><i class="fa fa-upload"></i> Backup/Restore all teams</button>';
 				buf += '<p>If you want to clear your cookies or <code>localStorage</code>, you can use the Backup/Restore feature to save your teams as text first.</p>';
+				var self = this;
+				if (navigator.storage && navigator.storage.persisted) {
+					navigator.storage.persisted().then(function (state) {
+						self.updatePersistence(state);
+					});
+				}
 			} else {
 				buf += '<button name="backup" class="button"><i class="fa fa-upload"></i> Restore teams from backup</button>';
 			}
@@ -434,6 +442,13 @@
 				$pane.scrollTop(this.teamScrollPos);
 				this.teamScrollPos = 0;
 			}
+		},
+		updatePersistence: function (state) {
+			if (state) {
+				this.$('.storage-warning').html('');
+				return;
+			}
+			this.$('.storage-warning').html('');
 		},
 		greeting: function (answer, button) {
 			var buf = '<p><strong>' + $(button).html() + '</p></strong>';
@@ -455,7 +470,7 @@
 				buf += '<p>No, they were free. That just makes it easier to get my money\'s worth. Let\'s play rock paper scissors!</p>';
 				buf += '<p><button class="button" name="greeting" value="RR"><i class="fa fa-hand-rock-o"></i> Rock</button> <button class="button" name="greeting" value="RP"><i class="fa fa-hand-paper-o"></i> Paper</button> <button class="button" name="greeting" value="RS"><i class="fa fa-hand-scissors-o"></i> Scissors</button> <button class="button" name="greeting" value="RL"><i class="fa fa-hand-lizard-o"></i> Lizard</button> <button class="button" name="greeting" value="RK"><i class="fa fa-hand-spock-o"></i> Spock</button></p>';
 			} else if (answer[0] === 'R') {
-				buf += '<p>I play Lotid, I win. <i class="fa fa-hand-o-left"></i></p>';
+				buf += '<p>I play laser, I win. <i class="fa fa-hand-o-left"></i></p>';
 				buf += '<p><button class="button" name="greeting" value="YC"><i class="fa fa-thumbs-o-down"></i> You can\'t do that!</button></p>';
 			} else if (answer === 'SP') {
 				buf += '<p>Okay, sure. I warn you, I\'m using the same RNG that makes Stone Edge miss for you.</p>';
@@ -677,24 +692,25 @@
 			}
 			this.back();
 		},
-		"new": function () {
-			var format = this.curFolder;
-			var folder = '';
-			if (format && format.charAt(format.length - 1) === '/') {
-				folder = format.slice(0, -1);
-				format = '';
-			}
-			var newTeam = {
-				name: 'Untitled ' + (teams.length + 1),
-				format: format,
-				team: '',
-				folder: folder,
-				iconCache: ''
-			};
+		"new": function (atTop) {
+			var newTeam = this.createTeam();
+
 			teams.push(newTeam);
 			this.edit(teams.length - 1);
 		},
 		newTop: function () {
+			var newTeam = this.createTeam();
+
+			teams.unshift(newTeam);
+			for (var room in app.rooms) {
+				var selection = app.rooms[room].$('button.teamselect').val();
+				if (!selection || selection === 'random') continue;
+				var obj = app.rooms[room].id === "" ? app.rooms[room] : app.rooms[room].tournamentBox;
+				obj.curTeamIndex++;
+			}
+			this.edit(0);
+		},
+		createTeam: function () {
 			var format = this.curFolder;
 			var folder = '';
 			if (format && format.charAt(format.length - 1) === '/') {
@@ -716,7 +732,8 @@
 					self.updatePersistence(state);
 				});
 			}
-			this.edit(0);
+
+			return newTeam;
 		},
 		"import": function () {
 			if (this.exportMode) return this.back();
@@ -760,7 +777,7 @@
 			var urlprefix = "data:text/plain;base64,";
 			if (document.location.protocol === 'https:') {
 				// Chrome is dumb and doesn't support data URLs in HTTPS
-				urlprefix = "https://play.pokemonshowdown.com/action.php?act=dlteam&team=";
+				urlprefix = "https://tppleague.me/action.php?act=dlteam&team=";
 			}
 			var contents = Storage.exportTeam(team.team).replace(/\n/g, '\r\n');
 			var downloadurl = "text/plain:" + filename + ":" + urlprefix + encodeURIComponent(window.btoa(unescape(encodeURIComponent(contents))));
@@ -3336,6 +3353,7 @@
 		getGen: function (format) {
 			format = '' + format;
 			if (!format) return 7;
+			if (format.substr(0, 9) === 'tppleague') return 7;
 			if (format.substr(0, 3) !== 'gen') return 6;
 			return parseInt(format.substr(3, 1), 10) || 6;
 		},
