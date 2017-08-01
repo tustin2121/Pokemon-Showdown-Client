@@ -703,7 +703,7 @@
 				s.onclose = socket.onclose;
 				return s;
 			};
-			this.socket.onclose = function () {
+			this.socket.onclose = function (e) {
 				if (!socketopened) {
 					if (Config.server.altport && !altport) {
 						if (document.location.protocol === 'https:') {
@@ -725,6 +725,7 @@
 					}
 					return self.trigger('init:connectionerror');
 				}
+				console.log('SockJS:closed => wasClean='+e.wasClean+' reason=['+e.reason+'] code=['+e.code+']');
 				self.trigger('init:socketclosed');
 			};
 		},
