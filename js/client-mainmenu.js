@@ -939,6 +939,7 @@
 				bufs[1] = '<li><button name="selectFormat" value=""' + (curFormat === '' ? ' class="sel"' : '') + '>(All formats)</button></li>';
 			}
 			var curSection = '';
+			var currCol = 1;
 			for (var i in BattleFormats) {
 				var format = BattleFormats[i];
 				var selected = false;
@@ -964,6 +965,7 @@
 				// if (formatName.charAt(0) !== '[') formatName = '[Gen 6] ' + formatName;
 				formatName = formatName.replace(/\[Gen \d\] /, '');
 				bufs[curBuf] += '<li><button name="selectFormat" value="' + i + '" class="format-gen gen'+formatGen+' ' + (curFormat === i ? ' sel' : '') + '">' + formatName + '</button></li>';
+				if (curFormat === i) currCol = format.column;
 			}
 			
 			var html1 = '<div class="colSelect">';
@@ -996,8 +998,8 @@
 			// }
 			html2 += '<div style="clear:left"></div>';
 			this.$el.html(html1+html2).addClass('ps-formatsel');
-			this.$el.find('.col1').show();
-			this.$el.find('.button.col1').addClass('sel');
+			this.$el.find('.col'+currCol).show();
+			this.$el.find('.button.col'+currCol).addClass('sel');
 		},
 		selectFormat: function (format) {
 			if (this.onselect) {
