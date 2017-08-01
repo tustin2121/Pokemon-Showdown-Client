@@ -1066,23 +1066,32 @@
 			var section = '';
 
 			var column = 0;
-			var columnChanged = false;
 
 			window.BattleFormats = {};
+			var formatmeta = { colNames:{} };
+			Object.defineProperty(BattleFormats, '_meta', { configurable:true, enumerable:false, value:formatmeta });
+			
 			for (var j = 1; j < formatsList.length; j++) {
 				if (isSection) {
 					section = formatsList[j];
 					isSection = false;
 				} else if (formatsList[j] === ',LL') {
 					app.localLadder = true;
-				} else if (formatsList[j] === '' || (formatsList[j].charAt(0) === ',' && !isNaN(formatsList[j].substr(1)))) {
+				// } else if (formatsList[j] === '' || (formatsList[j].charAt(0) === ',' && !isNaN(formatsList[j].substr(1)))) {
+				} else if (formatsList[j] === '' || formatsList[j].charAt(0) === ',') {
 					isSection = true;
-
+					
 					if (formatsList[j]) {
-						var newColumn = parseInt(formatsList[j].substr(1), 10) || 0;
+						var colId = formatsList[j].substr(1);
+						var colName = "Column "+colId;
+						if (colId.indexOf(':') > 0) {
+							colName = colId.substr(colId.indexOf(':')+1);
+							colId = colId.substring(0, colId.indexOf(':'));
+						}
+						var newColumn = parseInt(colId, 10) || 0;
 						if (column !== newColumn) {
 							column = newColumn;
-							columnChanged = true;
+							formatmeta.colNames[newColumn] = colName;
 						}
 					}
 				} else {
@@ -1188,7 +1197,6 @@
 					}
 				}
 			}
-			if (columnChanged) app.supports['formatColumns'] = true;
 			this.trigger('init:formats');
 		},
 		uploadReplay: function (data) {
