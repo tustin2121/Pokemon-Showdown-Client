@@ -951,15 +951,11 @@
 
 				if (format.section && format.section !== curSection) {
 					curSection = format.section;
-					if (!app.supports['formatColumns']) {
-						curBuf = (curSection === 'Doubles' || curSection === 'Past Generations') ? 2 : 1;
-					} else {
-						curBuf = format.column || 1;
-					}
+					curBuf = format.column || 1;
 					if (!bufs[curBuf]) {
 						bufs[curBuf] = '';
 					}
-					bufs[curBuf] += '<li><h3>' + Tools.escapeHTML(curSection) + '</li>';
+					bufs[curBuf] += '<li class="section"><h3>' + Tools.escapeHTML(curSection) + '</li>';
 				}
 				var formatName = Tools.escapeFormat(format.id);
 				var formatGen = /\[Gen (\d)\]/.exec(formatName);
@@ -969,21 +965,39 @@
 				formatName = formatName.replace(/\[Gen \d\] /, '');
 				bufs[curBuf] += '<li><button name="selectFormat" value="' + i + '" class="format-gen gen'+formatGen+' ' + (curFormat === i ? ' sel' : '') + '">' + formatName + '</button></li>';
 			}
-
-			var html = '';
+			
+			var html1 = '<div class="colSelect">';
+			var html2 = '';
 			for (var i = 1, l = bufs.length; i < l; i++) {
-				html += '<ul class="popupmenu"';
-				if (l > 1) {
-					html += ' style="float:left';
-					if (i > 0) {
-						html += ';padding-left:5px';
-					}
-					html += '"';
+				var colName = BattleFormats._meta.colNames[i];
+				var style = colName.slice(-1);
+				colName = colName.slice(0, -1);
+				switch (style) {
+					case '-': style='wide'; break;
+					case '=': style='triplewide'; break;
+					case '+':
+					default: style=''; break;
 				}
-				html += '>' + bufs[i] + '</ul>';
+				
+				html1 += '<button name="selectColumn" value="'+i+'" class="button col col'+i+'">'+colName+'</button>';
+				html2 += '<ul class="popupmenu '+style+' col col'+i+'" style="display:none">'+bufs[i]+'</ul>';
 			}
-			html += '<div style="clear:left"></div>';
-			this.$el.html(html);
+			html1 += '</div>';
+			// for (var i = 1, l = bufs.length; i < l; i++) {
+			// 	html += '<ul class="popupmenu"';
+			// 	if (l > 1) {
+			// 		html += ' style="float:left';
+			// 		if (i > 0) {
+			// 			html += ';padding-left:5px';
+			// 		}
+			// 		html += '"';
+			// 	}
+			// 	html += '>' + bufs[i] + '</ul>';
+			// }
+			html2 += '<div style="clear:left"></div>';
+			this.$el.html(html1+html2).addClass('ps-formatsel');
+			this.$el.find('.col1').show();
+			this.$el.find('.button.col1').addClass('sel');
 		},
 		selectFormat: function (format) {
 			if (this.onselect) {
@@ -997,7 +1011,14 @@
 			this.sourceEl.val(format).html(Tools.escapeFormat(format) || '(Select a format)');
 
 			this.close();
-		}
+		},
+		selectColumn: function (col) {
+			this.$el.find('.popupmenu.col').hide();
+			this.$el.find('.popupmenu.col'+col).show();
+			this.$el.find('.button.col').removeClass('sel')
+			this.$el.find('.button.col'+col).addClass('sel');
+			this.$el.css('min-height', this.$el.find('.colSelect').outerHeight()+5);
+		},
 	});
 
 	var TeamPopup = this.TeamPopup = this.Popup.extend({

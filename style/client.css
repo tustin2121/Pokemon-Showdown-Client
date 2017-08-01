@@ -686,7 +686,7 @@ p.or:after {
 	color: #EE4422;
 }
 
-.popupmenu, popupmenu li {
+.popupmenu, .popupmenu li {
 	margin: -2px 0 -1px 0;
 	padding: 0;
 	list-style: none;
@@ -3793,5 +3793,31 @@ blink {
  	background-color: #FFE84F;
  	border-color: #002DBF;
  	color: black;
+ }
+ 
+ .ps-formatsel {
+ 	padding: 5px 10px 5px 115px;
+ }
+ .ps-formatsel .colSelect {
+ 	position: absolute;
+ 	left: 5px; top: 5px;
+ 	width: 100px;
+ }
+ .ps-formatsel .colSelect button {
+ 	width: 100px;
+ }
+ .ps-formatsel .popupmenu.wide li, 
+ .ps-formatsel .popupmenu.triplewide li {
+ 	display: inline-block;
+ }
+ .ps-formatsel .popupmenu.wide li.section, 
+ .ps-formatsel .popupmenu.triplewide li.section {
+ 	display: block;
+ }
+ .ps-formatsel .popupmenu.wide {
+ 	width: 380px;
+ }
+ .ps-formatsel .popupmenu.triplewide {
+ 	width: 560px;
  }
  
