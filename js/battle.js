@@ -251,7 +251,6 @@ var Pokemon = (function () {
 		this.prevItemEffect = '';
 		this.species = species;
 		this.fainted = false;
-		this.zerohp = false;
 
 		this.status = '';
 		this.statusStage = 0;
@@ -381,7 +380,7 @@ var Pokemon = (function () {
 			hpstring = hpstring.substr(parenIndex + 1, hpstring.length - parenIndex - 2);
 		}
 
-		var oldhp = (this.zerohp || this.fainted) ? 0 : (this.hp || 1);
+		var oldhp = this.fainted ? 0 : (this.hp || 1);
 		var oldmaxhp = this.maxhp;
 		var oldwidth = this.hpWidth(100);
 		var oldcolor = this.hpcolor;
@@ -764,7 +763,6 @@ var Pokemon = (function () {
 	Pokemon.prototype.reset = function () {
 		this.clearVolatile();
 		this.hp = this.maxhp;
-		this.zerohp = false;
 		this.fainted = false;
 		this.needsReplace = (this.details.indexOf('-*') >= 0);
 		this.status = '';
@@ -778,7 +776,7 @@ var Pokemon = (function () {
 	// This function is NOT used in the calculation of any other displayed
 	// percentages or ranges, which have their own, more complex, formulae.
 	Pokemon.prototype.hpWidth = function (maxWidth) {
-		if (this.fainted || this.zerohp) return 0;
+		if (this.fainted) return 0;
 
 		// special case for low health...
 		if (this.hp == 1 && this.maxhp > 10) return 1;
@@ -1452,12 +1450,21 @@ var Side = (function () {
 	};
 	Side.prototype.updateSidebar = function () {
 		var pokemonhtml = '';
+		var noShow = this.battle.hardcoreMode && this.battle.gen < 7;
 		for (var i = 0; i < 6; i++) {
 			var poke = this.pokemon[i];
 			if (i >= this.totalPokemon) {
 				pokemonhtml += '<span class="picon" style="' + Tools.getPokemonIcon('pokeball-none') + '"></span>';
+			} else if (noShow && poke && poke.fainted) {
+				pokemonhtml += '<span class="picon" style="' + Tools.getPokemonIcon('pokeball-fainted') + '" title="Fainted"></span>';
+			} else if (noShow && poke && poke.status) {
+				pokemonhtml += '<span class="picon" style="' + Tools.getPokemonIcon('pokeball-statused') + '" title="Status"></span>';
+			} else if (noShow) {
+				pokemonhtml += '<span class="picon" style="' + Tools.getPokemonIcon('pokeball') + '" title="Non-statused"></span>';
 			} else if (!poke) {
 				pokemonhtml += '<span class="picon" style="' + Tools.getPokemonIcon('pokeball') + '" title="Not revealed"></span>';
+			} else if (!poke.ident && this.battle.teamPreviewCount && this.battle.teamPreviewCount < this.pokemon.length) {
+				pokemonhtml += '<span class="picon" style="' + Tools.getPokemonIcon(poke, !this.n) + ';opacity:0.6" title="' + poke.getFullName(true) + '"></span>';
 			} else {
 				pokemonhtml += '<span class="picon" style="' + Tools.getPokemonIcon(poke, !this.n) + '" title="' + poke.getFullName(true) + '"></span>';
 			}
@@ -2169,7 +2176,6 @@ var Side = (function () {
 		this.battle.message('' + pokemon.getName() + ' fainted!');
 
 		pokemon.fainted = true;
-		pokemon.zerohp = true;
 		pokemon.hp = 0;
 		pokemon.side.updateStatbar(pokemon, false, true);
 		pokemon.side.updateSidebar();
@@ -2191,9 +2197,13 @@ var Side = (function () {
 	Side.prototype.updateHPText = function (pokemon) {
 		var $hptext = pokemon.statbarElem.find('.hptext');
 		var $hptextborder = pokemon.statbarElem.find('.hptextborder');
-		if (pokemon.maxhp === 48) {
+		if (pokemon.maxhp === 48 || this.battle.hardcoreMode && pokemon.maxhp === 100) {
 			$hptext.hide();
 			$hptextborder.hide();
+		} else if (this.battle.hardcoreMode) {
+			$hptext.html(pokemon.hp + '/');
+			$hptext.show();
+			$hptextborder.show();
 		} else {
 			$hptext.html(pokemon.hpWidth(100) + '%');
 			$hptext.show();
@@ -2865,7 +2875,7 @@ var Battle = (function () {
 	};
 	Battle.prototype.message = function (message, hiddenmessage) {
 		if (message && !this.messageActive) {
-			this.log('<div class="spacer"></div>');
+			this.log('<div class="spacer battle-history"></div>');
 		}
 		if (message && !this.fastForward) {
 			if (!this.messageActive) {
@@ -2900,7 +2910,7 @@ var Battle = (function () {
 			this.activityWait(messageElem);
 		}
 		this.messageActive = true;
-		this.log('<div>' + message + (hiddenmessage ? hiddenmessage : '') + '</div>');
+		this.log('<div class="battle-history">' + message + (hiddenmessage ? hiddenmessage : '') + '</div>');
 	};
 	Battle.prototype.endAction = function () {
 		if (this.messageActive) {
@@ -2949,6 +2959,12 @@ var Battle = (function () {
 			this.yourSide.updateStatbar(null, true);
 		}
 	};
+	Battle.prototype.setHardcoreMode = function (mode) {
+		this.hardcoreMode = mode;
+		this.mySide.updateSidebar();
+		this.yourSide.updateSidebar();
+		this.updateWeather(undefined, true);
+	};
 	Battle.prototype.setTurn = function (turnnum) {
 		turnnum = parseInt(turnnum, 10);
 		if (turnnum == this.turn + 1) {
@@ -2964,7 +2980,7 @@ var Battle = (function () {
 		if (this.yourSide.active[1]) this.yourSide.active[1].clearTurnstatuses();
 		if (this.yourSide.active[2]) this.yourSide.active[2].clearTurnstatuses();
 
-		this.log('<h2>Turn ' + turnnum + '</h2>');
+		this.log('<h2 class="battle-history">Turn ' + turnnum + '</h2>');
 
 		var prevTurnElem = this.turnElem.children();
 		if (this.fastForward) {
@@ -3118,6 +3134,7 @@ var Battle = (function () {
 			pWeather[1] = pWeather[2];
 			pWeather[2] = 0;
 		}
+		if (this.gen < 7 && this.hardcoreMode) return buf;
 		if (pWeather[2]) {
 			return buf + ' <small>(' + pWeather[1] + ' or ' + pWeather[2] + ' turns)</small>';
 		}
@@ -3133,12 +3150,14 @@ var Battle = (function () {
 			cond[3] = cond[4];
 			cond[4] = 0;
 		}
+		if (this.gen < 7 && this.hardcoreMode) return buf;
 		if (!cond[4]) {
 			return buf + ' <small>(' + cond[3] + ' turn' + (cond[3] == 1 ? '' : 's') + ')</small>';
 		}
 		return buf + ' <small>(' + cond[3] + ' or ' + cond[4] + ' turns)</small>';
 	};
 	Battle.prototype.weatherLeft = function () {
+		if (this.gen < 7 && this.hardcoreMode) return '';
 		if (this.weatherMinTimeLeft != 0) {
 			return ' <small>(' + this.weatherMinTimeLeft + ' or ' + this.weatherTimeLeft + ' turns)</small>';
 		}
@@ -3302,7 +3321,7 @@ var Battle = (function () {
 			$hp.addClass('hp-yellow hp-red');
 		};
 
-		this.resultAnim(pokemon, '&minus;' + damage, 'bad');
+		this.resultAnim(pokemon, this.hardcoreMode ? 'Damage' : '&minus;' + damage, 'bad');
 
 		$hp.animate({
 			width: w,
@@ -3325,7 +3344,7 @@ var Battle = (function () {
 			$hp.removeClass('hp-red');
 		};
 
-		this.resultAnim(pokemon, '+' + damage, 'good');
+		this.resultAnim(pokemon, this.hardcoreMode ? 'Heal' : '+' + damage, 'good');
 
 		$hp.animate({
 			width: w,
@@ -3436,6 +3455,16 @@ var Battle = (function () {
 					this.message(pokemon.getName() + ' used <strong>' + move.name + '</strong>!');
 				}
 				if (!fromeffect.id || fromeffect.id === 'pursuit') {
+					if (move.isZ) {
+						pokemon.item = move.isZ;
+						var item = Tools.getItem(move.isZ);
+						if (item.zMoveFrom) move = Tools.getMove(move.zMoveFrom);
+					} else if (move.name.slice(0, 2) === 'Z-') {
+						move = Tools.getMove(move.name.slice(2));
+						for (var item in window.BattleItems) {
+							if (BattleItems[item].zMoveType === move.type) pokemon.item = item;
+						}
+					}
 					var pp = (target && target.side !== pokemon.side && toId(target.ability) === 'pressure' ? 2 : 1);
 					pokemon.markMove(move.name, pp);
 				}
@@ -6186,7 +6215,6 @@ var Battle = (function () {
 		output.hpcolor = '';
 		if (hp === '0' || hp === '0.0') {
 			output.hp = 0;
-			output.zerohp = true;
 		} else if (hp.indexOf('/') > 0) {
 			var hp = hp.split('/');
 			if (isNaN(parseFloat(hp[0])) || isNaN(parseFloat(hp[1]))) {
@@ -6198,9 +6226,6 @@ var Battle = (function () {
 			var colorchar = hp[1].substr(hp[1].length - 1);
 			if ((colorchar === 'y') || (colorchar === 'g')) {
 				output.hpcolor = colorchar;
-			}
-			if (!output.hp) {
-				output.zerohp = true;
 			}
 		} else if (!isNaN(parseFloat(hp))) {
 			output.hp = output.maxhp * parseFloat(hp) / 100;
@@ -6215,7 +6240,6 @@ var Battle = (function () {
 			output.status = status;
 		} else if (status === 'fnt') {
 			output.hp = 0;
-			output.zerohp = true;
 			output.fainted = true;
 		}
 		return output;
@@ -6574,7 +6598,12 @@ var Battle = (function () {
 			break;
 		case 'inactive':
 			if (!this.kickingInactive) this.kickingInactive = true;
-			if (args[1].slice(0, 9) === "You have ") {
+			if (args[1].slice(0, 11) === "Time left: ") {
+				this.kickingInactive = parseInt(args[1].slice(11), 10) || true;
+				this.totalTimeLeft = parseInt(args[1].split(' | ')[1], 10);
+				if (this.totalTimeLeft === this.kickingInactive) this.totalTimeLeft = 0;
+				return;
+			} else if (args[1].slice(0, 9) === "You have ") {
 				// this is ugly but parseInt is documented to work this way
 				// so I'm going to be lazy and not chop off the rest of the
 				// sentence
@@ -6582,7 +6611,8 @@ var Battle = (function () {
 				return;
 			} else if (args[1].slice(-14) === ' seconds left.') {
 				var hasIndex = args[1].indexOf(' has ');
-				if (toId(args[1].slice(0, hasIndex)) === app.user.get('userid')) {
+				var userid = (window.app && app.user && app.user.get('userid'));
+				if (toId(args[1].slice(0, hasIndex)) === userid) {
 					this.kickingInactive = parseInt(args[1].slice(hasIndex + 5), 10) || true;
 				}
 			}
@@ -6653,11 +6683,13 @@ var Battle = (function () {
 			poke.removeVolatile('typeadd');
 			poke.removeVolatile('typechange');
 
-			var newSpecies;
-			var commaIndex = args[2].indexOf(',');
-			if (commaIndex === -1) {
-				newSpecies = args[2];
-			} else {
+			var newSpecies = args[2];
+			var commaIndex = newSpecies.indexOf(',');
+			if (commaIndex !== -1) {
+				var level = $.trim(newSpecies.substr(commaIndex + 1));
+				if (level.charAt(0) === 'L') {
+					poke.level = +level.substr(1);
+				}
 				newSpecies = args[2].substr(0, commaIndex);
 			}
 			var template = Tools.getTemplate(newSpecies);
@@ -6788,6 +6820,14 @@ var Battle = (function () {
 				this.log('<div class="chatmessage-' + user + '"><button name="toggleMessages" value="' + user + '" class="subtle"><small>(' + $messages.length + ' line' + ($messages.length > 1 ? 's' : '') + ' from ' + user + ' hidden)</small></button></div>');
 			}
 			break;
+		case 'fieldhtml':
+			var $field = $('.battle');
+			$field.html(Tools.sanitizeHTML(args[1]));
+			break;
+		case 'controlshtml':
+			var $controls = $('.battle-controls');
+			$controls.html(Tools.sanitizeHTML(args[1]));
+			break;
 		default:
 			this.logConsole('unknown command: ' + args[0]);
 			this.log('<div>Unknown command: ' + Tools.escapeHTML(args[0]) + '</div>');
@@ -6815,6 +6855,7 @@ var Battle = (function () {
 		case 'c': case 'chat': case 'bchat':
 		case 'chatmsg': case 'chatmsg-raw': case 'raw': case 'error': case 'html':
 		case 'inactive': case 'inactiveoff': case 'warning':
+		case 'fieldhtml': case 'controlshtml':
 			// chat is preserved untouched
 			args = [args[0], str.slice(args[0].length + 2)];
 			break;

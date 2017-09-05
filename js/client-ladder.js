@@ -56,7 +56,7 @@
 						output: 'html'
 					}, function (data) {
 						if (self.curFormat !== format) return;
-						var buf = '<div class="ladder pad"><p><button name="selectFormat"><i class="fa fa-chevron-left"></i> Format List</button></p>';
+						var buf = '<div class="ladder pad"><p><button name="selectFormat"><i class="fa fa-chevron-left"></i> Format List</button></p><p><button class="button" name="refresh"><i class="fa fa-refresh"></i> Refresh</button></p>';
 						buf += '<h3>' + Tools.escapeFormat(format) + ' Top 500</h3>';
 						buf += data + '</div>';
 						self.$el.html(buf);
@@ -79,19 +79,22 @@
 		selectFormat: function (format) {
 			this.curFormat = format;
 			this.update();
+		},
+		refresh: function () {
+			this.$('button[name=refresh]').addClass('disabled').prop('disabled', true);
+			this.update();
 		}
 	}, {
 		COIL_B: {
 			'gen7oususpecttest': 17,
 			'gen7uususpecttest': 20,
-			'rususpecttest': 11,
-			'nususpecttest': 9,
-			'pususpecttest': 9,
-			'lcsuspecttest': 9,
+			'gen7rususpecttest': 9,
+			'gen7nususpecttest': 9,
+			'gen7lcsuspecttest': 13,
 			'gen7doublesoususpecttest': 14.5,
 			'gen7balancedhackmonssuspecttest': 11,
 			'gen71v1suspecttest': 20,
-			'gen7monotypesuspecttest': 14,
+			'gen7monotypesuspecttest': 10,
 			'gen7mixandmegasuspecttest': 10.5,
 			'gen7almostanyabilitysuspecttest': 6,
 			'gen7sketchmonssuspecttest': 6
