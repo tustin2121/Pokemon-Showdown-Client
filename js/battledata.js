@@ -758,8 +758,9 @@ var Tools = {
 			'psicon::item': 0
 		});
 
-		var uriRewriter = function (uri) {
-			return uri;
+		var uriRewriter = function (urlData) {
+			if (urlData.scheme_ === 'geo' || urlData.scheme_ === 'sms' || urlData.scheme_ === 'tel') return null;
+			return urlData;
 		};
 		var tagPolicy = function (tagName, attribs) {
 			if (html4.ELEMENTS[tagName] & html4.eflags['UNSAFE']) {
@@ -849,8 +850,42 @@ var Tools = {
 			}
 			return {tagName: tagName, attribs: attribs};
 		};
+		var localizeTime = function (full, date, time, timezone) {
+			var parsedTime = new Date(date + 'T' + time + (timezone || 'Z').toUpperCase());
+			// Very old (pre-ES5) web browsers may be incapable of parsing ISO 8601
+			// dates. In such a case, gracefully continue without replacing the date
+			// format.
+			if (!parsedTime.getTime()) return full;
+
+			var formattedTime;
+			// Try using Intl API if it exists
+			if (window.Intl && window.Intl.DateTimeFormat) {
+				formattedTime = new Intl.DateTimeFormat(undefined, {month: 'long', day: 'numeric', hour: 'numeric', minute: 'numeric'}).format(parsedTime);
+			} else {
+				// toLocaleString even exists in ECMAScript 1, so no need to check
+				// if it exists.
+				formattedTime = parsedTime.toLocaleString();
+			}
+			return '<time>' + Tools.escapeHTML(formattedTime) + '</time>';
+		};
 		return function (input) {
-			return html.sanitizeWithPolicy(getString(input), tagPolicy);
+			// <time> parsing requires ISO 8601 time. While more time formats are
+			// supported by most JavaScript implementations, it isn't required, and
+			// how to exactly enforce ignoring user agent timezone setting is not obvious.
+			// As dates come from the server which isn't aware of client timezone, a
+			// particular timezone is required.
+			//
+			// This regular expression is split into three groups.
+			//
+			// Group 1 - date
+			// Group 2 - time (seconds and milliseconds are optional)
+			// Group 3 - optional timezone
+			//
+			// Group 1 and group 2 are split to allow using space as a separator
+			// instead of T. Stricly speaking ECMAScript 5 specification only
+			// allows T, however it's more practical to also allow spaces.
+			return html.sanitizeWithPolicy(getString(input), tagPolicy)
+				.replace(/<time>\s*([+-]?\d{4,}-\d{2}-\d{2})[T ](\d{2}:\d{2}(?::\d{2}(?:\.\d{3})?)?)(Z|[+-]\d{2}:\d{2})?\s*<\/time>/ig, localizeTime);
 		};
 	})(),
 
@@ -1305,6 +1340,8 @@ var Tools = {
 			return 'background:transparent url(' + Tools.resourcePrefix + 'sprites/smicons-pokeball-sheet.png) no-repeat scroll -0px 4px';
 		} else if (pokemon === 'pokeball-statused') {
 			return 'background:transparent url(' + Tools.resourcePrefix + 'sprites/smicons-pokeball-sheet.png) no-repeat scroll -40px 4px';
+		} else if (pokemon === 'pokeball-fainted') {
+			return 'background:transparent url(' + Tools.resourcePrefix + 'sprites/smicons-pokeball-sheet.png) no-repeat scroll -80px 4px;opacity:.4;filter:contrast(0)';
 		} else if (pokemon === 'pokeball-none') {
 			return 'background:transparent url(' + Tools.resourcePrefix + 'sprites/smicons-pokeball-sheet.png) no-repeat scroll -80px 4px';
 		}
@@ -1632,7 +1669,7 @@ var Tools = {
 
 		var top = Math.floor(num / 12) * 30;
 		var left = (num % 12) * 40;
-		var fainted = (pokemon && pokemon.fainted ? ';opacity:.4' : '');
+		var fainted = (pokemon && pokemon.fainted ? ';opacity:.7;filter:contrast(0)' : '');
 		return 'background:transparent url(' + Tools.resourcePrefix + 'sprites/smicons-sheet.png?a1) no-repeat scroll -' + left + 'px -' + top + 'px' + fainted;
 	},
 
@@ -1665,9 +1702,9 @@ var Tools = {
 		// }
 		if (Tools.prefs('nopastgens')) gen = 6;
 		var spriteDir = Tools.resourcePrefix + 'sprites/xydex';
-		if (template.gen >= 7) spriteDir = Tools.resourcePrefix + 'sprites/bw';
-		if ((!gen || gen === 6) && !template.isNonstandard && !Tools.prefs('bwgfx')) {
+		if ((!gen || gen >= 6) && !template.isNonstandard && !Tools.prefs('bwgfx')) {
 			var offset = '-2px -3px';
+			if (template.gen >= 7) offset = '-6px -7px';
 			if (id.substr(0, 6) === 'arceus') offset = '-2px 7px';
 			if (id === 'garchomp') offset = '-2px 2px';
 			if (id === 'garchompmega') offset = '-2px 0px';
