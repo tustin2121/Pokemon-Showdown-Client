@@ -397,8 +397,10 @@ var Pokemon = (function () {
 	};
 	Pokemon.prototype.checkDetails = function (details) {
 		if (!details) return false;
+		if (details.indexOf(', shiny') >= 0) {
+			if (this.checkDetails(details.replace(', shiny', ''))) return true;
+		}
 		if (details === this.details) return true;
-		if (!this.needsReplace) return false;
 		// the actual forme was hidden on Team Preview
 		details = details.replace(/-[A-Za-z0-9]+(, |$)/, '$1');
 		return (details === this.details.replace(/-\*(, |$)/, '$1'));
@@ -576,6 +578,7 @@ var Pokemon = (function () {
 		for (var i = 0; i < this.moveTrack.length; i++) {
 			if (moveName === this.moveTrack[i][0]) {
 				this.moveTrack[i][1] += pp;
+				if (this.moveTrack[i][1] < 0) this.moveTrack[i][1] = 0;
 				return;
 			}
 		}
@@ -764,7 +767,6 @@ var Pokemon = (function () {
 		this.clearVolatile();
 		this.hp = this.maxhp;
 		this.fainted = false;
-		this.needsReplace = (this.details.indexOf('-*') >= 0);
 		this.status = '';
 		this.moveTrack = [];
 		this.name = this.name || this.species;
@@ -3455,18 +3457,20 @@ var Battle = (function () {
 					this.message(pokemon.getName() + ' used <strong>' + move.name + '</strong>!');
 				}
 				if (!fromeffect.id || fromeffect.id === 'pursuit') {
+					var moveName = move.name;
 					if (move.isZ) {
 						pokemon.item = move.isZ;
 						var item = Tools.getItem(move.isZ);
-						if (item.zMoveFrom) move = Tools.getMove(move.zMoveFrom);
+						if (item.zMoveFrom) moveName = item.zMoveFrom;
 					} else if (move.name.slice(0, 2) === 'Z-') {
-						move = Tools.getMove(move.name.slice(2));
+						moveName = moveName.slice(2);
+						move = Tools.getMove(moveName);
 						for (var item in window.BattleItems) {
 							if (BattleItems[item].zMoveType === move.type) pokemon.item = item;
 						}
 					}
 					var pp = (target && target.side !== pokemon.side && toId(target.ability) === 'pressure' ? 2 : 1);
-					pokemon.markMove(move.name, pp);
+					pokemon.markMove(moveName, pp);
 				}
 				break;
 			}
@@ -5785,6 +5789,7 @@ var Battle = (function () {
 					break;
 				case 'leppaberry':
 					actions += '' + poke.getName() + " restored PP to its " + Tools.escapeHTML(args[3]) + " move using Leppa Berry!";
+					poke.markMove(args[3], -10);
 					break;
 				case 'focusband':
 					poke.item = 'Focus Band';
@@ -6308,16 +6313,12 @@ var Battle = (function () {
 				}
 				if (isSwitch && pokemon == this.p1.lastPokemon && !this.p1.active[slot]) continue;
 				if ((searchid && pokemon.searchid === searchid) || // exact match
-					(!pokemon.searchid && pokemon.checkDetails(details)) || // switch-in matches Team Preview entry
 					(!searchid && pokemon.ident === pokemonid)) { // name matched, good enough
-					if (!pokemon.searchid && createIfNotFound) {
-						pokemon.name = name;
-						pokemon.searchid = searchid;
-						pokemon.ident = pokemonid;
-						if (pokemon.needsReplace) {
-							pokemon = this.p1.newPokemon(this.parseDetails(name, pokemonid, details), i);
-						}
-					}
+					if (slot >= 0) pokemon.slot = slot;
+					return pokemon;
+				}
+				if (!pokemon.searchid && pokemon.checkDetails(details)) { // switch-in matches Team Preview entry
+					pokemon = this.p1.newPokemon(this.parseDetails(name, pokemonid, details), i);
 					if (slot >= 0) pokemon.slot = slot;
 					return pokemon;
 				}
@@ -6338,16 +6339,12 @@ var Battle = (function () {
 				}
 				if (isSwitch && pokemon == this.p2.lastPokemon && !this.p2.active[slot]) continue;
 				if ((searchid && pokemon.searchid === searchid) || // exact match
-					(!pokemon.searchid && pokemon.checkDetails(details)) || // switch-in matches Team Preview entry
 					(!searchid && pokemon.ident === pokemonid)) { // name matched, good enough
-					if (!pokemon.searchid && createIfNotFound) {
-						pokemon.name = name;
-						pokemon.searchid = searchid;
-						pokemon.ident = pokemonid;
-						if (pokemon.needsReplace) {
-							pokemon = this.p2.newPokemon(this.parseDetails(name, pokemonid, details), i);
-						}
-					}
+					if (slot >= 0) pokemon.slot = slot;
+					return pokemon;
+				}
+				if (!pokemon.searchid && pokemon.checkDetails(details)) { // switch-in matches Team Preview entry
+					pokemon = this.p2.newPokemon(this.parseDetails(name, pokemonid, details), i);
 					if (slot >= 0) pokemon.slot = slot;
 					return pokemon;
 				}
@@ -6688,7 +6685,7 @@ var Battle = (function () {
 			if (commaIndex !== -1) {
 				var level = $.trim(newSpecies.substr(commaIndex + 1));
 				if (level.charAt(0) === 'L') {
-					poke.level = +level.substr(1);
+					poke.level = parseInt(level.substr(1), 10);
 				}
 				newSpecies = args[2].substr(0, commaIndex);
 			}
