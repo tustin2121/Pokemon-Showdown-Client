@@ -56,7 +56,7 @@ Promise.resolve()
 	storedData = data;
 })
 // === Insert Twitch Channels to download Sub emotes from here ===
-.then(downloadChannelEmotesFor("--twitch-curse-integration--"))
+// .then(downloadChannelEmotesFor("--twitch-curse-integration--")) // This is causing problems with TwitchLit
 .then(downloadChannelEmotesFor("--twitch-turbo--"))
 .then(downloadChannelEmotesFor("srkevo4"))
 .then(downloadChannelEmotesFor("puncayshun"))

@@ -142,9 +142,9 @@ anim: function (battle, args) {
 		</div>
 		
 		<script src="/js/lib/jquery-1.11.0.min.js"></script>
-		<script src="/js/lib/lodash.compat.js"></script>
+		<!--<script src="/js/lib/lodash.compat.js"></script>-->
 		<script src="/js/lib/html-sanitizer-minified.js"></script>
-		<script src="/js/config.js?a6"></script>
+		<script src="/config/config.js?a6"></script>
 		<script src="/js/battledata.js?a6"></script>
 		<script src="/data/pokedex-mini.js?a6"></script>
 		<script src="/data/pokedex-mini-bw.js?a6"></script>
@@ -303,7 +303,7 @@ var AnimHelper = {
 			}
 			let extras = "";
 			
-			let list = $("input[name=combineList]").val().split(/[,;|]/).join("|");
+			let list = $("input[name=combineList]").val().replace(/['"]/g, '').split(/[,;|]/).join("|");
 			this.battle.add(`|-animcustom|${source.ident}|${target.ident}|${list}${extras}`);
 			this.battle.play();
 		});
@@ -415,6 +415,7 @@ ${fn}`);
 };
 
 window.onload = function () {
+	Config.server = Config.server || {};
 	AnimHelper.init();
 };
 </script>
