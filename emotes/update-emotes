@@ -61,6 +61,8 @@ Promise.resolve()
 .then(downloadChannelEmotesFor("srkevo4"))
 .then(downloadChannelEmotesFor("puncayshun"))
 .then(downloadChannelEmotesFor("lffn"))
+.then(downloadChannelEmotesFor("cirno_tv"))
+.then(downloadChannelEmotesFor("auslove"))
 .then(downloadChannelEmotesFor("twitchplayspokemon"))
 
 ////////////////////////////////////////////////////////////////////////////////

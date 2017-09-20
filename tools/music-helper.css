@@ -1,0 +1,139 @@
+/* music.css */
+
+body {
+	margin: 0;
+}
+#main {
+	position: absolute;
+	left: 365px; right:0;
+	top:0; bottom:0;
+	padding: 5px;
+}
+#filetree {
+    background-color: aliceblue;
+    position: absolute;
+	left: 0; width: 360px;
+    top: 0; bottom: 0;
+    overflow-y: scroll;
+	margin: 0;
+	padding: 0 0 0 5px;
+	font-family: sans-serif;
+    font-size: 10pt;
+}
+#filetree span {
+    white-space: nowrap;
+}
+#filetree ul {
+    padding-left: 20px;
+    list-style-type: none;
+}
+
+#filetree.loading::before {
+	content: ' ';
+	background: url(/img/ajax-loader.gif);
+	top: 20px; left: 20%;
+	width: 220px; height:19px;
+	position: absolute;
+}
+#filetree li {
+	position: relative;
+}
+#filetree li.n0::before,
+#filetree li.n1::before {
+	content: '\00a0';
+	position: absolute;
+	z-index: -10;
+	left: -100px; right: 0;
+}
+#filetree li.n0::before { background-color:#EEEEEE; }
+#filetree li.n1::before { background-color:#DDDDDD; }
+
+/* Files */
+#filetree li span {
+	color: #000000;
+	cursor: pointer;
+}
+#filetree li span::before {
+	content: "\f1c7"; /* fa-file-sound-o */
+	margin-right: 4px;
+	display: inline-block;
+    font: normal normal normal 14px/1 FontAwesome;
+    font-size: inherit;
+    text-rendering: auto;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+#filetree li span.nometa { color: #AAAAAA; }
+#filetree li span.notmusic { color: #AAAADD; }
+#filetree li span.notmusic::before {
+	content: "\f016"; /* fa-file-o */
+	margin-right: 4px;
+}
+#filetree li span.metaerr { color: #AA0000; }
+#filetree li span.metaerr::before {
+	content: "\f071"; /* fa-warning */
+	margin-right: 4px;
+}
+#filetree li span.dir { color: #880000; }
+#filetree li span.dir::before {
+	content: "\f07c"; /* fa-folder-open */
+	margin-right: 4px;
+}
+#filetree li.closed span.dir::before {
+	content: "\f07b"; /* fa-folder */
+	margin-right: 6px;
+}
+
+#filetree li.closed ul { display:none; }
+
+.ajax {
+	display: none;
+	position: absolute;
+	top: 50px; left: 34%;
+}
+.timestamp {
+	float: right;
+	padding: 1px 10px;
+	border: 1px solid #888888;
+	font-family: monospace;
+}
+
+#waveform .controls {
+	font-size: 1.5rem;
+	margin-bottom: 10px;
+}
+
+.fa-lg {
+    line-height: 1em;
+	vertical-align: baseline;
+}
+
+.musicdata {
+	display: inline-block;
+	padding: 8px; margin: 2px;
+    border: 1px solid #888888;
+}
+.musicdata::before {
+	content: attr(label);
+	display: block;
+	font-size: 1.2em;
+	margin: -6px 0 2px;
+	text-align: center;
+	font-variant: small-caps;
+}
+#main .songtitle {
+	text-align: center;
+	font-size: 0.8em;
+}
+
+.output {
+	font-family: monospace;
+	margin-top: 2em;
+    margin-left: 2em;
+    tab-size: 4;
+    color: #aaaaaa;
+}
+.output .curr {
+	color: #000000;
+}

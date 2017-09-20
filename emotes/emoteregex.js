@@ -16,6 +16,12 @@ var processEmoteRegExp = function(str) {
 	// lffn emotes
 	str = str.replace(/\b(lffnMarth|lffnZip|lffnFox|lffnEvil|lffnEgo|lffnMyB|lffnSheik|lffnPop|lffnTSM|lffnPaint|lffnPaintGold|lffnFalco|lffnLEFF|lffnNotch|lffnWeeb|lffnMewtwo|lffnW)\b/g,
 		'<img src="/emotes/lffn/$&.png" alt="$&" title="$&" class="emote"/>');
+	// cirno_tv emotes
+	str = str.replace(/\b(cirFairy|cirPrise|cirShades|cirBell|cirLewd|cirThree|cirBar|cirRage|cirWink|cirHappy|cirLove|cirGlod|cirSleep|cirSmug|cirHonk|cirHi|cirNilla|cirMini|cirGasm|cirCola|cirLaugh|cirKiss|cirBlind|cirBaka|cirBlech|cirSanta|cirGreed|cirPalm|cirThink|cirWut|cirREE|cirGPantsu|cirLPantsu|cirPls|cirMiku|cirTan)\b/g,
+		'<img src="/emotes/cirno_tv/$&.png" alt="$&" title="$&" class="emote"/>');
+	// auslove emotes
+	str = str.replace(/\b(ausTy|ausThump|ausGoof|ausHype|ausDJ|ausGrump|ausTired|ausGasm|ausCute|ausTroll|ausL|ausLol|ausWave|ausCry|ausRekt|ausShiny|ausHax|ausHug|ausWow|ausLuck|ausHonk|ausDono|ausHole|ausC|ausFix|ausLurk|ausPotato|ausPride|ausEww|ausHungry|ausTilt|ausYay|ausCheeky|ausCheer|ausGG|ausRage|ausRich)\b/g,
+		'<img src="/emotes/auslove/$&.png" alt="$&" title="$&" class="emote"/>');
 	// twitchplayspokemon emotes
 	str = str.replace(/\b(tppPokeball|tppHelix|tppRng|tppPokeyen|tppCrit|tppHax|tppMiss|tppPc|tppRiot|tppDome|tppCursor|tppTrumpet|tppSlowpoke|tppHappy|tppBait|tppS)\b/g,
 		'<img src="/emotes/twitchplayspokemon/$&.png" alt="$&" title="$&" class="emote"/>');
