@@ -158,7 +158,7 @@ $(()=>{
 	$('.output')
 		.append( $('<div>').text(`// Remember to add any output below to the bgm-index.js file. Clicking save only outputs changes here, to copy into that file.`) )
 		.append( $('<div>').text(`// Also remember to cut off as much extra time as possible from the music before uploading to the server, for smaller, faster downloads.`) )
-		.append( $('<div>') )
+		.append( $('<div>').text(` `) )
 		;
 });
 
@@ -337,7 +337,7 @@ function saveMeta() {
 		meta.loop = [loopin, loopout];
 	}
 	meta.tags = {};
-	tags.split(',').forEach(t=> meta.tags[t]=1 );
+	tags.split(',').filter(x=>x&&x.trim()).forEach(t=> meta.tags[t]=1 );
 	meta.info = metaName;
 	
 	Object.assign(loadedMeta, meta);
