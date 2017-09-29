@@ -758,9 +758,8 @@
 				.append("<label style='margin-top:6px;'>Battle Music:</label>")
 				.append(function(){
 					var sel = $("<select name='battlemusic'>");
-					var music = Object.keys(musicTable.meta);
+					var music = musicTable.availableBattleMusic();
 					for (var i = 0; i < music.length; i++) {
-						if (!musicTable.isValidBattle(music[i])) continue;
 						sel.append('<option value="'+music[i]+'" '+(data.info.bgmusic==music[i]? "selected":'')+'>'+music[i]+'</option>');
 					}
 					return sel;

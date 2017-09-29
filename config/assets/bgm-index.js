@@ -14,6 +14,7 @@
 	for (var key in musicMeta) {
 		var value = musicMeta[key];
 		value.url = value.url || bgmPath+key+".mp3";
+		if (value.tags.hidden) continue;
 		if (value.tags.random) {
 			if (value.tags.victory) randomVictoryMusic.push(key);
 			else randomBattleMusic.push(key);
@@ -27,6 +28,26 @@
 		meta: musicMeta,
 		cats: categories,
 		
+		availableBattleMusic : function() {
+			return Object.keys(musicMeta).filter(_filter).sort(_sort);
+			
+			function _sort(a, b) {
+				var ax = a.slice(a.indexOf('/'));
+				var bx = b.slice(b.indexOf('/'));
+				if (ax < bx) return -1;
+				if (ax > bx) return 1;
+				if (a < b) return -1;
+				if (a > b) return 1;
+				return 0;
+			}
+			function _filter(a) {
+				if (!a || !musicMeta[a]) return false;
+				if (musicMeta[a].tags.hidden) return false;
+				if (musicMeta[a].tags.victory) return false;
+				if (musicMeta[a].tags.defeat) return false;
+				return true;
+			}
+		},
 		randBattle : function() { 
 			return randomBattleMusic[Math.floor(Math.random() * randomBattleMusic.length)];
 		},
@@ -40,13 +61,16 @@
 		},
 		getVictoryMusicFor : function(id) {
 			if (!id || !musicMeta[id]) return this.randVictory();
-			if (musicMeta[id].victoryMusic) {
-				id = musicMeta[id].victoryMusic;
-			} else {
-				id += "-win";
+			return _try(musicMeta[id].victoryMusic)
+				|| _try(id+"-win")
+				|| _try( id.slice(0, id.lastIndexOf('/'))+"/win" )
+				|| this.randVictory();
+			
+			function _try(v) {
+				if (!musicMeta[v]) return false;
+				if (!musicMeta[v].tags.victory) return false;
+				return v;
 			}
-			if (!musicMeta[id] || !musicMeta[id].tags.victory) return this.randVictory();
-			return id;
 		},
 		isCategory : function(cat) {
 			return (cat && categories[cat]);
@@ -90,6 +114,7 @@
 "hgss/rocket":				{ loop:[20.173, 70.969], tags:{ random:1, }, 				info:"Pokémon HeartGold/SoulSilver - Battle! Rocket" },
 "hgss/ho-oh":				{ loop:[32.587,100.125], tags:{  }, 						info:"Pokémon HeartGold/SoulSilver - Battle! Ho-Oh" },
 "hgss/entei":				{ loop:[ 4.019, 85.385], tags:{  }, 						info:"Pokémon HeartGold/SoulSilver - Battle! Entei" },
+"hgss/beasts":				{ loop:[13.590,105.819], tags:{  },							info:"Pokémon HeartGold/SoulSilver - Beasts" },
 
 "dpp/trainer":				{ loop:[13.440, 96.959], tags:{ random:1, trainer:1, }, 	info:"Pokémon Diamond, Pearl, & Platinum - Battle! Trainer" },
 "dpp/trainer-win":			{ loop:[ 1.642, 14.315], tags:{ random:1, victory:1, }, 	info:"Pokémon Diamond, Pearl, & Platinum - Victory! Trainer" },
@@ -135,6 +160,8 @@
 "bw2/colress":				{ loop:[12.869,116.843], tags:{ random:1, }, 				info:"Pokémon Black2/White2 - Battle! Colress" },
 "bw2/ghetsis":				{ loop:[29.441, 89.455], tags:{ random:1, }, 				info:"Pokémon Black2/White2 - Battle! Ghetsis" },
 "bw2/sinnoh-champion":		{ loop:[22.340, 97.357], tags:{ random:1, champ:1, }, 		info:"Pokémon Black2/White2 - Battle! Sinnoh Champion" },
+"bw2/hoenn-gym":			{ loop:[13.594, 77.933], tags:{ random:1, gym:1, },			info:"Pokémon Black2/White2 - Battle! Gym Leader (Hoenn)" },
+"bw2/johto-gym":			{ loop:[15.095, 75.732], tags:{ random:1, gym:1, },			info:"Pokémon Black2/White2 - Battle! Gym Leader (Johto)" },
 "bw2/homika-dogars":		{ loop:[ 1.661, 68.131], tags:{  }, 						info:"Pokémon Black2/White2 - Homika Dogars" },
 
 "bw2mashup/cynthia":		{ loop:[12.340, 87.357], tags:{ random:1, champ: 1},		info:"Pokémon Black/White/2 Mashup - Battle! Cynthia" },
@@ -188,11 +215,23 @@
 "reorch/hoenn-e4":			{ loop:[13.709, 67.717], tags:{ random:1, e4:1, }, 			info:"Pokémon Reorchestrated: Hoenn Summer - Battle! Elite Four" },
 "reorch/hoenn-team":		{ loop:[ 8.332,114.774], tags:{ random:1, }, 				info:"Pokémon Reorchestrated: Double Team! - Aqua and Magma" },
 
+"mmbn/1/boss":				{ loop:[ 9.099, 47.472], tags:{ random:1, },				info:"Mega Man Battle Network - Boss" },
+"mmbn/1/finalboss":			{ loop:[ 4.315, 47.960], tags:{ random:1, },				info:"Mega Man Battle Network - Final Boss" },
+"hidden/rickroll":			{ loop:[36.305,154.569], tags:{ hidden:1, },				info:"Rick Astley - Never Gonna Give You Up" },
+
 "rs/attack-ii":				{ loop:[55.706,142.093], tags:{ random:1, }, 				info:"RuneScape 3 - Attack II" },
 
 "pokken/haunted-house":		{ loop:[33.604,118.398], tags:{  }, 						info:"Pokken Tournament - Haunted House" },
 "pokken/diggersby-land":	{ loop:[ 6.800,125.954], tags:{  },							info:"Pokkén Tournament - Diggersby Land" },
 "pokken/main-theme":		{ loop:[14.632,108.630], tags:{  },							info:"Pokkén Tournament - Main Theme" },
 "pokken/old-ferrum-town":	{ loop:[ 9.891,123.898], tags:{  },							info:"Pokkén Tournament - Old Ferrum Town" },
+
+"ff/7/chocobo":				{ loop:[10.436,116.462], tags:{ random:1, },				info:"Final Fantasy 7 - Electric de Chocobo" },
+"ff/7/win":					{ loop:[ 5.169, 23.559], tags:{ victory:1, },				info:"Final Fantasy 7 - Victory Fanfare" },
+
+"persona/5/desert-river":	{ loop:[59.548,310.613], tags:{ random:1, },				info:"Persona 5 - Rivers in the Desert" },
+"persona/5/desert-river-i":	{ loop:[16.290,149.197], tags:{ random:1, },				info:"Persona 5 - Rivers in the Desert (Instrumental)" },
+"persona/5/last-surprise":	{ loop:[17.827,222.655], tags:{ random:1, },				info:"Persona 5 - Last Surprise" },
+"persona/5/win":			{ loop:[34.714, 51.720], tags:{ random:1, victory:1, },		info:"Persona 5 - Victory" },
 
 });

@@ -93,8 +93,9 @@ $(()=>{
 		loopRegion = wavesurfer.regions.add({
 			drag:false,
 			loop:false, //will set to true when we have both sides of the loop
-			color: 'hsla(200, 100%, 30%, 0.1)',
+			color: 'hsla(200, 100%, 30%, 0.15)',
 		});
+		$('button[name=moveLoop] .fa').removeClass('fa-arrows-h').addClass('fa-i-cursor');
 	});
 	wavesurfer.on('error', ()=>{
 		$('#main .ajax').hide();
@@ -117,6 +118,16 @@ $(()=>{
 	$('button[name=stop]').on('click', ()=>wavesurfer.stop() );
 	$('button[name=zoomin]').on('click', ()=>zoom(2.0) );
 	$('button[name=zoomout]').on('click', ()=>zoom(0.5) );
+	$('button[name=moveLoop]').on('click', ()=>{
+		if (!loopRegion) return;
+		loopRegion.drag = !loopRegion.drag;
+		loopRegion.updateRender();
+		if (loopRegion.drag) {
+			$('button[name=moveLoop] .fa').removeClass('fa-i-cursor').addClass('fa-arrows-h');
+		} else {
+			$('button[name=moveLoop] .fa').removeClass('fa-arrows-h').addClass('fa-i-cursor');
+		}
+	});
 	$('input[name=tags]').selectize({
 		delimiter: ',',
 		options: [
@@ -126,6 +137,7 @@ $(()=>{
 			{ value:"gym", text:"gym" },
 			{ value:"e4", text:"e4" },
 			{ value:"champion", text:"champion" },
+			{ value:"hidden", text:"hidden" },
 		],
 		// persist: false,
 		// create: (input)=>{
@@ -347,7 +359,9 @@ function saveMeta() {
 	output += `tags:{ `;
 	for (let t in meta.tags) { output += `${t}:1, `; }
 	output += `},`;
-	output = tabOut(`"${loadedMeta._id}":`,7) + tabOut(output, 15)+`info:"${meta.info}" },`;
+	output = tabOut(`"${loadedMeta._id}":`,7) + tabOut(output, 15)+`info:"${meta.info}"`;
+	if (loadedMeta.victoryMusic) output += `, victoryMusic:'${loadedMeta.victoryMusic}'`;
+	output += ` },`;
 	
 	let outTag = $('.output').find(`[name="${loadedMeta._id}"]`);
 	if (!outTag.length) {

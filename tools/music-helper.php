@@ -54,6 +54,7 @@ $(()=>updateFileList([
 				<button name='stop'><i class="fa fa-2x fa-stop"></i></button>
 				<button name='zoomin'><i class="fa fa-2x fa-search-plus"></i></button>
 				<button name='zoomout'><i class="fa fa-2x fa-search-minus"></i></button>
+				<button name='moveLoop'><i class="fa fa-2x fa-i-cursor"></i></button>
 			</div>
 		</div>
 		<div class="musicdata" label="Loop">
