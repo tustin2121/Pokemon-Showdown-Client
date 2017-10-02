@@ -141,6 +141,9 @@ anim: function (battle, args) {
 			<div class="extra"></div>
 		</div>
 		
+		<?php if (isset($_GET['3d'])) { ?>
+		<script src="js/lib/three.min.js"></script>
+		<?php } ?>
 		<script src="/js/lib/jquery-1.11.0.min.js"></script>
 		<!--<script src="/js/lib/lodash.compat.js"></script>-->
 		<script src="/js/lib/html-sanitizer-minified.js"></script>
@@ -148,9 +151,15 @@ anim: function (battle, args) {
 		<script src="/js/battledata.js?a6"></script>
 		<script src="/data/pokedex-mini.js?a6"></script>
 		<script src="/data/pokedex-mini-bw.js?a6"></script>
-		<script src="/data/graphics.js?a6"></script>
 		<script src="/sprites/bgs/bg-index.js"></script>
 		<script src="/js/battle.js?a6"></script>
+<?php if (isset($_GET['3d'])) { ?>
+		<script src="js/3d/patch.js"></script>
+		<script src="data/graphics.3d.js"></script>
+<?php } else { ?>
+		<script src="data/graphics.js?a6"></script>
+<?php } ?>
+		
 		
 <script>
 /* global $, Battle, BattleMoveAnims, BattleStatusAnims, BattleOtherAnims, BattleEffects */

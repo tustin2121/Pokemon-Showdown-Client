@@ -2,7 +2,7 @@
 <html>
 	<head>
 		<meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
-		<title>TPP League</title>
+		<title><?php if (isset($_GET['3d'])) echo "3D";?> TPP League</title>
 		<link rel="shortcut icon" href="lotid.png" />
 		<link rel="stylesheet" href="style/client.css" />
 		<link rel="stylesheet" href="style/sim-types.css" />
@@ -14,21 +14,21 @@
 		<meta name="robots" content="noindex" />
 		<meta http-equiv="X-UA-Compatible" content="IE=Edge" />
 		<script>
-			var Config = {testclient: true};
-			(function() {
-				if (location.search !== '') {
-					var m = /\?~~(([^:\/]*)(:[0-9]*)?)/.exec(location.search);
-					if (m) {
-						Config.server = {
-							id: m[1],
-							host: m[2],
-							port: (m[3] && parseInt(m[3].substr(1))) || 8000
-						};
-					} else {
-						alert('Unrecognised query string syntax: ' + location.search);
-					}
-				}
-			})();
+			// var Config = {testclient: true};
+			// (function() {
+			// 	if (location.search !== '') {
+			// 		var m = /\?~~(([^:\/]*)(:[0-9]*)?)/.exec(location.search);
+			// 		if (m) {
+			// 			Config.server = {
+			// 				id: m[1],
+			// 				host: m[2],
+			// 				port: (m[3] && parseInt(m[3].substr(1))) || 8000
+			// 			};
+			// 		} else {
+			// 			alert('Unrecognised query string syntax: ' + location.search);
+			// 		}
+			// 	}
+			// })();
 		</script>
 		<!--[if lte IE 8]><script>
 			Config.oldie = true;
@@ -60,6 +60,19 @@
 		<script>
 			document.getElementById('loading-message').innerHTML += ' DONE<br />Loading libraries...';
 		</script>
+<?php if (isset($_GET['3d'])) { ?>
+		<script src="js/lib/three.detector.js"></script>
+		<script>
+			if (!Detector.webgl) {
+				document.getElementById('loading-message').innerHTML += ' <span style="color:red">ERROR<br />Unable to use WebGL. Please remove ?3d from your url and reload.</span>';
+				window.stop();
+				throw new Error('Unable to use WebGL. Please remove ?3d from your url and reload.');
+			} else {
+				window.battle_3d = true;
+			}
+		</script>
+		<script src="js/lib/three.min.js"></script>
+<?php } ?>
 		<script src="js/lib/jquery-2.1.4.min.js"></script>
 		<script src="js/lib/jquery-cookie.js"></script>
 		<script src="js/lib/autoresize.jquery.min.js"></script>
@@ -102,7 +115,12 @@
 		<script src="js/client-battle.js"></script>
 		<script src="js/client-rooms.js"></script>
 		<script src="js/storage.js"></script>
+<?php if (isset($_GET['3d'])) { ?>
+		<script src="js/3d/patch.js"></script>
+		<script src="data/graphics.3d.js"></script>
+<?php } else { ?>
 		<script src="data/graphics.js"></script>
+<?php } ?>
 		<script src="sprites/bgs/bg-index.js"></script>
 		<script src="emotes/emoteregex.js"></script>
 		<script src="badges/badge-anim.js"></script>
