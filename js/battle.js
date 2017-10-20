@@ -7176,44 +7176,45 @@ var Battle = (function () {
 		// }
 	};
 	
-	Battle.prototype.preloadVictory = function() {
-		// console.debug("preloadVictory");
-		var id = musicTable.randVictory();
-		if (!id) return;
-		if (this.bgmId && musicTable.meta[this.bgmId+"-win"]) {
-			id = this.bgmId+"-win"; //if there's a matching win music, load that up
-		}
-		if (this.forceWinm) {
-			id = this.forceWinm;
-		}
-		var bgmInfo = musicTable.meta[id];
-		BattleSound.loadWinMusic(bgmInfo.url, bgmInfo.loop[0], bgmInfo.loop[1]);
-		this.winm = bgmInfo.url;
-	};
+	/* globals musicTable */
 	Battle.prototype.preloadBgm = function () {
-		// console.debug("preloadBgm");
-		var id = musicTable.randBattle();
-		if (!id) return;
-		if (this.forceBgm) {
-			id = this.forceBgm;
+		var id, bgmInfo;
+		id = this.forceBgm;
+		bgmInfo = musicTable.get(id);
+		if (!bgmInfo) {
+			id = musicTable.randBattle();
+			bgmInfo = musicTable.get(id);
 		}
-		var bgmInfo = musicTable.meta[id];
-		this.bgmId = id;
+		console.debug("♫ Forced BGM: "+this.forceBgm+" :: id="+bgmInfo.id);
+		if (!id) return;
+		this.bgmId = bgmInfo.id;
 		BattleSound.loadBgm(bgmInfo.url, bgmInfo.loop[0], bgmInfo.loop[1]);
 		this.bgm = bgmInfo.url;
 	};
+	Battle.prototype.preloadVictory = function() {
+		var id, bgmInfo;
+		id = this.forceWinm;
+		bgmInfo = musicTable.get(id);
+		if (!bgmInfo) {
+			id = musicTable.getVictoryMusicFor(this.bgmId);
+			bgmInfo = musicTable.get(id);
+		}
+		console.debug("♫ Forced WinM: "+this.forceWinm+" :: id="+bgmInfo.id);
+		if (!id) return;
+		BattleSound.loadWinMusic(bgmInfo.url, bgmInfo.loop[0], bgmInfo.loop[1]);
+		this.winm = bgmInfo.url;
+	};
 	Battle.prototype.setMute = function (mute) {
-		// console.debug("setMute");
 		BattleSound.setMute(mute);
 	};
 	Battle.prototype.soundStart = function () {
-		// console.debug("soundStart");
 		if (!this.bgm) this.preloadBgm();
 		if (!this.winm) this.preloadVictory();
 		if (this.forcePrebgm && this.battleState >= 5 && this.battleState < 10) {
-			console.log("FORCED: "+this.forcePrebgm);
 			try {
-				var bgmInfo = musicTable.meta[this.forcePrebgm];
+				var bgmInfo = musicTable.get(this.forcePrebgm);
+				console.debug("♫ Forced Prebattle: "+this.forcePrebgm+" :: id="+bgmInfo.id);
+				if (!bgmInfo) return;
 				BattleSound.loadBgm(bgmInfo.url, bgmInfo.loop[0], bgmInfo.loop[1]);
 				BattleSound.playBgm(bgmInfo.url, 1);
 			} catch (e) { console.error(e); }
@@ -7223,7 +7224,6 @@ var Battle = (function () {
 		BattleSound.playBgm(this.bgm, this.turn);
 	};
 	Battle.prototype.soundStop = function () {
-		// console.debug("soundStop");
 		BattleSound.stopBgm();
 	};
 	Battle.prototype.soundPause = function () {

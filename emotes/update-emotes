@@ -24,9 +24,9 @@ Promise.resolve()
 // Request global emotes
 .then(()=>{
 	console.write("Requesting global emotes.");
-	return requestJSON("https://twitchemotes.com/api_cache/v2/global.json");
+	return requestJSON("https://twitchemotes.com/api_cache/v3/global.json");
 }).then((data)=>{
-	emoteUrlTemplate = data.template.small;
+	emoteUrlTemplate = "https://static-cdn.jtvnw.net/emoticons/v1/{image_id}/1.0";
 	storedData = data;
 	
 	console.log("Indexing and downloading global emotes...");
@@ -34,11 +34,12 @@ Promise.resolve()
 	let currEmotes = fs.readdirSync(path.join(DIR, "-global")).filter(f=>f.endsWith(".png")).map(f=>f.replace(".png", ""));
 	let emotes = [];
 	let emotePromises = [];
-	for (let e in data.emotes) {
-		let eminfo = data.emotes[e];
+	console.log(data);
+	for (let e in data) {
+		let eminfo = data[e];
 		rm(currEmotes, e);
 		emotes.push(e);
-		emotePromises.push(pullEmote("-global", e, eminfo.image_id));
+		emotePromises.push(pullEmote("-global", e, eminfo.id));
 	}
 	Array.prototype.push.apply(orphanedEmotes, currEmotes.map(f=>path.join("-global", f)));
 	emoteRegexes["-global"] = emotes;
@@ -50,14 +51,14 @@ Promise.resolve()
 // Request subscriber emotes
 .then(()=>{
 	console.write("\nRequesting subscriber emotes.");
-	return requestJSON("https://twitchemotes.com/api_cache/v2/subscriber.json");
+	return requestJSON("https://twitchemotes.com/api_cache/v3/subscriber.json");
 }).then((data)=>{
-	emoteUrlTemplate = data.template.small;
+	emoteUrlTemplate = "https://static-cdn.jtvnw.net/emoticons/v1/{image_id}/1.0";
 	storedData = data;
 })
 // === Insert Twitch Channels to download Sub emotes from here ===
 // .then(downloadChannelEmotesFor("--twitch-curse-integration--")) // This is causing problems with TwitchLit
-.then(downloadChannelEmotesFor("--twitch-turbo--"))
+// .then(downloadChannelEmotesFor("--twitch-turbo--")) // removing because it doesn't seem to be in the API anymore???
 .then(downloadChannelEmotesFor("srkevo4"))
 .then(downloadChannelEmotesFor("puncayshun"))
 .then(downloadChannelEmotesFor("lffn"))
@@ -284,7 +285,7 @@ function downloadChannelEmotesFor(channel) {
 	return function(){
 		console.log(`\nIndexing and downloading emotes for channel ${channel}...`);
 		try { fs.mkdirSync(path.join(DIR, cname)); } catch (e) { if (e.code!='EEXIST') throw e; }
-		let data = storedData.channels[channel]
+		let data = storedData[getChannelIDByName(storedData, cname)];
 		
 		if (!data || data.emotes.length == 0) {
 			console.log("SKIPPING: No emotes for this channel!");
@@ -293,12 +294,11 @@ function downloadChannelEmotesFor(channel) {
 		let currEmotes = fs.readdirSync(path.join(DIR, cname)).filter(f=>f.endsWith(".png")).map(f=>f.replace(".png", ""));
 		let emotes = [];
 		let emotePromises = [];
-		for (let i = 0; i < data.emotes.length; i++) {
-			let eminfo = data.emotes[i];
-			rm(currEmotes, eminfo.code);
-			emotes.push(eminfo.code);
-			emotePromises.push(pullEmote(cname, eminfo.code, eminfo.image_id));
-		}
+		data.emotes.forEach(emote => {
+			rm(currEmotes, emote.code);
+			emotes.push(emote.code);
+			emotePromises.push(pullEmote(cname, emote.code, emote.id));
+		});
 		Array.prototype.push.apply(orphanedEmotes, currEmotes.map(f=>path.join(cname, f)));
 		emoteRegexes[cname] = emotes;
 		return Promise.all(emotePromises);
@@ -311,4 +311,8 @@ function rm(arr, ele) {
 		arr.splice(idx, 1);
 		idx = arr.indexOf(ele);
 	}
+}
+
+function getChannelIDByName(data, cname) {
+  return Object.keys(data).find(id => data[id].channel_name === cname);
 }

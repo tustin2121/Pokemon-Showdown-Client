@@ -304,6 +304,8 @@ License: GPLv2
 }
 .rightbar .trainer {
 	bottom: 232px;
+	bottom: initial;
+    top: 33px;
 }
 .trainer strong {
 	display: block;

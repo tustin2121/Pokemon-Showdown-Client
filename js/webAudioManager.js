@@ -52,7 +52,7 @@ SoundManager.prototype = {
 function Sound(opts) {
     this.id = opts.id;
     this.url = opts.url;
-    console.log("CREATE: "+this.id);
+    console.debug("♫ CREATE: "+this.id);
     
     this.__muteNode = audioCtx.createGain();
     if (audioCtx.createStereoPanner) {
@@ -140,7 +140,7 @@ Sound.prototype = {
     },
     
     play : function(time, offset, playDepth) {
-        console.log("PLAY: "+this.id+" [count:"+(this.playCount+1)+"][depth:"+playDepth+"]");
+        console.debug("♫ PLAY: "+this.id+" [count:"+(this.playCount+1)+"][depth:"+playDepth+"]");
         this.playCount++;
         if (this.__sourceNode) return true; //Don't double-play
         if (!this.audiobuffer) { //not loaded yet, can't play yet
@@ -181,7 +181,7 @@ Sound.prototype = {
     },
     
     stop : function(time) {
-        console.log("STOP: "+this.id+" [count:"+(this.playCount-1)+"]");
+        console.debug("♫ STOP: "+this.id+" [count:"+(this.playCount-1)+"]");
         this.playCount--;
         if (!this.__sourceNode) return true; //Can't double-stop
         
@@ -199,7 +199,7 @@ Sound.prototype = {
     },
     
     pause : function() {
-        console.log("PAUSE: "+this.id);
+        console.debug("♫ PAUSE: "+this.id);
         if (!this.__sourceNode) return false; //can't pause while not playing
         
         this.pauseOffset = audioCtx.currentTime - this.startTime;
@@ -214,7 +214,7 @@ Sound.prototype = {
     },
     
     resume : function() {
-        console.log("RESUME: "+this.id);
+        console.debug("♫ RESUME: "+this.id);
         if (this.__sourceNode) return false; //can't resume while playing
         if (this.pauseOffset === null) return false; //can't resume if not paused
         
@@ -223,7 +223,7 @@ Sound.prototype = {
     },
     
     fadeOut : function(time, delay) {
-        console.log("FADE: "+this.id);
+        console.debug("♫ FADE: "+this.id);
         this.playCount--;
         if (!this.__sourceNode) return; //can't fade if we aren't playing
         delay = delay || 0;

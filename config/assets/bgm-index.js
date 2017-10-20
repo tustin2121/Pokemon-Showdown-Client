@@ -13,6 +13,8 @@
 	// Parse data and set it up for use
 	for (var key in musicMeta) {
 		var value = musicMeta[key];
+		if (typeof value !== 'object') continue;
+		value.id = key;
 		value.url = value.url || bgmPath+key+".mp3";
 		if (value.tags.hidden) continue;
 		if (value.tags.random) {
@@ -27,6 +29,24 @@
 	const exp = {
 		meta: musicMeta,
 		cats: categories,
+		
+		get : function(id) {
+			if (!id) return null;
+			
+			var music = musicMeta[id];
+			if (music && music.url) return music;
+			
+			if (typeof music === 'string') {
+				music = musicMeta[music];
+				if (music && music.url) return music;
+			}
+			if (id.indexOf('/') === -1) {
+				var mid = id.replace('-', '/'); //replaces first dash with slash
+				music = musicMeta[mid];
+				if (music && music.url) return music;
+			}
+			return null;
+		},
 		
 		availableBattleMusic : function() {
 			return Object.keys(musicMeta).filter(_filter).sort(_sort);
@@ -234,4 +254,6 @@
 "persona/5/last-surprise":	{ loop:[17.827,222.655], tags:{ random:1, },				info:"Persona 5 - Last Surprise" },
 "persona/5/win":			{ loop:[34.714, 51.720], tags:{ random:1, victory:1, },		info:"Persona 5 - Victory" },
 
+// old ids, as aliases, for replays
+"dpp-cynthia-piano":"dpp/cynthia-piano",
 });
