@@ -69,9 +69,9 @@
 		updateLayout: function () {
 			var width = this.$el.width();
 			if (width < 950) {
-				this.battle.messageDelay = 800;
+				this.battle.messageShownTime = 500;
 			} else {
-				this.battle.messageDelay = 8;
+				this.battle.messageShownTime = 1;
 			}
 			if (width && width < 640) {
 				var scale = (width / 640);
@@ -384,7 +384,7 @@
 				if (!this.choice) {
 					this.choice = {
 						choices: null,
-						teamPreview: [1, 2, 3, 4, 5, 6].slice(0, switchables.length),
+						teamPreview: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24].slice(0, switchables.length),
 						done: 0,
 						count: 1
 					};
@@ -397,7 +397,7 @@
 					// Request full team order if one of our Pokémon has Illusion
 					for (var i = 0; i < switchables.length && i < 6; i++) {
 						if (toId(switchables[i].baseAbility) === 'illusion') {
-							this.choice.count = 6;
+							this.choice.count = this.myPokemon.length;
 						}
 					}
 					if (this.battle.teamPreviewCount) {
@@ -498,6 +498,7 @@
 			var trapped = curActive.trapped;
 			var canMegaEvo = curActive.canMegaEvo || switchables[pos].canMegaEvo;
 			var canZMove = curActive.canZMove || switchables[pos].canZMove;
+			var canUltraBurst = curActive.canUltraBurst || switchables[pos].canUltraBurst;
 			if (canZMove && typeof canZMove[0] === 'string') {
 				canZMove = _.map(canZMove, function (move) {
 					return {move: move, target: Tools.getMove(move).target};
@@ -622,7 +623,9 @@
 				if (canMegaEvo) {
 					moveMenu += '<br /><label class="megaevo"><input type="checkbox" name="megaevo" />&nbsp;Mega&nbsp;Evolution</label>';
 				} else if (canZMove) {
-					moveMenu += '<br /><label class="megaevo"><input type="checkbox" name="zmove" />&nbsp;Use Z Move</label>';
+					moveMenu += '<br /><label class="megaevo"><input type="checkbox" name="zmove" />&nbsp;Z-Power</label>';
+				} else if (canUltraBurst) {
+					moveMenu += '<br /><label class="megaevo"><input type="checkbox" name="ultraburst" />&nbsp;Ultra Burst</label>';
 				}
 				if (this.finalDecisionMove) {
 					moveMenu += '<em style="display:block;clear:both">You <strong>might</strong> have some moves disabled, so you won\'t be able to cancel an attack!</em><br/>';
@@ -747,7 +750,7 @@
 		},
 		updateTeamControls: function (type) {
 			var switchables = this.request && this.request.side ? this.myPokemon : [];
-			var maxIndex = Math.min(switchables.length, 6);
+			var maxIndex = Math.min(switchables.length, 24);
 
 			var requestTitle = "";
 			if (this.choice.done) {
@@ -1028,13 +1031,14 @@
 				var isMulti = this.battle.mySide.active.length > 1 || this.battle.yourSide.active.length > 1;
 				var isMega = !!(this.$('input[name=megaevo]')[0] || '').checked;
 				var isZMove = !!(this.$('input[name=zmove]')[0] || '').checked;
+				var isUltraBurst = !!(this.$('input[name=ultraburst]')[0] || '').checked;
 
 				var move = e.getAttribute('data-move');
 				var target = e.getAttribute('data-target');
 				var choosableTargets = {normal: 1, any: 1, adjacentAlly: 1, adjacentAllyOrSelf: 1, adjacentFoe: 1};
 				var spreadTargets = {allAdjacentFoes: 1, allAdjacent: 1};
 
-				this.choice.choices.push('move ' + pos + (isMega ? ' mega' : '') + (isZMove ? ' zmove' : ''));
+				this.choice.choices.push('move ' + pos + (isMega ? ' mega' : '') + (isZMove ? ' zmove' : '') + (isUltraBurst ? ' ultra' : ''));
 				if (isMulti && target in choosableTargets) {
 					this.choice.type = 'movetarget';
 					this.choice.moveTarget = target;
@@ -1171,7 +1175,11 @@
 		endTurn: function () {
 			var act = this.request && this.request.requestType;
 			if (act === 'team') {
-				this.sendDecision('team ' + this.choice.teamPreview.join(''));
+				if (this.choice.teamPreview.length >= 10) {
+					this.sendDecision('team ' + this.choice.teamPreview.join(','));
+				} else {
+					this.sendDecision('team ' + this.choice.teamPreview.join(''));
+				}
 			} else {
 				if (act === 'switch') {
 					// Assert that the remaining Pokémon won't switch, even though
@@ -1222,6 +1230,27 @@
 		selectMove: function () {
 			this.tooltips.hideTooltip();
 			this.$controls.find('.controls').attr('class', 'controls move-controls');
+		}
+	}, {
+		readReplayFile: function (file) {
+			var reader = new FileReader();
+			reader.onload = function (e) {
+				var html = e.target.result;
+				var index1 = html.indexOf('<script type="text/plain" class="battle-log-data">');
+				var index2 = html.indexOf('<script type="text/plain" class="log">');
+				if (index1 < 0 && index2 < 0) return alert("Unrecognized HTML file: Only replay files are supported.");
+				if (index1 >= 0) {
+					html = html.slice(index1 + 50);
+				} else if (index2 >= 0) {
+					html = html.slice(index2 + 38);
+				}
+				var index3 = html.indexOf('</script>');
+				html = html.slice(0, index3);
+				html = html.replace(/\\\//g, '/');
+				app.receive('>battle-uploadedreplay\n|init|battle\n|title|Uploaded replay\n' + html);
+				app.receive('>battle-uploadedreplay\n|expire|Uploaded replay');
+			};
+			reader.readAsText(file);
 		}
 	});
 

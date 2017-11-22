@@ -72,6 +72,8 @@
 			} else if (file.type && file.type.substr(0, 6) === 'image/') {
 				// It's an image file, try to set it as a background
 				CustomBackgroundPopup.readFile(file);
+			} else if (file.type && file.type === 'text/html') {
+				BattleRoom.readReplayFile(file);
 			}
 		}
 	});
@@ -223,6 +225,8 @@
 			}
 			if (assertion === ';') {
 				this.trigger('login:authrequired', name);
+			} else if (assertion === ';;@gmail') {
+				this.trigger('login:authrequired', name, '@gmail');
 			} else if (assertion.substr(0, 2) === ';;') {
 				this.trigger('login:invalidname', name, assertion.substr(2));
 			} else if (assertion.indexOf('\n') >= 0 || !assertion) {
@@ -256,7 +260,7 @@
 
 			if (this.get('userid') !== userid) {
 				var self = this;
-				$.get(this.getActionPHP(), {
+				$.post(this.getActionPHP(), {
 					act: 'getassertion',
 					userid: userid,
 					challstr: this.challstr
@@ -267,7 +271,7 @@
 				app.send('/trn ' + name);
 			}
 		},
-		passwordRename: function (name, password) {
+		passwordRename: function (name, password, special) {
 			var self = this;
 			$.post(this.getActionPHP(), {
 				act: 'login',
@@ -281,9 +285,15 @@
 					self.finishRename(name, data.assertion);
 				} else {
 					// wrong password
+					if (special === '@gmail') {
+						try {
+							gapi.auth2.getAuthInstance().signOut(); // eslint-disable-line no-undef
+						} catch (e) {}
+					}
 					app.addPopup(LoginPasswordPopup, {
 						username: name,
-						error: 'Wrong password.'
+						error: data.error || 'Wrong password.',
+						special: special
 					});
 				}
 			}), 'text');
@@ -304,7 +314,7 @@
 				 */
 				this.challstr = challstr;
 				var self = this;
-				$.get(this.getActionPHP(), {
+				$.post(this.getActionPHP(), {
 					act: 'upkeep',
 					challstr: this.challstr
 				}, Tools.safeJSON(function (data) {
@@ -376,7 +386,11 @@
 					this.addRoom('lobby', null, true);
 				}
 				Storage.whenPrefsLoaded(function () {
-					if (!Config.server.registered) return app.send('/autojoin');
+					if (!Config.server.registered) {
+						app.send('/autojoin');
+						Backbone.history.start({pushState: !Config.testclient});
+						return;
+					}
 					var autojoin = (Tools.prefs('autojoin') || '');
 					var autojoinIds = [];
 					if (typeof autojoin === 'string') {
@@ -397,6 +411,9 @@
 						}
 					}
 					app.send('/autojoin ' + autojoinIds.join(','));
+
+					// HTML5 history throws exceptions when running on file://
+					Backbone.history.start({pushState: !Config.testclient});
 				});
 			}
 
@@ -476,8 +493,8 @@
 				self.addPopup(LoginPopup, {name: name, reason: reason});
 			});
 
-			this.user.on('login:authrequired', function (name) {
-				self.addPopup(LoginPasswordPopup, {username: name});
+			this.user.on('login:authrequired', function (name, special) {
+				self.addPopup(LoginPasswordPopup, {username: name, special: special});
 			});
 
 			this.on('response:savereplay', this.uploadReplay, this);
@@ -600,9 +617,6 @@
 			Storage.whenAppLoaded.load(this);
 
 			this.initializeConnection();
-
-			// HTML5 history throws exceptions when running on file://
-			Backbone.history.start({pushState: !Config.testclient});
 		},
 		/**
 		 * Start up the client, including loading teams and preferences,
@@ -706,12 +720,6 @@
 			this.socket.onclose = function (e) {
 				if (!socketopened) {
 					if (Config.server.altport && !altport) {
-						if (document.location.protocol === 'https:') {
-							if (confirm("Could not connect with HTTPS. Try HTTP?")) {
-								return document.location.replace('http://' +
-									document.location.host + document.location.pathname);
-							}
-						}
 						altport = true;
 						Config.server.port = Config.server.altport;
 						self.socket = reconstructSocket(self.socket);
@@ -1056,7 +1064,7 @@
 				groups[symbol] = {
 					name: groupName ? Tools.escapeHTML(groupName + ' (' + symbol + ')') : null,
 					type: groupType,
-					order: i + 1,
+					order: i + 1
 				};
 			}
 
@@ -2259,66 +2267,66 @@
 		'~': {
 			name: "Administrator (~)",
 			type: 'leadership',
-			order: 10001,
+			order: 10001
 		},
 		'#': {
 			name: "Room Owner (#)",
 			type: 'leadership',
-			order: 10002,
+			order: 10002
 		},
 		'&': {
 			name: "Leader (&amp;)",
 			type: 'leadership',
-			order: 10003,
+			order: 10003
 		},
 		'@': {
 			name: "Moderator (@)",
 			type: 'staff',
-			order: 10004,
+			order: 10004
 		},
 		'%': {
 			name: "Driver (%)",
 			type: 'staff',
-			order: 10005,
+			order: 10005
 		},
 		'*': {
 			name: "Bot (*)",
 			type: 'normal',
-			order: 10006,
+			order: 10006
 		},
 		'\u2606': {
 			name: "Player (\u2606)",
 			type: 'normal',
-			order: 10007,
+			order: 10007
 		},
 		'\u2605': {
 			name: "Player (\u2605)",
 			type: 'normal',
-			order: 10008,
+			order: 10008
 		},
 		'+': {
 			name: "Voice (+)",
 			type: 'normal',
-			order: 10009,
+			order: 10009
 		},
 		' ': {
 			type: 'normal',
-			order: 10010,
+			order: 10010
 		},
 		'!': {
 			name: "<span style='color:#777777'>Muted (!)</span>",
 			type: 'punishment',
-			order: 10011,
+			order: 10011
 		},
 		'✖': {
 			name: "<span style='color:#777777'>Namelocked (✖)</span>",
 			type: 'punishment',
-			order: 10012,
+			order: 10012
 		},
 		'\u203d': {
 			name: "<span style='color:#777777'>Locked (\u203d)</span>",
 			type: 'punishment',
-			order: 10013,
+			order: 10013
 		}
 	};
 
@@ -2501,7 +2509,11 @@
 
 			if (data.cantconnect) {
 				buf += '<p class="error">Couldn\'t connect to server!</p>';
-				buf += '<p class="buttonbar"><button type="submit">Retry</button> <button name="close">Work offline</button></p>';
+				if (document.location.protocol === 'https:') {
+					buf += '<p class="buttonbar"><button type="submit"><strong>Retry</strong></button> <button name="tryhttp">Retry with HTTP</button> <button name="close">Work offline</button></p>';
+				} else {
+					buf += '<p class="buttonbar"><button type="submit"><strong>Retry</strong></button> <button name="close">Work offline</button></p>';
+				}
 			} else if (data.message && data.message !== true) {
 				buf += '<p>' + data.message + '</p>';
 				buf += '<p class="buttonbar"><button type="submit" class="autofocus"><strong>Reconnect</strong></button> <button name="close">Work offline</button></p>';
@@ -2512,6 +2524,10 @@
 
 			buf += '</form>';
 			this.$el.html(buf);
+		},
+		tryhttp: function () {
+			document.location.replace('http://' +
+				document.location.host + document.location.pathname + '?insecure');
 		},
 		submit: function (data) {
 			document.location.reload();
