@@ -159,7 +159,7 @@
 				e.stopPropagation();
 				var val = '/pm ' + app.user.lastPM + ', ';
 				textbox.value = val;
-				e.setSelectionRange(val.length, val.length);
+				textbox.setSelectionRange(val.length, val.length);
 			}
 		},
 		clickUsername: function (e) {
@@ -1146,7 +1146,7 @@
 			if (this.$chatFrame.scrollTop() + 60 >= this.$chat.height() - this.$chatFrame.height()) {
 				autoscroll = true;
 			}
-			this.addChat(user, message, pm);
+			if (!(message.substr(0, 4) === '/raw' || message.substr(0, 5) === '/html')) this.addChat(user, message, pm);
 			if (autoscroll) {
 				this.$chatFrame.scrollTop(this.$chat.height());
 			}

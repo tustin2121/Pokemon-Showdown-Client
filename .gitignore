@@ -16,6 +16,7 @@ eslint-cache/
 Thumbs.db
 /lib/ntbb-config.lib.php
 npm-debug.log
+/vendor/
 /emotes/*
 !/emotes/-x/
 !/emotes/-robot/
