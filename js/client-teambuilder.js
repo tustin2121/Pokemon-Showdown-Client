@@ -326,6 +326,9 @@
 				buf += '<h2>Hi</h2>';
 				buf += '<p>Did you have a good day?</p>';
 				buf += '<p><button class="button" name="greeting" value="Y"><i class="fa fa-smile-o"></i> Yes, my day was pretty good</button> <button class="button" name="greeting" value="N"><i class="fa fa-frown-o"></i> No, it wasn\'t great</button></p>';
+				if (Storage.teams && !Storage.teams.length) {
+					buf += '<p><a style="color:#AA2222;text-decoration:none" href="http://play.pokemonshowdown.com/recoverteams.html" target="blank">Some people have reported losing their teams in our switch to HTTPS. If that\'s you, use this <u><b>Team Recovery Tool</b></u> to get your teams back.</a></p>';
+				}
 				buf += '<h2>All teams</h2>';
 			} else {
 				if (this.curFolder.slice(-1) === '/') {
@@ -459,7 +462,7 @@
 				buf += '<p><button class="button" name="greeting" value="W"><i class="fa fa-question-circle"></i> Wait, who are you? Talking to a teambuilder is weird.</button></p>';
 			} else if (answer === 'W') {
 				buf += '<p>Oh, I\'m Zarel! I made a Credits button for this...</p>';
-				buf += '<div class="menugroup"><p><button class="button mainmenu4" name="credits"><i class="fa fa-info-circle"></i> Credits</button></p></div>';
+				buf += '<div class="menugroup"><p><a href="//pokemonshowdown.com/credits" target="_blank"><button class="button mainmenu4"><i class="fa fa-info-circle"></i> Credits</button></a></p></div>';
 				buf += '<p>Isn\'t it pretty? Matches your background and everything. It used to be in the Main Menu but we had to get rid of it to save space.</p>';
 				buf += '<p>Speaking of, you should try <button class="button" name="background"><i class="fa fa-picture-o"></i> changing your background</button>.';
 				buf += '<p><button class="button" name="greeting" value="B"><i class="fa fa-hand-pointer-o"></i> You might be having too much fun with these buttons and icons</button></p>';
@@ -520,9 +523,6 @@
 				buf += '<p><button class="button" name="greeting" value="SP"><i class="fa fa-caret-square-o-right"></i> I wanted to play for real...</button></p>';
 			}
 			$(button).parent().replaceWith(buf);
-		},
-		credits: function () {
-			app.addPopup(CreditsPopup);
 		},
 		background: function () {
 			app.addPopup(CustomBackgroundPopup);
@@ -850,16 +850,9 @@
 					team.format = format;
 				}
 				edited = true;
-				this.updateTeamList();
-			} else {
-				if (format.slice(-1) === '/') {
-					format = format.slice(0, -1);
-					format = toFormatId(format);
-					team.folder = format;
-					edited = true;
-				}
-				this.updateTeamList();
+
 			}
+			this.updateTeamList();
 
 			if (edited) {
 				Storage.saveTeam(team);
@@ -2572,7 +2565,11 @@
 				val = (id in BattlePokedex ? BattlePokedex[id].species : '');
 				break;
 			case 'ability':
-				val = (id in BattleAbilities ? BattleAbilities[id].name : '');
+				if (id in BattleItems && this.curTeam.format == "gen7dualwielding") {
+					val = BattleItems[id].name;
+				} else {
+					val = (id in BattleAbilities ? BattleAbilities[id].name : '');
+				}
 				break;
 			case 'item':
 				val = (id in BattleItems ? BattleItems[id].name : '');

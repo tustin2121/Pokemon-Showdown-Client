@@ -5,6 +5,7 @@
 			'click a': 'click',
 			'click .username': 'clickUsername',
 			'click button': 'dispatchClickButton',
+			'dblclick button[name=openSounds]': 'toggleMute',
 
 			'dragstart .roomtab': 'dragStartRoom',
 			'dragend .roomtab': 'dragEndRoom',
@@ -59,6 +60,12 @@
 			e.stopPropagation();
 			var name = $(e.currentTarget).data('name');
 			app.addPopup(UserPopup, {name: name, sourceEl: e.currentTarget});
+		},
+		toggleMute: function () {
+			var muted = !Tools.prefs('mute');
+			Tools.prefs('mute', muted);
+			BattleSound.setMute(muted);
+			app.topbar.$('button[name=openSounds]').html('<i class="' + (muted ? 'fa fa-volume-off' : 'fa fa-volume-up') + '"></i>');
 		},
 
 		// tabbar
@@ -463,7 +470,7 @@
 				buf += '<p><label class="optlabel">Layout: <select name="onepanel"><option value=""' + (!onePanel ? ' selected="selected"' : '') + '>&#x25EB; Left and right panels</option><option value="1"' + (onePanel ? ' selected="selected"' : '') + '>&#x25FB; Single panel</option></select></label></p>';
 			}
 			buf += '<p><label class="optlabel">Background: <button name="background">Change background</button></label></p>';
-			buf += '<p><label class="optlabel"><input type="checkbox" name="dark"' + (Tools.prefs('dark') ? ' checked' : '') + ' /> Dark mode (beta)</label></p>';
+			buf += '<p><label class="optlabel"><input type="checkbox" name="dark"' + (Tools.prefs('dark') ? ' checked' : '') + ' /> Dark mode</label></p>';
 			buf += '<p><label class="optlabel"><input type="checkbox" name="noanim"' + (Tools.prefs('noanim') ? ' checked' : '') + ' /> Disable animations</label></p>';
 			buf += '<p><label class="optlabel"><input type="checkbox" name="bwgfx"' + (Tools.prefs('bwgfx') ? ' checked' : '') + ' /> Use BW sprites instead of XY models</label></p>';
 			buf += '<p><label class="optlabel"><input type="checkbox" name="nopastgens"' + (Tools.prefs('nopastgens') ? ' checked' : '') + ' /> Use modern sprites for past generations</label></p>';
@@ -936,14 +943,48 @@
 
 			buf += '<p>Log in:</p>';
 			buf += '<p><label class="label">Username: <strong>' + Tools.escapeHTML(data.username) + '<input type="hidden" name="username" value="' + Tools.escapeHTML(data.username) + '" /></strong></label></p>';
-			buf += '<p><label class="label">Password: <input class="textbox autofocus" type="password" name="password"></label></p>';
-			buf += '<p class="buttonbar"><button type="submit"><strong>Log in</strong></button> <button name="close">Cancel</button></p>';
+			if (data.special === '@gmail') {
+				buf += '<div id="gapi-custom-signin" style="width:240px;margin:0 auto">[loading Google log-in button]</div>';
+				buf += '<p class="buttonbar"><button name="close">Cancel</button></p>';
+			} else {
+				buf += '<p><label class="label">Password: <input class="textbox autofocus" type="password" name="password"></label></p>';
+				buf += '<p class="buttonbar"><button type="submit"><strong>Log in</strong></button> <button name="close">Cancel</button></p>';
+			}
 
 			buf += '<p class="or">or</p>';
 			buf += '<p class="buttonbar"><button name="login">Choose another name</button></p>';
 
 			buf += '</form>';
 			this.$el.html(buf);
+
+			if (data.special === '@gmail') {
+				var self = this;
+				window.gapiRenderButton = function () {
+					gapi.signin2.render('gapi-custom-signin', { // eslint-disable-line no-undef
+						'scope': 'profile email',
+						'width': 240,
+						'height': 50,
+						'longtitle': true,
+						'theme': 'dark',
+						'onsuccess': function (googleUser) {
+							var profile = googleUser.getBasicProfile();
+							var id_token = googleUser.getAuthResponse().id_token;
+							self.close();
+							app.user.passwordRename(data.username, id_token, data.special);
+						},
+						'onfailure': function (googleUser) {
+							alert('sign-in failed');
+						}
+					});
+				};
+				if (window.gapiLoaded) return setTimeout(window.gapiRenderButton, 100);
+				window.gapiLoaded = true;
+
+				var script = document.createElement('script');
+				script.async = true;
+				script.src = 'https://apis.google.com/js/platform.js?onload=gapiRenderButton';
+				document.getElementsByTagName('head')[0].appendChild(script);
+			}
 		},
 		login: function () {
 			this.close();

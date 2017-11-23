@@ -72,28 +72,36 @@ Storage.bg = {
 			background: background,
 			'background-size': 'cover'
 		});
+		var attrib = '';
 		this.changeCount++;
 
 		if (!hues) switch (bgid) {
 		case 'horizon':
 			hues = ["318.87640449438203,35.177865612648226%", "216,46.2962962962963%", "221.25,32.25806451612904%", "197.8021978021978,52.60115606936417%", "232.00000000000003,19.480519480519483%", "228.38709677419354,60.7843137254902%"];
+			attrib = '<a href="https://vtas.deviantart.com/art/Pokemon-Horizon-312267168" target="_blank" class="subtle">"Horizon" <small>background by Vivian Zou</small></a>';
 			break;
 		case 'ocean':
 			hues = ["82.8169014084507,34.63414634146342%", "216.16438356164383,29.55465587044534%", "212.92682926829266,59.42028985507245%", "209.18918918918916,57.51295336787566%", "199.2857142857143,48.275862068965495%", "213.11999999999998,55.06607929515419%"];
+			attrib = '<a href="https://quanyails.deviantart.com/art/Sunrise-Ocean-402667154" target="_blank" class="subtle">"Sunrise Ocean" <small>background by Yijing Chen</small></a>';
 			break;
 		case 'waterfall':
 			hues = ["119.31034482758622,37.66233766233767%", "184.36363636363635,23.012552301255226%", "108.92307692307692,37.14285714285714%", "70.34482758620689,20.567375886524818%", "98.39999999999998,36.76470588235296%", "140,38.18181818181818%"];
+			attrib = '<a href="https://yilx.deviantart.com/art/Irie-372292729" target="_blank" class="subtle">"Irie" <small>background by Samuel Teo</small></a>';
 			break;
 		case 'shaymin':
 			hues = ["39.000000000000064,21.7391304347826%", "170.00000000000003,2.380952380952378%", "157.5,11.88118811881188%", "174.78260869565216,12.041884816753928%", "185.00000000000003,12.76595744680851%", "20,5.660377358490567%"];
+			attrib = '<a href="http://cargocollective.com/bluep" target="_blank" class="subtle">"Shaymin" <small>background by Daniel Kong</small></a>';
 			break;
 		case 'charizards':
 			hues = ["37.159090909090914,74.57627118644066%", "10.874999999999998,70.79646017699115%", "179.51612903225808,52.10084033613446%", "20.833333333333336,36.73469387755102%", "192.3076923076923,80.41237113402063%", "210,29.629629629629633%"];
+			attrib = '<a href="https://seiryuuden.deviantart.com/art/The-Ultimate-Mega-Showdown-Charizards-414587079" target="_blank" class="subtle">"Charizards" <small>background by Jessica Valencia</small></a>';
 			break;
 		case 'lotid':
 			hues = ["84.99999999999999,27.27272727272727%", "62.837837837837824,77.0833333333333%", "39.0909090909091,51.5625%", "41.81818181818183,42.85714285714285%", "41.142857142857125,50.724637681159436%", "45.857142857142854,56.45161290322579%"];
 			break;
 		}
+		if (attrib) attrib = '<small style="display:block;padding-bottom:4px">' + attrib + '</small>';
+		$('.bgcredit').html(attrib);
 		if (!hues && bgUrl.charAt(0) === '#') {
 			var r = parseInt(bgUrl.slice(1, 3), 16) / 255;
 			var g = parseInt(bgUrl.slice(3, 5), 16) / 255;
@@ -527,6 +535,7 @@ Storage.packTeam = function (team) {
 	var buf = '';
 	if (!team) return '';
 
+	var hasHP;
 	for (var i = 0; i < team.length; i++) {
 		var set = team[i];
 		if (buf) buf += ']';
@@ -560,10 +569,12 @@ Storage.packTeam = function (team) {
 		}
 
 		// moves
-		if (set.moves) {
-			buf += '|' + set.moves.map(toId).join(',');
-		} else {
-			buf += '|';
+		buf += '|';
+		if (set.moves) for (var j = 0; j < set.moves.length; j++) {
+			var moveid = toId(set.moves[j]);
+			if (j && !moveid) continue;
+			buf += (j ? ',' : '') + moveid;
+			if (moveid.substr(0, 11) === 'hiddenpower' && moveid.length > 11) hasHP = true;
 		}
 
 		// nature
@@ -619,6 +630,11 @@ Storage.packTeam = function (team) {
 			buf += '|' + set.happiness;
 		} else {
 			buf += '|';
+		}
+
+		if (set.pokeball || (set.hpType && !hasHP)) {
+			buf += ',' + (set.hpType || '');
+			buf += ',' + toId(set.pokeball);
 		}
 	}
 
@@ -720,13 +736,18 @@ Storage.fastUnpackTeam = function (buf) {
 
 		// happiness
 		j = buf.indexOf(']', i);
+		var misc = undefined;
 		if (j < 0) {
-			if (buf.substring(i)) {
-				set.happiness = Number(buf.substring(i));
-			}
-			break;
+			if (i < buf.length) misc = buf.substring(i).split(',', 3);
+		} else {
+			if (i !== j) misc = buf.substring(i, j).split(',', 3);
 		}
-		if (i !== j) set.happiness = Number(buf.substring(i, j));
+		if (misc) {
+			set.happiness = (misc[0] ? Number(misc[0]) : 255);
+			set.hpType = misc[1];
+			set.pokeball = misc[2];
+		}
+		if (j < 0) break;
 		i = j + 1;
 	}
 
@@ -830,13 +851,18 @@ Storage.unpackTeam = function (buf) {
 
 		// happiness
 		j = buf.indexOf(']', i);
+		var misc = undefined;
 		if (j < 0) {
-			if (buf.substring(i)) {
-				set.happiness = Number(buf.substring(i));
-			}
-			break;
+			if (i < buf.length) misc = buf.substring(i).split(',', 3);
+		} else {
+			if (i !== j) misc = buf.substring(i, j).split(',', 3);
 		}
-		if (i !== j) set.happiness = Number(buf.substring(i, j));
+		if (misc) {
+			set.happiness = (misc[0] ? Number(misc[0]) : 255);
+			set.hpType = misc[1];
+			set.pokeball = misc[2];
+		}
+		if (j < 0) break;
 		i = j + 1;
 	}
 
