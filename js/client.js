@@ -2509,11 +2509,7 @@
 
 			if (data.cantconnect) {
 				buf += '<p class="error">Couldn\'t connect to server!</p>';
-				if (document.location.protocol === 'https:') {
-					buf += '<p class="buttonbar"><button type="submit"><strong>Retry</strong></button> <button name="tryhttp">Retry with HTTP</button> <button name="close">Work offline</button></p>';
-				} else {
-					buf += '<p class="buttonbar"><button type="submit"><strong>Retry</strong></button> <button name="close">Work offline</button></p>';
-				}
+				buf += '<p class="buttonbar"><button type="submit"><strong>Retry</strong></button> <button name="close">Work offline</button></p>';
 			} else if (data.message && data.message !== true) {
 				buf += '<p>' + data.message + '</p>';
 				buf += '<p class="buttonbar"><button type="submit" class="autofocus"><strong>Reconnect</strong></button> <button name="close">Work offline</button></p>';
