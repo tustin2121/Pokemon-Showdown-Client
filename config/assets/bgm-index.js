@@ -52,8 +52,8 @@
 			return Object.keys(musicMeta).filter(_filter).sort(_sort);
 			
 			function _sort(a, b) {
-				var ax = a.slice(a.indexOf('/'));
-				var bx = b.slice(b.indexOf('/'));
+				var ax = a.slice(0, a.indexOf('/'));
+				var bx = b.slice(0, b.indexOf('/'));
 				if (ax < bx) return -1;
 				if (ax > bx) return 1;
 				if (a < b) return -1;
@@ -62,6 +62,7 @@
 			}
 			function _filter(a) {
 				if (!a || !musicMeta[a]) return false;
+				if (typeof musicMeta[a] !== 'object') return false;
 				if (musicMeta[a].tags.hidden) return false;
 				if (musicMeta[a].tags.victory) return false;
 				if (musicMeta[a].tags.defeat) return false;

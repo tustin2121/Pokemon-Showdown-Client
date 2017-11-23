@@ -6109,10 +6109,10 @@ var Battle = (function () {
 				break;
 			
 			case '-stadium':
-				if (kwargs.request) {
+				if (kwargs.request || (kwargs.ready && app.user.get('userid') === this.p1.id)) {
 					this.stadiumRequest = true;
 				}
-				if (kwargs.norequest) {
+				if (kwargs.norequest || kwargs.notready) {
 					this.stadiumRequest = false;
 				}
 				if (kwargs.bg && kwargs.bg !== '.') {

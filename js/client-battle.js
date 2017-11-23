@@ -1277,7 +1277,7 @@
 				buf += '</select></label></p>';
 				
 				buf += '<p><label class="optlabel">Battle Music: <select name="battlemusic">';
-				var music = Object.keys(musicTable.meta);
+				var music = musicTable.availableBattleMusic();
 				for (var i = 0; i < music.length; i++) {
 					buf += "<option value='"+music[i]+"'"+(this.battle.forceBgm==music[i]?"selected":"")+">"+music[i]+"</option>";
 				}
