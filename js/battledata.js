@@ -1310,12 +1310,21 @@ var Tools = {
 		if (pokemon.shiny && options.gen > 1) dir += '-shiny';
 
 		// April Fool's 2014
+		// if (window.Config && Config.server && Config.server.afd || options.afd) {
+		// 	dir = 'afd' + dir;
+		// 	spriteData.url += dir + '/' + name + '.png';
+		// 	return spriteData;
+		// }
+		// April Fool's 2018
 		if (window.Config && Config.server && Config.server.afd || options.afd) {
-			dir = 'afd' + dir;
-			spriteData.url += dir + '/' + name + '.png';
+			var baseMon = Tools.getTemplate(pokemon.baseSpecies);
+			while (baseMon && baseMon.prevo) {
+				baseMon = Tools.getTemplate(baseMon.prevo);
+			}
+			spriteData.url += 'afdegg/' + ('000'+(baseMon && baseMon.num || '')).slice(-3) + 'egg.png';
 			return spriteData;
 		}
-
+		
 		// Gender differences don't exist prior to Gen 4
 		if (genNum >= 4) {
 			if (animationData[facing]) {
@@ -1713,6 +1722,10 @@ var Tools = {
 			if (altNums[id]) {
 				num = altNums[id];
 			}
+		}
+		
+		if (window.Config && Config.server && Config.server.afd) {
+			num = 816 + 1; //egg
 		}
 
 		var top = Math.floor(num / 12) * 30;

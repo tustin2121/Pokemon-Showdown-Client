@@ -7260,7 +7260,7 @@ var Battle = (function () {
 			id = musicTable.randBattle();
 			bgmInfo = musicTable.get(id);
 		}
-		console.debug("♫ Forced BGM: "+this.forceBgm+" :: id="+bgmInfo.id);
+		console.debug("♫ Forced BGM: "+this.forceBgm+" :: id="+(bgmInfo||{}).id);
 		if (!id) return;
 		this.bgmId = bgmInfo.id;
 		BattleSound.loadBgm(bgmInfo.url, bgmInfo.loop[0], bgmInfo.loop[1]);
@@ -7274,7 +7274,7 @@ var Battle = (function () {
 			id = musicTable.getVictoryMusicFor(this.bgmId);
 			bgmInfo = musicTable.get(id);
 		}
-		console.debug("♫ Forced WinM: "+this.forceWinm+" :: id="+bgmInfo.id);
+		console.debug("♫ Forced WinM: "+this.forceWinm+" :: id="+(bgmInfo||{}).id);
 		if (!id) return;
 		BattleSound.loadWinMusic(bgmInfo.url, bgmInfo.loop[0], bgmInfo.loop[1]);
 		this.winm = bgmInfo.url;
@@ -7288,7 +7288,7 @@ var Battle = (function () {
 		if (this.forcePrebgm && this.battleState >= 5 && this.battleState < 10) {
 			try {
 				var bgmInfo = musicTable.get(this.forcePrebgm);
-				console.debug("♫ Forced Prebattle: "+this.forcePrebgm+" :: id="+bgmInfo.id);
+				console.debug("♫ Forced Prebattle: "+this.forcePrebgm+" :: id="+(bgmInfo||{}).id);
 				if (!bgmInfo) return;
 				BattleSound.loadBgm(bgmInfo.url, bgmInfo.loop[0], bgmInfo.loop[1]);
 				BattleSound.playBgm(bgmInfo.url, 1);

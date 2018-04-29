@@ -8,7 +8,11 @@
 		gym: [],
 		e4: [],
 		champ: [],
+		hidden: [],
 	};
+	
+	// For April Fools
+	const playHidden = false;
 	
 	// Parse data and set it up for use
 	for (var key in musicMeta) {
@@ -16,10 +20,11 @@
 		if (typeof value !== 'object') continue;
 		value.id = key;
 		value.url = value.url || bgmPath+key+".mp3";
-		if (value.tags.hidden) continue;
+		if (value.tags.hidden && !playHidden) continue;
 		if (value.tags.random) {
 			if (value.tags.victory) randomVictoryMusic.push(key);
-			else randomBattleMusic.push(key);
+			else if (value.tags.hidden && playHidden
+				|| !value.tags.hidden && !playHidden) randomBattleMusic.push(key);
 		}
 		for (var cat in categories) {
 			if (value.tags[cat]) categories[cat].push(key);
@@ -63,7 +68,8 @@
 			function _filter(a) {
 				if (!a || !musicMeta[a]) return false;
 				if (typeof musicMeta[a] !== 'object') return false;
-				if (musicMeta[a].tags.hidden) return false;
+				if (musicMeta[a].tags.hidden && !playHidden) return false;
+				if (!musicMeta[a].tags.hidden && playHidden) return false;
 				if (musicMeta[a].tags.victory) return false;
 				if (musicMeta[a].tags.defeat) return false;
 				return true;
@@ -135,7 +141,7 @@
 "hgss/rocket":				{ loop:[20.173, 70.969], tags:{ random:1, }, 				info:"Pokémon HeartGold/SoulSilver - Battle! Rocket" },
 "hgss/ho-oh":				{ loop:[32.587,100.125], tags:{  }, 						info:"Pokémon HeartGold/SoulSilver - Battle! Ho-Oh" },
 "hgss/entei":				{ loop:[ 4.019, 85.385], tags:{  }, 						info:"Pokémon HeartGold/SoulSilver - Battle! Entei" },
-"hgss/beasts":				{ loop:[13.590,105.819], tags:{  },							info:"Pokémon HeartGold/SoulSilver - Beasts" },
+"hgss/beasts":				{ loop:[13.590,105.819], tags:{  },							info:"Pokémon HeartGold/SoulSilver - Battle! Raikou+Entei+Suicune" },
 
 "dpp/trainer":				{ loop:[13.440, 96.959], tags:{ random:1, trainer:1, }, 	info:"Pokémon Diamond, Pearl, & Platinum - Battle! Trainer" },
 "dpp/trainer-win":			{ loop:[ 1.642, 14.315], tags:{ random:1, victory:1, }, 	info:"Pokémon Diamond, Pearl, & Platinum - Victory! Trainer" },
@@ -236,9 +242,38 @@
 "reorch/hoenn-e4":			{ loop:[13.709, 67.717], tags:{ random:1, e4:1, }, 			info:"Pokémon Reorchestrated: Hoenn Summer - Battle! Elite Four" },
 "reorch/hoenn-team":		{ loop:[ 8.332,114.774], tags:{ random:1, }, 				info:"Pokémon Reorchestrated: Double Team! - Aqua and Magma" },
 
-"mmbn/1/boss":				{ loop:[ 9.099, 47.472], tags:{ random:1, },				info:"Mega Man Battle Network - Boss" },
-"mmbn/1/finalboss":			{ loop:[ 4.315, 47.960], tags:{ random:1, },				info:"Mega Man Battle Network - Final Boss" },
-"hidden/rickroll":			{ loop:[36.305,154.569], tags:{ hidden:1, },				info:"Rick Astley - Never Gonna Give You Up" },
+"mmbn/1/boss":				{ loop:[ 9.099, 47.472], tags:{ random:1, },				info:"Mega Man Battle Network - Net Battle" },
+"mmbn/1/finalboss":			{ loop:[ 4.315, 47.960], tags:{ random:1, },				info:"Mega Man Battle Network - Vs Life Virus" },
+"mmbn/2/boss":				{ loop:[ 6.589, 39.602], tags:{ random:1, },				info:"Mega Man Battle Network 2 - Battle Spirit" },
+"mmbn/2/finalboss":			{ loop:[18.474, 59.122], tags:{ random:1, },				info:"Mega Man Battle Network 2 - Vs Gospel" },
+"mmbn/3/boss":				{ loop:[11.097, 42.823], tags:{ random:1, },				info:"Mega Man Battle Network 3 - Boss Battle" },
+"mmbn/3/tourney":			{ loop:[31.428, 62.316], tags:{ random:1, },				info:"Mega Man Battle Network 3 - Great Battlers" },
+"mmbn/3/finalboss":			{ loop:[44.488, 95.479], tags:{ random:1, },				info:"Mega Man Battle Network 3 - Vs Alpha" },
+"mmbn/4/virus":				{ loop:[22.392, 47.120], tags:{ random:1, },				info:"Mega Man Battle Network 4 - Cyber Battle" },
+"mmbn/4/boss":				{ loop:[10.090, 48.380], tags:{ random:1, },				info:"Mega Man Battle Network 4 - Battle with Myself" },
+"mmbn/4/tourney":			{ loop:[50.386,102.053], tags:{ random:1, },				info:"Mega Man Battle Network 4 - Battle Pressure" },
+"mmbn/4/ds-virus":			{ loop:[ 7.122, 71.751], tags:{ random:1, },				info:"Mega Man Battle Network 4 - Cyber Battle (DS Remix)" },
+// "mmbn/5/virus":				{ loop:[18.474, 59.122], tags:{ random:1, },				info:"Mega Man Battle Network 5 - Battle Start!" },
+// "mmbn/5/boss":				{ loop:[ 6.589, 39.602], tags:{ random:1, },				info:"Mega Man Battle Network 5 - Powerful Enemy" },
+// "mmbn/5/finalboss":			{ loop:[18.474, 59.122], tags:{ random:1, },				info:"Mega Man Battle Network 5 - Vs Nebula Gray" },
+// "mmbn/5/ds-virus":			{ loop:[ 6.589, 39.602], tags:{ random:1, },				info:"Mega Man Battle Network 5 - Battle Start! (DS Remix)" },
+// "mmbn/5/ds-finalboss":		{ loop:[18.474, 59.122], tags:{ random:1, },				info:"Mega Man Battle Network 5 - Vs Nebula Gray (DS Remix)" },
+// "mmbn/6/virus":				{ loop:[18.474, 59.122], tags:{ random:1, },				info:"Mega Man Battle Network 6 - Battle Field" },
+// "mmbn/6/boss":				{ loop:[ 6.589, 39.602], tags:{ random:1, },				info:"Mega Man Battle Network 6 - Surge of Power!" },
+// "mmbn/6/finalboss":			{ loop:[18.474, 59.122], tags:{ random:1, },				info:"Mega Man Battle Network 6 - Decisive Battle, Cybeasts!" },
+
+"hidden/rickroll":			{ loop:[36.305,154.569], tags:{ random:1, hidden:1, },			info:"Rick Astley - Never Gonna Give You Up" },
+"hidden/colress":			{ loop:[12.369,116.343], tags:{ random:1, hidden:1, },			info:"Pokémon Black2/White2 - Battle! Colress" },
+"hidden/iris":				{ loop:[11.378,103.878], tags:{ random:1, hidden:1, }, 			info:"Pokémon Black2/White2 - Battle! Champion", victoryMusic:'bw-champion-win' },
+"hidden/iris2":				{ loop:[10.758,150.760], tags:{ random:1, hidden:1, }, 			info:"Pokémon Black2/White2 - Battle! Champion", victoryMusic:'bw-champion-win' },
+"hidden/gladion":			{ loop:[14.341, 86.008], tags:{ random:1, hidden:1, }, 			info:"Pokémon Sun/Moon - Battle! Gladion" },
+"hidden/gladion2":			{ loop:[14.341,157.675], tags:{ random:1, hidden:1, }, 			info:"Pokémon Sun/Moon - Battle! Gladion" },
+"hidden/lance":				{ loop:[23.719, 68.085], tags:{ random:1, hidden:1, }, 			info:"Pokémon HeartGold/SoulSilver - Battle! Champion" },
+"hidden/oras-trainer": 		{ loop:[13.579, 91.548], tags:{ random:1, hidden:1, }, 			info:"Pokémon OmegaRuby/AlphaSapphire - Battle! Trainer" },
+"hidden/lake-guardians":	{ loop:[16.615,110.809], tags:{ random:1, hidden:1, }, 			info:"Pokémon Diamond, Pearl, & Platinum - Battle! Azelf/Mesprit/Uxie" },
+"hidden/bw-legendary":		{ loop:[14.082,102.797], tags:{ random:1, hidden:1, }, 			info:"Pokémon Black/White - Battle! Legendary Pokémon" },
+"hidden/bw-legendary2":		{ loop:[14.082,102.797], tags:{ random:1, hidden:1, }, 			info:"Pokémon Black/White - Battle! Legendary Pokémon" },
+"hidden/dpp-wild":			{ loop:[17.739, 75.130], tags:{ random:1, hidden:1, }, 			info:"Pokémon Diamond, Pearl, & Platinum - Battle! Wild Pokémon" },
 
 "rs/attack-ii":				{ loop:[55.706,142.093], tags:{ random:1, }, 				info:"RuneScape 3 - Attack II" },
 

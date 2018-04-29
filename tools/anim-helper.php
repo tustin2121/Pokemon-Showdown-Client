@@ -155,8 +155,16 @@ anim: function (battle, args) {
 <script>
 /* global $, Battle, BattleMoveAnims, BattleStatusAnims, BattleOtherAnims, BattleEffects */
 var musicTable = {
+	get: ()=> null,
+	availableBattleMusic: ()=>[],
 	randBattle: ()=> null,
 	randVictory: ()=> null,
+	randInCategory: ()=> null,
+	getVictoryMusicFor: ()=> null,
+	isCategory: ()=>false,
+	isValidBattle: ()=>true,
+	isValidVictory: ()=>true,
+	isValidDefeat: ()=>true,
 };
 var soundManager = {
 	createSound: ()=> null,
