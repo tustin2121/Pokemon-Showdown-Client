@@ -416,7 +416,11 @@ var BattleTooltips = (function () {
 			text += '<p>HP: ' + pokemon.hpDisplay() + exacthp + (pokemon.status ? ' <span class="status ' + pokemon.status + '">' + pokemon.status.toUpperCase() + '</span>' : '');
 			if (pokemon.statusData) {
 				if (pokemon.status === 'tox') {
-					text += ' Next damage: ' + Math.floor(100 / 16) * Math.min(pokemon.statusData.toxicTurns, 15) + '%';
+					if (pokemon.ability === 'Poison Heal' || pokemon.ability === 'Magic Guard') {
+						text += ' <small>Would take if ability removed: ' + Math.floor(100 / 16) * Math.min(pokemon.statusData.toxicTurns, 15) + '%</small>';
+					} else {
+						text += ' Next damage: ' + Math.floor(100 / 16) * Math.min(pokemon.statusData.toxicTurns, 15) + '%';
+					}
 				} else if (pokemon.status === 'slp') {
 					text += ' Turns asleep: ' + pokemon.statusData.sleepTurns;
 				}
@@ -694,10 +698,10 @@ var BattleTooltips = (function () {
 			stats.def = Math.floor(stats.def * 1.5);
 			stats.spd = Math.floor(stats.spd * 1.5);
 		}
-		if (ability === 'grasspelt' && this.battle.hasPseudoWeather('grassyterrain')) {
+		if (ability === 'grasspelt' && this.battle.hasPseudoWeather('Grassy Terrain')) {
 			stats.def = Math.floor(stats.def * 1.5);
 		}
-		if (ability === 'surgesurfer' && this.battle.hasPseudoWeather('electricterrain')) {
+		if (ability === 'surgesurfer' && this.battle.hasPseudoWeather('Electric Terrain')) {
 			stats.spe *= 2;
 		}
 		if (item === 'choicespecs') {
@@ -733,7 +737,7 @@ var BattleTooltips = (function () {
 		if (item === 'choicescarf') {
 			stats.spe = Math.floor(stats.spe * 1.5);
 		}
-		if (item === 'ironball' || item === 'machobrace') {
+		if (item === 'ironball' || item === 'machobrace' || /power(?!herb)/.test(item)) {
 			stats.spe = Math.floor(stats.spe * 0.5);
 		}
 		if (ability === 'furcoat') {
@@ -915,6 +919,7 @@ var BattleTooltips = (function () {
 			if (move.id in table.overrideAcc) accuracy = table.overrideAcc[move.id];
 		}
 		var accuracyComment = '%';
+		if (move.id === 'toxic' && this.battle.gen >= 6 && this.pokemonHasType(pokemon, 'Poison')) return '&mdash; (Boosted by Poison type)';
 		if (move.id === 'blizzard' && this.battle.weather === 'hail') return '&mdash; (Boosted by Hail)';
 		if (move.id === 'hurricane' || move.id === 'thunder') {
 			if (this.battle.weather === 'raindance' || this.battle.weather === 'primordialsea') return '&mdash; (Boosted by Rain)';
@@ -1387,6 +1392,7 @@ var BattleTooltips = (function () {
 			if (template.speciesid in table.overrideType) types = table.overrideType[template.speciesid].split('/');
 		}
 
+		if (pokemon.volatiles && pokemon.volatiles.typechange) types = pokemon.volatiles.typechange[2].split('/');
 		if (pokemon.volatiles && pokemon.volatiles.typeadd) {
 			if (types && types.indexOf(pokemon.volatiles.typeadd[2]) === -1) types = types.concat(pokemon.volatiles.typeadd[2]);
 		}

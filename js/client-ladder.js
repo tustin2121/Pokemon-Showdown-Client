@@ -1,6 +1,88 @@
 (function ($) {
 
-	var LadderRoom = this.LadderRoom = this.Room.extend({
+	var HTMLRoom = this.HTMLRoom = this.Room.extend({
+		type: 'html',
+		title: 'Page',
+		initialize: function () {
+			this.$el.addClass('ps-room-light').addClass('scrollable');
+			this.$el.html('<div class="pad"><p>Page unavailable</p></div>');
+		},
+		send: function (data) {
+			// HTML rooms don't actually exist server side, so send globally
+			app.send(data);
+		},
+		receive: function (data) {
+			this.add(data);
+		},
+		add: function (log) {
+			if (typeof log === 'string') log = log.split('\n');
+			for (var i = 0; i < log.length; i++) {
+				this.addRow(log[i]);
+			}
+		},
+		join: function () {
+			app.send('/join ' + this.id);
+		},
+		leave: function () {
+			app.send('/leave ' + this.id);
+		},
+		addRow: function (line) {
+			var name, name2, room, action, silent, oldid;
+			if (!line || typeof line !== 'string') return;
+			if (line.charAt(0) !== '|') line = '||' + line;
+			var pipeIndex = line.indexOf('|', 1);
+			var row;
+			if (pipeIndex >= 0) {
+				row = [line.slice(1, pipeIndex), line.slice(pipeIndex + 1)];
+			} else {
+				row = [line.slice(1), ''];
+			}
+			switch (row[0]) {
+			case 'init':
+				// ignore (handled elsewhere)
+				break;
+
+			case 'title':
+				this.title = row[1];
+				app.roomTitleChanged(this);
+				app.topbar.updateTabbar();
+				break;
+
+			case 'pagehtml':
+				this.$el.html(Tools.sanitizeHTML(row[1]));
+				this.subtleNotifyOnce();
+				break;
+
+			case 'selectorhtml':
+				var pipeIndex2 = row[1].indexOf('|');
+				if (pipeIndex2 < 0) return;
+				this.$(row[1].slice(0, pipeIndex2)).html(Tools.sanitizeHTML(row[1].slice(pipeIndex2 + 1)));
+				this.subtleNotifyOnce();
+				break;
+
+			case 'notify':
+				if (!Tools.prefs('mute') && Tools.prefs('notifvolume')) {
+					soundManager.getSoundById('notif').setVolume(Tools.prefs('notifvolume')).play();
+				}
+				this.notifyOnce(row[1], row.slice(2).join('|'), 'highlight');
+				break;
+
+			case 'tempnotify':
+				if (!this.notifications && !Tools.prefs('mute') && Tools.prefs('notifvolume')) {
+					soundManager.getSoundById('notif').setVolume(Tools.prefs('notifvolume')).play();
+				}
+				this.notify(row[2], row[3], row[1]);
+				break;
+
+			case 'tempnotifyoff':
+				this.closeNotification(row[1]);
+				break;
+
+			}
+		}
+	});
+
+	var LadderRoom = this.LadderRoom = HTMLRoom.extend({
 		type: 'ladder',
 		title: 'Ladder',
 		initialize: function () {
@@ -19,9 +101,11 @@
 			}, this);
 		},
 		curFormat: '',
+		join: function () {},
+		leave: function () {},
 		update: function () {
 			if (!this.curFormat) {
-				var buf = '<div class="ladder pad"><p>See a user\'s ranking with <code>/ranking <em>username</em></code></p>' +
+				var buf = '<div class="ladder pad"><p>See a user\'s ranking with <a class="button" href="//pokemonshowdown.com/users/" target="_blank">User lookup</a></p>' +
 					//'<p><strong style="color:red">I\'m really really sorry, but as a warning: we\'re going to reset the ladder again soon to fix some more ladder bugs.</strong></p>' +
 					'<p>(btw if you couldn\'t tell the ladder screens aren\'t done yet; they\'ll look nicer than this once I\'m done.)</p>' +
 					'<p><button name="selectFormat" value="help" class="button"><i class="fa fa-info-circle"></i> How the ladder works</button></p><ul>';
@@ -67,11 +151,10 @@
 		showHelp: function () {
 			var buf = '<div class="ladder pad"><p><button name="selectFormat"><i class="fa fa-chevron-left"></i> Format List</button></p>';
 			buf += '<h3>How the ladder works</h3>';
-			buf += '<p>Our ladder displays four ratings: Elo, GXE, Glicko-1, and COIL.</p>';
+			buf += '<p>Our ladder displays three ratings: Elo, GXE, and Glicko-1.</p>';
 			buf += '<p><strong>Elo</strong> is the main ladder rating. It\'s a pretty normal ladder rating: goes up when you win and down when you lose.</p>';
 			buf += '<p><strong>GXE</strong> (Glicko X-Act Estimate) is an estimate of your win chance against an average ladder player.</p>';
 			buf += '<p><strong>Glicko-1</strong> is a different rating system. It has rating and deviation values.</p>';
-			buf += '<p><strong>COIL</strong> (Converging Order Invariant Ladder) is mainly used for suspect tests. It goes up as you play games, but not too many games.</p>';
 			buf += '<p>Note that win/loss should not be used to estimate skill, since who you play against is much more important than how many times you win or lose. Our other stats like Elo and GXE are much better for estimating skill.</p>';
 			buf += '</div>';
 			this.$el.html(buf);
@@ -83,21 +166,6 @@
 		refresh: function () {
 			this.$('button[name=refresh]').addClass('disabled').prop('disabled', true);
 			this.update();
-		}
-	}, {
-		COIL_B: {
-			'gen7oususpecttest': 17,
-			'gen7uususpecttest': 20,
-			'gen7rususpecttest': 9,
-			'gen7nususpecttest': 9,
-			'gen7pususpecttest': 9,
-			'gen7lcsuspecttest': 13,
-			'gen7monotypesuspecttest': 9,
-			'gen7doublesoususpecttest': 14.5,
-			'gen7balancedhackmonssuspecttest': 11,
-			'gen71v1suspecttest': 20,
-			'gen7mixandmegasuspecttest': 10.5,
-			'gen7almostanyabilitysuspecttest': 6
 		}
 	});
 

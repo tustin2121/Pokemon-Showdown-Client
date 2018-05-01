@@ -45,6 +45,8 @@
 			'input .statform input[type=number].numform': 'statChange',
 			'change select[name=nature]': 'natureChange',
 			'change select[name=ivspread]': 'ivSpreadChange',
+			'change .evslider': 'statSlided',
+			'input .evslider': 'statSlide',
 
 			// teambuilder events
 			'click .utilichart a': 'chartClick',
@@ -83,7 +85,6 @@
 				}
 				this.exportMode = false;
 			} else if (this.curSet) {
-				app.clearGlobalListeners();
 				this.curSet = null;
 				Storage.saveTeam(this.curTeam);
 			} else if (this.curTeam) {
@@ -326,9 +327,6 @@
 				buf += '<h2>Hi</h2>';
 				buf += '<p>Did you have a good day?</p>';
 				buf += '<p><button class="button" name="greeting" value="Y"><i class="fa fa-smile-o"></i> Yes, my day was pretty good</button> <button class="button" name="greeting" value="N"><i class="fa fa-frown-o"></i> No, it wasn\'t great</button></p>';
-				if (Storage.teams && !Storage.teams.length) {
-					buf += '<p><a style="color:#AA2222;text-decoration:none" href="http://play.pokemonshowdown.com/recoverteams.html" target="blank">Some people have reported losing their teams in our switch to HTTPS. If that\'s you, use this <u><b>Team Recovery Tool</b></u> to get your teams back.</a></p>';
-				}
 				buf += '<h2>All teams</h2>';
 			} else {
 				if (this.curFolder.slice(-1) === '/') {
@@ -343,8 +341,6 @@
 					buf += '<h2><i class="fa fa-folder-open-o"></i> ' + filterFormat + '</h2>';
 				}
 			}
-
-			buf += '<div class="storage-warning"></div>';
 
 			var newButtonText = "New Team";
 			if (filterFolder) newButtonText = "New Team in folder";
@@ -403,7 +399,7 @@
 					// support dragging and dropping buttons.
 					buf += '<li><div name="edit" data-value="' + i + '" class="team" draggable="true">' + formatText + '<strong>' + Tools.escapeHTML(team.name) + '</strong><br /><small>';
 					buf += Storage.getTeamIcons(team);
-					buf += '</small></div><button name="edit" value="' + i + '"><i class="fa fa-pencil"></i>Edit</button><button name="delete" value="' + i + '"><i class="fa fa-trash"></i>Delete</button></li>';
+					buf += '</small></div><button name="edit" value="' + i + '"><i class="fa fa-pencil" aria-label="Edit" title="Edit (you can also just click on the team)"></i></button><button name="newTop" value="' + i + '" title="Duplicate" aria-label="Duplicate"><i class="fa fa-clone"></i></button><button name="delete" value="' + i + '"><i class="fa fa-trash"></i> Delete</button></li>';
 				}
 				if (!atLeastOne) {
 					if (filterFolder) {
@@ -424,7 +420,7 @@
 			} else if (this.curFolder) {
 				buf += '<button name="backup" class="button"><i class="fa fa-upload"></i> Backup all teams from this folder</button>';
 			} else if (atLeastOne) {
-				buf += '<p><strong>Clearing your cookies (specifically, <code>localStorage</code>) will delete your teams.</strong></p>';
+				buf += '<p><strong>Clearing your cookies (specifically, <code>localStorage</code>) will delete your teams.</strong> <span class="storage-warning">Browsers sometimes randomly clear cookies - you should back up your teams or use the desktop client if you want to make sure you don\'t lose them.</span></p>';
 				buf += '<button name="backup" class="button"><i class="fa fa-upload"></i> Backup/Restore all teams</button>';
 				buf += '<p>If you want to clear your cookies or <code>localStorage</code>, you can use the Backup/Restore feature to save your teams as text first.</p>';
 				var self = this;
@@ -451,7 +447,6 @@
 				this.$('.storage-warning').html('');
 				return;
 			}
-			this.$('.storage-warning').html('');
 		},
 		greeting: function (answer, button) {
 			var buf = '<p><strong>' + $(button).html() + '</p></strong>';
@@ -698,9 +693,8 @@
 			teams.push(newTeam);
 			this.edit(teams.length - 1);
 		},
-		newTop: function () {
-			var newTeam = this.createTeam();
-
+		newTop: function (i) {
+			var newTeam = this.createTeam(i ? teams[i] : null);
 			teams.unshift(newTeam);
 			for (var room in app.rooms) {
 				var selection = app.rooms[room].$('button.teamselect').val();
@@ -710,21 +704,31 @@
 			}
 			this.edit(0);
 		},
-		createTeam: function () {
-			var format = this.curFolder || 'gen7';
-			var folder = '';
-			if (format && format.charAt(format.length - 1) === '/') {
-				folder = format.slice(0, -1);
-				format = 'gen7';
+		createTeam: function (orig) {
+			var newTeam;
+			if (orig) {
+				newTeam = {
+					name: 'Copy of ' + orig.name,
+					format: orig.format,
+					team: orig.team,
+					folder: orig.folder,
+					iconCache: ''
+				};
+			} else {
+				var format = this.curFolder || 'gen7';
+				var folder = '';
+				if (format && format.charAt(format.length - 1) === '/') {
+					folder = format.slice(0, -1);
+					format = 'gen7';
+				}
+				newTeam = {
+					name: 'Untitled ' + (teams.length + 1),
+					format: format,
+					team: '',
+					folder: folder,
+					iconCache: ''
+				};
 			}
-			var newTeam = {
-				name: 'Untitled ' + (teams.length + 1),
-				format: format,
-				team: '',
-				folder: folder,
-				iconCache: ''
-			};
-
 			// work around Opera 42-45 crashing when persist() is called
 			if (navigator.storage && navigator.storage.persist && !/ OPR\/4[0-5]/.test(navigator.userAgent)) {
 				var self = this;
@@ -1628,7 +1632,6 @@
 		},
 		updateChart: function (pokemonChanged, wasIncomplete) {
 			var type = this.curChartType;
-			app.clearGlobalListeners();
 			if (type === 'stats') {
 				this.search.qType = null;
 				this.search.qName = null;
@@ -1903,7 +1906,7 @@
 			buf += '<div class="col evslidercol"><div></div>';
 			for (var i in stats) {
 				if (i === 'spd' && this.curTeam.gen === 1) continue;
-				buf += '<div><input type="slider" name="evslider-' + i + '" value="' + Tools.escapeHTML(set.evs[i] === undefined ? (this.curTeam.gen > 2 ? '0' : '252') : '' + set.evs[i]) + '" min="0" max="252" step="4" class="evslider" /></div>';
+				buf += '<div><input type="range" name="evslider-' + i + '" value="' + Tools.escapeHTML(set.evs[i] === undefined ? (this.curTeam.gen > 2 ? '0' : '252') : '' + set.evs[i]) + '" min="0" max="252" step="4" class="evslider" tabindex="-1" aria-hidden="true" /></div>';
 			}
 			buf += '</div>';
 
@@ -2061,30 +2064,12 @@
 
 			buf += '</div>';
 			this.$chart.html(buf);
-			var self = this;
-			this.suppressSliderCallback = true;
-			app.clearGlobalListeners();
-			this.$chart.find('.evslider').slider({
-				from: 0,
-				to: 252,
-				step: 4,
-				skin: 'round_plastic',
-				onstatechange: function (val) {
-					if (!self.suppressSliderCallback) self.statSlide(val, this);
-				},
-				callback: function () {
-					self.save();
-				}
-			});
-			this.suppressSliderCallback = false;
 		},
 		setStatFormGuesses: function () {
 			this.updateStatForm(true);
 		},
 		setSlider: function (stat, val) {
-			this.suppressSliderCallback = true;
-			this.$chart.find('input[name=evslider-' + stat + ']').slider('value', val || 0);
-			this.suppressSliderCallback = false;
+			this.$chart.find('input[name=evslider-' + stat + ']').val(val || 0);
 		},
 		updateNature: function () {
 			var set = this.curSet;
@@ -2215,11 +2200,12 @@
 				}
 			}
 		},
-		statSlide: function (val, slider) {
-			var stat = slider.inputNode[0].name.substr(9);
+		statSlide: function (e) {
+			var slider = e.currentTarget;
+			var stat = slider.name.substr(9);
 			var set = this.curSet;
 			if (!set) return;
-			val = +val;
+			var val = +slider.value;
 			var originalVal = val;
 			var result = this.getStat(stat, set, val);
 			while (val && this.getStat(stat, set, val - 4) == result) val -= 4;
@@ -2242,7 +2228,7 @@
 
 			// Don't try this at home.
 			// I am a trained professional.
-			if (val !== originalVal) slider.o.pointers[0].set(val);
+			if (val !== originalVal) slider.value = val;
 
 			if (!set.evs) set.evs = {};
 			if (this.ignoreEVLimits) {
@@ -2259,6 +2245,10 @@
 			this.$('input[name=stat-' + stat + ']').val(val);
 
 			this.updateStatGraph();
+		},
+		statSlided: function (e) {
+			this.statSlide(e);
+			this.save();
 		},
 		natureChange: function (e) {
 			var set = this.curSet;
@@ -2691,7 +2681,7 @@
 			var format = this.curTeam.format;
 			if (!set.level || set.level === 100) return true;
 			if (format.substr(0, 3) === 'gen') format = format.substr(4);
-			if (format.substr(0, 10) === 'battlespot' || format.substr(0, 3) === 'vgc') {
+			if (format.substr(0, 10) === 'battlespot' || format.substr(0, 3) === 'vgc' || format === 'ultrasinnohclassic') {
 				if (set.level === 50) return true;
 			}
 			return false;
@@ -2745,7 +2735,7 @@
 				if (moves[i].substr(0, 13) === 'Hidden Power ') hasHiddenPower = true;
 				var move = Tools.getMove(moves[i]);
 				if (Tools.getCategory(move, this.curTeam.gen) === 'Physical' &&
-						!move.damage && !move.ohko && move.id !== 'rapidspin' && move.id !== 'foulplay' && move.id !== 'endeavor') {
+						!move.damage && !move.ohko && move.id !== 'rapidspin' && move.id !== 'foulplay' && move.id !== 'endeavor' && move.id !== 'counter') {
 					minAtk = false;
 				} else if (move.id === 'metronome' || move.id === 'assist' || move.id === 'copycat' || move.id === 'mefirst') {
 					minAtk = false;
@@ -2854,6 +2844,7 @@
 			var hasMove = {};
 			var template = Tools.getTemplate(set.species || set.name);
 			var stats = this.getBaseStats(template);
+			if (!stats) return '?';
 			var itemid = toId(set.item);
 			var abilityid = toId(set.ability);
 
@@ -3154,7 +3145,7 @@
 			if (this.curTeam && this.ignoreEVLimits) {
 				evs = {hp:252, atk:252, def:252, spa:252, spd:252, spe:252};
 				if (!moveCount['PhysicalAttack']) delete evs.atk;
-				if (!moveCount['SpecialAttack']) delete evs.spa;
+				if (!moveCount['SpecialAttack'] && this.curTeam.gen > 1) delete evs.spa;
 				if (hasMove['gyroball'] || hasMove['trickroom']) delete evs.spe;
 				if (this.curTeam.gen === 1) delete evs.spd;
 				if (this.curTeam.gen < 3) return evs;
@@ -3358,10 +3349,6 @@
 			if (format.substr(0, 9) === 'tppleague') return 7;
 			if (format.substr(0, 3) !== 'gen') return 6;
 			return parseInt(format.substr(3, 1), 10) || 6;
-		},
-		destroy: function () {
-			app.clearGlobalListeners();
-			Room.prototype.destroy.call(this);
 		}
 	});
 
