@@ -75,30 +75,34 @@ Storage.bg = {
 		var attrib = '';
 		this.changeCount++;
 
-		if (!hues) switch (bgid) {
-		case 'horizon':
-			hues = ["318.87640449438203,35.177865612648226%", "216,46.2962962962963%", "221.25,32.25806451612904%", "197.8021978021978,52.60115606936417%", "232.00000000000003,19.480519480519483%", "228.38709677419354,60.7843137254902%"];
-			attrib = '<a href="https://vtas.deviantart.com/art/Pokemon-Horizon-312267168" target="_blank" class="subtle">"Horizon" <small>background by Vivian Zou</small></a>';
-			break;
-		case 'ocean':
-			hues = ["82.8169014084507,34.63414634146342%", "216.16438356164383,29.55465587044534%", "212.92682926829266,59.42028985507245%", "209.18918918918916,57.51295336787566%", "199.2857142857143,48.275862068965495%", "213.11999999999998,55.06607929515419%"];
-			attrib = '<a href="https://quanyails.deviantart.com/art/Sunrise-Ocean-402667154" target="_blank" class="subtle">"Sunrise Ocean" <small>background by Yijing Chen</small></a>';
-			break;
-		case 'waterfall':
-			hues = ["119.31034482758622,37.66233766233767%", "184.36363636363635,23.012552301255226%", "108.92307692307692,37.14285714285714%", "70.34482758620689,20.567375886524818%", "98.39999999999998,36.76470588235296%", "140,38.18181818181818%"];
-			attrib = '<a href="https://yilx.deviantart.com/art/Irie-372292729" target="_blank" class="subtle">"Irie" <small>background by Samuel Teo</small></a>';
-			break;
-		case 'shaymin':
-			hues = ["39.000000000000064,21.7391304347826%", "170.00000000000003,2.380952380952378%", "157.5,11.88118811881188%", "174.78260869565216,12.041884816753928%", "185.00000000000003,12.76595744680851%", "20,5.660377358490567%"];
-			attrib = '<a href="http://cargocollective.com/bluep" target="_blank" class="subtle">"Shaymin" <small>background by Daniel Kong</small></a>';
-			break;
-		case 'charizards':
-			hues = ["37.159090909090914,74.57627118644066%", "10.874999999999998,70.79646017699115%", "179.51612903225808,52.10084033613446%", "20.833333333333336,36.73469387755102%", "192.3076923076923,80.41237113402063%", "210,29.629629629629633%"];
-			attrib = '<a href="https://seiryuuden.deviantart.com/art/The-Ultimate-Mega-Showdown-Charizards-414587079" target="_blank" class="subtle">"Charizards" <small>background by Jessica Valencia</small></a>';
-			break;
-		case 'lotid':
-			hues = ["84.99999999999999,27.27272727272727%", "62.837837837837824,77.0833333333333%", "39.0909090909091,51.5625%", "41.81818181818183,42.85714285714285%", "41.142857142857125,50.724637681159436%", "45.857142857142854,56.45161290322579%"];
-			break;
+		if (!hues) {
+			switch (bgid) {
+			case 'horizon':
+				hues = ["318.87640449438203,35.177865612648226%", "216,46.2962962962963%", "221.25,32.25806451612904%", "197.8021978021978,52.60115606936417%", "232.00000000000003,19.480519480519483%", "228.38709677419354,60.7843137254902%"];
+				attrib = '<a href="https://vtas.deviantart.com/art/Pokemon-Horizon-312267168" target="_blank" class="subtle">"Horizon" <small>background by Vivian Zou</small></a>';
+				break;
+			case 'ocean':
+				hues = ["82.8169014084507,34.63414634146342%", "216.16438356164383,29.55465587044534%", "212.92682926829266,59.42028985507245%", "209.18918918918916,57.51295336787566%", "199.2857142857143,48.275862068965495%", "213.11999999999998,55.06607929515419%"];
+				attrib = '<a href="https://quanyails.deviantart.com/art/Sunrise-Ocean-402667154" target="_blank" class="subtle">"Sunrise Ocean" <small>background by Yijing Chen</small></a>';
+				break;
+			case 'waterfall':
+				hues = ["119.31034482758622,37.66233766233767%", "184.36363636363635,23.012552301255226%", "108.92307692307692,37.14285714285714%", "70.34482758620689,20.567375886524818%", "98.39999999999998,36.76470588235296%", "140,38.18181818181818%"];
+				attrib = '<a href="https://yilx.deviantart.com/art/Irie-372292729" target="_blank" class="subtle">"Irie" <small>background by Samuel Teo</small></a>';
+				break;
+			case 'shaymin':
+				hues = ["39.000000000000064,21.7391304347826%", "170.00000000000003,2.380952380952378%", "157.5,11.88118811881188%", "174.78260869565216,12.041884816753928%", "185.00000000000003,12.76595744680851%", "20,5.660377358490567%"];
+				attrib = '<a href="http://cargocollective.com/bluep" target="_blank" class="subtle">"Shaymin" <small>background by Daniel Kong</small></a>';
+				break;
+			case 'charizards':
+				hues = ["37.159090909090914,74.57627118644066%", "10.874999999999998,70.79646017699115%", "179.51612903225808,52.10084033613446%", "20.833333333333336,36.73469387755102%", "192.3076923076923,80.41237113402063%", "210,29.629629629629633%"];
+				attrib = '<a href="https://seiryuuden.deviantart.com/art/The-Ultimate-Mega-Showdown-Charizards-414587079" target="_blank" class="subtle">"Charizards" <small>background by Jessica Valencia</small></a>';
+				break;
+			case 'lotid':
+				hues = ["84.99999999999999,27.27272727272727%", "62.837837837837824,77.0833333333333%", "39.0909090909091,51.5625%", "41.81818181818183,42.85714285714285%", "41.142857142857125,50.724637681159436%", "45.857142857142854,56.45161290322579%"];
+				break;
+			case 'digimon':
+				hues = ["170.45454545454544,27.500000000000004%", "84.70588235294119,13.821138211382115%", "112.50000000000001,7.8431372549019605%", "217.82608695652175,54.761904761904766%", "0,1.6949152542372816%", ""];
+			}
 		}
 		if (attrib) attrib = '<small style="display:block;padding-bottom:4px">' + attrib + '</small>';
 		$('.bgcredit').html(attrib);
@@ -237,10 +241,9 @@ Storage.whenPrefsLoaded = Tools.makeLoadTracker();
 Storage.whenTeamsLoaded = Tools.makeLoadTracker();
 Storage.whenAppLoaded = Tools.makeLoadTracker();
 
-var convertShowjoins = function () {
+var updatePrefs = function () {
 	var oldShowjoins = Storage.prefs('showjoins');
-	if (typeof oldShowjoins === 'undefined') return;
-	if (typeof oldShowjoins !== 'object') {
+	if (oldShowjoins !== undefined && typeof oldShowjoins !== 'object') {
 		var showjoins = {};
 		var serverShowjoins = {global: (oldShowjoins ? 1 : 0)};
 		var showroomjoins = Storage.prefs('showroomjoins');
@@ -251,8 +254,20 @@ var convertShowjoins = function () {
 		showjoins[Config.server.id] = serverShowjoins;
 		Storage.prefs('showjoins', showjoins, true);
 	}
+
+	var isChrome64 = navigator.userAgent.includes(' Chrome/64.');
+	if (Storage.prefs('nogif') !== undefined) {
+		if (!isChrome64) {
+			Storage.prefs('nogif', null);
+		}
+	} else if (isChrome64) {
+		Storage.prefs('nogif', true);
+		Storage.whenAppLoaded(function () {
+			app.addPopupMessage('Your version of Chrome has a bug that makes animated GIFs freeze games sometimes, so certain animations have been disabled. Only some people have the problem, so you can experiment and enable them in the Options menu setting "Disable GIFs for Chrome 64 bug".');
+		});
+	}
 };
-Storage.whenPrefsLoaded(convertShowjoins);
+Storage.whenPrefsLoaded(updatePrefs);
 
 Storage.initPrefs = function () {
 	Storage.loadTeams();
@@ -402,8 +417,20 @@ Storage.initTestClient = function () {
 			}
 			app.addPopup(ProxyPopup, {uri: uri, callback: callback});
 		};
-		$.post = function (/*uri, data, callback, type*/) {
-			app.addPopupMessage('The requested action is not supported by testclient.html. Please complete this action in the official client instead.');
+		$.post = function (uri, data, callback, type) {
+			if (type === 'html') {
+				uri += '&testclient';
+			}
+			if (uri[0] === '/') { //relative URI
+				uri = Tools.resourcePrefix + uri.substr(1);
+			}
+			var src = '<!DOCTYPE html><html><body><form action="' + Tools.escapeHTML(uri) + '" method="POST">';
+			src += '<input type="hidden" name="testclient">';
+			for (var i in data) {
+				src += '<input type=hidden name="' + i + '" value="' + Tools.escapeHTML(data[i]) + '">';
+			}
+			src += '<input type=submit value="Please click this button first."></form></body></html>';
+			app.addPopup(ProxyPopup, {uri: "data:text/html;charset=UTF-8," + encodeURIComponent(src), callback: callback});
 		};
 		Storage.whenPrefsLoaded.load();
 	});
@@ -1061,7 +1088,7 @@ Storage.importTeam = function (text, teams) {
 			if (line.substr(0, 14) === 'Hidden Power [') {
 				var hptype = line.substr(14, line.length - 15);
 				line = 'Hidden Power ' + hptype;
-				if (!curSet.ivs && window.BattleTypeChart) {
+				if (!curSet.ivs && window.BattleTypeChart && window.BattleTypeChart[hptype]) {
 					curSet.ivs = {};
 					for (var stat in window.BattleTypeChart[hptype].HPivs) {
 						curSet.ivs[stat] = window.BattleTypeChart[hptype].HPivs[stat];
@@ -1304,9 +1331,31 @@ Storage.nwLoadTeams = function () {
 			self.nwFinishedLoadingTeams(localApp);
 		}
 		for (var i = 0; i < files.length; i++) {
+			if (i >= 2000) {
+				setTimeout(function () {
+					Storage.nwLoadNextBatch(files, 2000, dirOffset);
+				}, 3000);
+				break;
+			}
 			self.nwLoadTeamFile(files[i].slice(dirOffset), localApp);
 		}
 	});
+};
+
+Storage.nwLoadNextBatch = function (files, offset, dirOffset) {
+	if (window.app) {
+		window.app.addPopupMessage("Loading " + files.length + " teams (Teams load slowly if you have over 2000 teams)");
+	}
+	var i;
+	for (i = offset; i < files.length; i++) {
+		if (i >= offset + 2000) {
+			setTimeout(function () {
+				Storage.nwLoadNextBatch(files, i);
+			}, 3000);
+			break;
+		}
+		this.nwLoadTeamFile(files[i].slice(dirOffset), window.app);
+	}
 };
 
 Storage.nwLoadTeamFile = function (filename, localApp) {
@@ -1354,9 +1403,11 @@ Storage.nwLoadTeamFile = function (filename, localApp) {
 				iconCache: '',
 				filename: filename
 			});
-			if (!--self.nwTeamsLeft) {
-				self.nwFinishedLoadingTeams(localApp);
-			}
+		} else {
+			app.popup(err);
+		}
+		if (!--self.nwTeamsLeft) {
+			self.nwFinishedLoadingTeams(localApp);
 		}
 	});
 };

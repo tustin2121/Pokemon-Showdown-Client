@@ -235,6 +235,8 @@
 				e.preventDefault();
 				e.stopPropagation();
 				userid = $(e.currentTarget).closest('.pm-window').data('userid');
+				// counteract jQuery auto-casting
+				if (userid !== undefined && userid !== '') userid = '' + userid;
 			} else {
 				userid = toId(e);
 			}
@@ -339,21 +341,30 @@
 			var $chat = $pmWindow.find('.inner');
 			// this.tabComplete.reset();
 			this.chatHistories[userid].push(text);
-			if (text.toLowerCase() === '/ignore') {
+			var data = '';
+			var cmd = text.toLowerCase();
+			var spaceIndex = cmd.indexOf(' ');
+			if (spaceIndex > 0) {
+				data = cmd.substr(spaceIndex + 1);
+				cmd = cmd.substr(0, spaceIndex);
+			}
+			if (cmd === '/ignore') {
 				if (app.ignore[userid]) {
 					$chat.append('<div class="chat">User ' + userid + ' is already on your ignore list. (Moderator messages will not be ignored.)</div>');
 				} else {
 					app.ignore[userid] = 1;
 					$chat.append('<div class="chat">User ' + userid + ' ignored. (Moderator messages will not be ignored.)</div>');
 				}
-			} else if (text.toLowerCase() === '/unignore') {
+			} else if (cmd === '/unignore') {
 				if (!app.ignore[userid]) {
 					$chat.append('<div class="chat">User ' + userid + ' isn\'t on your ignore list.</div>');
 				} else {
 					delete app.ignore[userid];
 					$chat.append('<div class="chat">User ' + userid + ' no longer ignored.</div>');
 				}
-			} else if (text.toLowerCase() === '/clear') {
+			} else if (cmd === '/challenge') {
+				this.challenge(userid, data);
+			} else if (cmd === '/clear') {
 				$chat.empty();
 			} else {
 				text = ('\n' + text).replace(/\n\n/g, '\n').replace(/\n/g, '\n/pm ' + userid + ', ').substr(1);
@@ -744,7 +755,7 @@
 			var teamIndex = $pmWindow.find('button[name=team]').val();
 			var team = null;
 			if (Storage.teams[teamIndex]) team = Storage.teams[teamIndex];
-			if (!window.BattleFormats[format].team && !team) {
+			if (format.indexOf('@@@') === -1 && !window.BattleFormats[format].team && !team) {
 				app.addPopupMessage("You need to go into the Teambuilder and build a team for this format.");
 				return;
 			}
@@ -829,6 +840,8 @@
 				return '<button class="select teamselect" name="team" disabled><em>Loading...</em></button>';
 			}
 			if (!formatid) formatid = this.curFormat;
+			var atIndex = formatid.indexOf('@@@');
+			if (atIndex >= 0) formatid = formatid.slice(0, atIndex);
 			if (!window.BattleFormats[formatid]) {
 				return '<button class="select teamselect" name="team" disabled></button>';
 			}

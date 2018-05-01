@@ -22,7 +22,7 @@ module.exports = {
 		// Battle stuff
 		"Battle": true, "Pokemon": true, "BattleSound": true, "BattleTooltips": true,
 		"BattleAbilities": false, "BattleAliases": false, "BattleBackdrops": false, "BattleBackdropsFive": false, "BattleBackdropsFour": false, "BattleBackdropsThree": false, "BattleEffects": false,
-		"BattleFormats": false, "BattleFormatsData": false, "BattleLearnsets": false, "BattleItems": false, "BattleMoveAnims": false, "BattleMovedex": false, "BattleNatures": false, 
+		"BattleFormats": false, "BattleFormatsData": false, "BattleLearnsets": false, "BattleItems": false, "BattleMoveAnims": false, "BattleMovedex": false, "BattleNatures": false,
 		"BattleOtherAnims": false,  "BattlePokedex": false,"BattlePokemonSprites": false, "BattlePokemonSpritesBW": false, "BattleSearchCountIndex": false, "BattleSearchIndex": false,
 		"BattleSearchIndexOffset": false, "BattleSearchIndexType": false, "BattleStatIDs": false, "BattleStatNames": false, "BattleStats": false, "BattleStatusAnims": false, "BattleStatuses": false, "BattleTeambuilderTable": false,
 
@@ -32,7 +32,7 @@ module.exports = {
 		"ChatHistory": false, "Topbar": false, "UserList": false,
 
 		// Rooms
-		"Room": false, "BattleRoom": false, "ChatRoom": false, "ConsoleRoom": false, "LadderRoom": false, "MainMenuRoom": false, "RoomsRoom": false, "BattlesRoom": false, "TeambuilderRoom": false,
+		"Room": false, "BattleRoom": false, "ChatRoom": false, "ConsoleRoom": false, "HTMLRoom": false, "LadderRoom": false, "MainMenuRoom": false, "RoomsRoom": false, "BattlesRoom": false, "TeambuilderRoom": false,
 
 		// Tons of popups
 		"Popup": false, "ForfeitPopup": false, "BracketPopup": false, "LoginPasswordPopup": false, "UserPopup": false, "TeamPopup": false,
@@ -51,6 +51,9 @@ module.exports = {
 		"no-inner-declarations": ["error", "functions"],
 		"no-redeclare": "off",
 		"valid-jsdoc": "off",
+
+		// TODO: actually fix useless escapes
+		"no-useless-escape": "off",
 
 		"array-callback-return": "error",
 		"complexity": "off",
@@ -151,7 +154,7 @@ module.exports = {
 		"no-new-object": "error",
 		"no-spaced-func": "error",
 		"no-ternary": "off",
-		"no-trailing-spaces": "error",
+		"no-trailing-spaces": ["error", {"ignoreComments": false}],
 		"no-underscore-dangle": "off",
 		"no-unneeded-ternary": "error",
 		"object-curly-spacing": ["error", "never"],
@@ -198,8 +201,7 @@ module.exports = {
 		"no-var": "error",
 		"new-cap": ["error", {"newIsCap": true, "capIsNew: false}],
 		"padded-blocks": ["error", "never"],
-		"strict": ["error", "global"],
-		"validate-conditionals": "error"
+		"strict": ["error", "global"]
 		*/
 	}
 };

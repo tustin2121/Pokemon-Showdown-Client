@@ -330,9 +330,9 @@
 						}
 						return -1; // a comes first
 					} else if (bidx != -1) {
-						return 1;  // b comes first
+						return 1; // b comes first
 					}
-					return (a[0] < b[0]) ? -1 : 1;  // alphabetical order
+					return (a[0] < b[0]) ? -1 : 1; // alphabetical order
 				});
 				this.tabComplete.candidates = candidates;
 				this.tabComplete.index = 0;
@@ -781,7 +781,7 @@
 						buffer += '</table></div>';
 						return self.add('|raw|' + buffer);
 					}
-					buffer += '<tr><th>Format</th><th><abbr title="Elo rating">Elo</abbr></th><th><abbr title="user\'s percentage chance of winning a random battle (aka GLIXARE)">GXE</abbr></th><th><abbr title="Glicko-1 rating: rating±deviation">Glicko-1</abbr></th><th>COIL</th><th>W</th><th>L</th><th>Total</th></tr>';
+					buffer += '<tr><th>Format</th><th><abbr title="Elo rating">Elo</abbr></th><th><abbr title="user\'s percentage chance of winning a random battle (aka GLIXARE)">GXE</abbr></th><th><abbr title="Glicko-1 rating: rating±deviation">Glicko-1</abbr></th><th>W</th><th>L</th><th>Total</th></tr>';
 
 					var hiddenFormats = [];
 					for (var i = 0; i < data.length; i++) {
@@ -812,12 +812,6 @@
 							buffer += '<td><em>' + Math.round(row.rpr) + '<small> &#177; ' + Math.round(row.rprd) + '</small></em></td>';
 						}
 						var N = parseInt(row.w, 10) + parseInt(row.l, 10) + parseInt(row.t, 10);
-						var COIL_B = LadderRoom.COIL_B[formatId];
-						if (COIL_B) {
-							buffer += '<td>' + Math.round(40.0 * parseFloat(row.gxe) * Math.pow(2.0, -COIL_B / N), 0) + '</td>';
-						} else {
-							buffer += '<td>--</td>';
-						}
 						buffer += '<td>' + row.w + '</td><td>' + row.l + '</td><td>' + N + '</td></tr>';
 					}
 					if (hiddenFormats.length) {
@@ -894,6 +888,29 @@
 				}
 				return text; // Send the /avatar command through to the server.
 
+			case 'afd':
+				var cleanedTarget = toId(target);
+				if (cleanedTarget === 'off' || cleanedTarget === 'disable') {
+					Config.server.afd = false;
+					this.add('April Fools\' day mode disabled.');
+				} else {
+					Config.server.afd = true;
+					this.add('April Fools\' day mode enabled.');
+				}
+				for (var roomid in app.rooms) {
+					var battle = app.rooms[roomid] && app.rooms[roomid].battle;
+					if (!battle) continue;
+					var turn = battle.turn;
+					battle.reset(true);
+					battle.fastForwardTo(turn);
+					if (battle.playbackState !== 3) {
+						battle.play();
+					} else {
+						battle.pause();
+					}
+				}
+				return false;
+
 			// documentation of client commands
 			case 'help':
 				switch (toId(target)) {
@@ -967,6 +984,10 @@
 				case 'ladder':
 					this.add('/rating - Get your own rating.');
 					this.add('/rating [username] - Get user [username]\'s rating.');
+					return false;
+				case 'afd':
+					this.add('/afd - Enable April Fools\' Day sprites.');
+					this.add('/afd disable - Disable April Fools\' Day sprites.');
 					return false;
 				}
 			}
@@ -1258,12 +1279,25 @@
 					break;
 
 				case 'notify':
+					if (row[3] && !this.getHighlight(row[3])) return;
 					if (!Tools.prefs('mute') && Tools.prefs('notifvolume')) {
 						try {
 						soundManager.getSoundById('notif').setVolume(Tools.prefs('notifvolume')).play();
 						} catch (e) { console.error(`Can't play notify sound:`, e); }
 					}
-					this.notifyOnce(row[1], row.slice(2).join('|'), 'highlight');
+					this.notifyOnce(row[1], row[2], 'highlight');
+					break;
+
+				case 'tempnotify':
+					if (row[4] && !this.getHighlight(row[4])) return;
+					if (!this.notifications && !Tools.prefs('mute') && Tools.prefs('notifvolume')) {
+						soundManager.getSoundById('notif').setVolume(Tools.prefs('notifvolume')).play();
+					}
+					this.notify(row[2], row[3], row[1]);
+					break;
+
+				case 'tempnotifyoff':
+					this.closeNotification(row[1]);
 					break;
 
 				case 'error':
@@ -1271,13 +1305,19 @@
 					break;
 
 				case 'uhtml':
-					this.$chat.append('<div class="notice uhtml-' + toId(row[1]) + '">' + Tools.sanitizeHTML(row.slice(2).join('|')) + '</div>');
-					break;
-
 				case 'uhtmlchange':
 					var $elements = this.$chat.find('div.uhtml-' + toId(row[1]));
-					if (!$elements.length) break;
-					$elements.html(Tools.sanitizeHTML(row.slice(2).join('|')));
+					var html = row.slice(2).join('|');
+					if (!html) {
+						$elements.remove();
+					} else if (!$elements.length) {
+						this.$chat.append('<div class="notice uhtml-' + toId(row[1]) + '">' + Tools.sanitizeHTML(html) + '</div>');
+					} else if (row[0] === 'uhtmlchange') {
+						$elements.html(Tools.sanitizeHTML(html));
+					} else {
+						$elements.remove();
+						this.$chat.append('<div class="notice uhtml-' + toId(row[1]) + '">' + Tools.sanitizeHTML(html) + '</div>');
+					}
 					break;
 
 				case 'unlink':
@@ -1301,7 +1341,18 @@
 
 				case 'tournament':
 				case 'tournaments':
-					if (Tools.prefs('notournaments')) break;
+					if (Tools.prefs('notournaments')) {
+						if (row[1] === 'create') {
+							this.$chat.append('<div class="notice">' + Tools.escapeFormat(row[2]) + ' ' + Tools.escapeHTML(row[3]) + ' tournament created (and hidden because you have tournaments disabled).</div>');
+						} else if (row[1] === 'start') {
+							this.$chat.append('<div class="notice">Tournament started.</div>');
+						} else if (row[1] === 'forceend') {
+							this.$chat.append('<div class="notice">Tournament force-ended.</div>');
+						} else if (row[1] === 'end') {
+							this.$chat.append('<div class="notice">Tournament ended.</div>');
+						}
+						break;
+					}
 					if (!this.tournamentBox) this.tournamentBox = new TournamentBox(this, this.$tournamentWrapper);
 					if (!this.tournamentBox.parseMessage(row.slice(1), row[0] === 'tournaments')) break;
 					// fallthrough in case of unparsed message
@@ -1517,7 +1568,7 @@
 			var userid = toUserid(name);
 
 			var speakerHasAuth = " +\u2606".indexOf(name.charAt(0)) < 0;
-			var readerHasAuth = this.users && " +\u2606".indexOf((this.users[app.user.get('userid')] || ' ').charAt(0)) < 0;
+			var readerHasAuth = this.users && " +\u2606\u203D!".indexOf((this.users[app.user.get('userid')] || ' ').charAt(0)) < 0;
 			if (app.ignore[userid] && !speakerHasAuth && !readerHasAuth) return;
 
 			// Add this user to the list of people who have spoken recently.
@@ -1577,6 +1628,8 @@
 				var notifyTitle = "Mentioned by " + name + (this.id === 'lobby' ? '' : " in " + this.title);
 				var notifyText = $lastMessage.html().indexOf('<span class="spoiler">') >= 0 ? '(spoiler)' : $lastMessage.children().last().text();
 				this.notifyOnce(notifyTitle, "\"" + notifyText + "\"", 'highlight');
+			} else if (mayNotify && this.id.substr(0, 5) === 'help-') {
+				this.notifyOnce("Help message from " + name, "\"" + message + "\"", 'pm');
 			} else if (mayNotify && name !== '~') { // |c:|~| prefixes a system message
 				this.subtleNotifyOnce();
 			}
@@ -1607,8 +1660,8 @@
 				components.push(date.getSeconds());
 			}
 			return '<small>[' + components.map(
-					function (x) { return (x < 10) ? '0' + x : x; }
-				).join(':') + '] </small>';
+				function (x) { return (x < 10) ? '0' + x : x; }
+			).join(':') + '] </small>';
 		},
 		parseBattleID: function (id) {
 			if (id.lastIndexOf('-') > 6) {
@@ -1666,6 +1719,7 @@
 		},
 		hide: function () {
 			this.$el.scrollTop(0);
+			this.$el.removeClass('userlist-maximized');
 			this.$el.addClass('userlist-minimized');
 		},
 		updateUserCount: function () {

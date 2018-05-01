@@ -147,7 +147,7 @@
 			avatar: 0
 		},
 		initialize: function () {
-			app.clearGlobalListeners();
+			app.addGlobalListeners();
 			app.on('response:userdetails', function (data) {
 				if (data.userid === this.get('userid')) {
 					this.set('avatar', data.avatar);
@@ -647,7 +647,7 @@
 		 */
 		initializeConnection: function () {
 			Storage.whenPrefsLoaded(function () {
-				// Config.server.afd = true;
+				if (Config.server.id !== 'smogtours') Config.server.afd = true;
 				app.connect();
 			});
 		},
@@ -738,8 +738,8 @@
 			};
 		},
 		dispatchFragment: function (fragment) {
-			if (location.search && window.history) {
-				history.replaceState(null, null, '/');
+			if (!Config.testclient && location.search && window.history) {
+				history.replaceState(null, null, location.pathname);
 			}
 			this.fragment = fragment = toRoomid(fragment || '');
 			if (this.initialFragment === undefined) this.initialFragment = fragment;
@@ -826,6 +826,8 @@
 					this.once('init:choosename', function () {
 						self.send('/join ' + roomid);
 					});
+				} else if (data === 'rename') {
+					this.renameRoom(roomid, errormessage);
 				} else if (data !== 'namepending') {
 					if (isdeinit) { // deinit
 						if (this.rooms[roomid] && this.rooms[roomid].type === 'chat') {
@@ -1220,10 +1222,7 @@
 			}
 			app.topbar.updateTabbar();
 		},
-		clearGlobalListeners: function () {
-			// jslider doesn't clear these when it should,
-			// so we have to do it for them :/
-			$(document).off('click touchstart mousedown touchmove mousemove touchend mouseup');
+		addGlobalListeners: function () {
 			$(document).on('click', 'a', function (e) {
 				if (this.className === 'closebutton') return; // handled elsewhere
 				if (this.className.indexOf('minilogo') >= 0) return; // handled elsewhere
@@ -1231,8 +1230,19 @@
 				if (this.host === 'play.pokemonshowdown.com' || this.host === 'psim.us' || this.host === location.host) {
 					if (!e.cmdKey && !e.metaKey && !e.ctrlKey) {
 						var target = this.pathname.substr(1);
-						var shortLinks = /^(appeals?|rooms?suggestions?|suggestions?|adminrequests?|bugs?|bugreports?|rules?|faq|credits?|news|privacy|contact|dex)$/;
+						var shortLinks = /^(appeals?|rooms?suggestions?|suggestions?|adminrequests?|bugs?|bugreports?|rules?|faq|credits?|news|privacy|contact|dex|insecure)$/;
 						if (target.indexOf('/') < 0 && target.indexOf('.') < 0 && !shortLinks.test(target)) {
+							if (this.dataset && this.dataset.target === 'replace') {
+								var roomEl = $(this).closest('.ps-room')[0];
+								if (roomEl && roomEl.id) {
+									var roomid = roomEl.id.slice(5);
+									window.app.renameRoom(roomid, target);
+									window.app.rooms[target].join();
+									e.preventDefault();
+									e.stopPropagation();
+									e.stopImmediatePropagation();
+								}
+							}
 							window.app.tryJoinRoom(target);
 							e.preventDefault();
 							e.stopPropagation();
@@ -1246,6 +1256,16 @@
 					e.preventDefault();
 					e.stopPropagation();
 					e.stopImmediatePropagation();
+					return;
+				}
+				if (this.rel === 'noopener') {
+					var formatOptions = Tools.prefs('chatformatting') || {};
+					if (!formatOptions.hideinterstice && !Tools.interstice.isWhitelisted(this.href)) {
+						this.href = Tools.interstice.getURI(this.href);
+					}
+				} else if (this.target === '_blank') {
+					// for performance reasons, there's no reason to ever have an opener
+					this.rel = 'noopener';
 				}
 			});
 		},
@@ -1352,6 +1372,7 @@
 				'constructor': ChatRoom
 			};
 			var typeTable = {
+				'html': HTMLRoom,
 				'battle': BattleRoom,
 				'chat': ChatRoom
 			};
@@ -1364,8 +1385,10 @@
 
 			// otherwise, infer the room type
 			if (!type) {
-				if (id.substr(0, 7) === 'battle-') {
+				if (id.slice(0, 7) === 'battle-') {
 					type = BattleRoom;
+				} else if (id.slice(0, 5) === 'view-') {
+					type = HTMLRoom;
 				} else {
 					type = ChatRoom;
 				}
@@ -1617,25 +1640,36 @@
 			if (room.requestLeave && !room.requestLeave(e)) return false;
 			return this.removeRoom(id);
 		},
+		renameRoom: function (id, newid) {
+			var room = this.rooms[id];
+			if (!room) return false;
+			if (this.rooms[newid]) {
+				this.removeRoom(id, true);
+				return false;
+			}
+			this.rooms[newid] = room;
+			room.id = newid;
+			room.$el[0].id = 'room-' + newid;
+			delete this.rooms[id];
+			this.updateLayout();
+		},
 		removeRoom: function (id, alreadyLeft) {
 			var room = this.rooms[id];
-			if (room) {
-				if (room === this.curRoom) this.focusRoom('');
-				delete this.rooms[id];
-				var index = this.roomList.indexOf(room);
-				if (index >= 0) this.roomList.splice(index, 1);
-				index = this.sideRoomList.indexOf(room);
-				if (index >= 0) this.sideRoomList.splice(index, 1);
-				room.destroy(alreadyLeft);
-				if (room === this.sideRoom) {
-					this.sideRoom = null;
-					this.curSideRoom = null;
-					this.updateSideRoom();
-				}
-				this.updateLayout();
-				return true;
+			if (!room) return false;
+			if (room === this.curRoom) this.focusRoom('');
+			delete this.rooms[id];
+			var index = this.roomList.indexOf(room);
+			if (index >= 0) this.roomList.splice(index, 1);
+			index = this.sideRoomList.indexOf(room);
+			if (index >= 0) this.sideRoomList.splice(index, 1);
+			room.destroy(alreadyLeft);
+			if (room === this.sideRoom) {
+				this.sideRoom = null;
+				this.curSideRoom = null;
+				this.updateSideRoom();
 			}
-			return false;
+			this.updateLayout();
+			return true;
 		},
 		moveRoomBy: function (room, amount) {
 			var index = this.roomList.indexOf(room);
@@ -2509,7 +2543,14 @@
 
 			if (data.cantconnect) {
 				buf += '<p class="error">Couldn\'t connect to server!</p>';
-				buf += '<p class="buttonbar"><button type="submit"><strong>Retry</strong></button> <button name="close">Work offline</button></p>';
+				if (window.wiiu && document.location.protocol === 'https:') {
+					buf += '<p class="error">The Wii U does not support secure connections.</p>';
+					buf += '<p class="buttonbar"><button name="tryhttp" autofocus><strong>Connect insecurely</button> <button name="close">Work offline</button></p>';
+				} else if (document.location.protocol === 'https:') {
+					buf += '<p class="buttonbar"><button type="submit"><strong>Retry</strong></button> <button name="tryhttp">Retry with HTTP</button> <button name="close">Work offline</button></p>';
+				} else {
+					buf += '<p class="buttonbar"><button type="submit"><strong>Retry</strong></button> <button name="close">Work offline</button></p>';
+				}
 			} else if (data.message && data.message !== true) {
 				buf += '<p>' + data.message + '</p>';
 				buf += '<p class="buttonbar"><button type="submit" class="autofocus"><strong>Reconnect</strong></button> <button name="close">Work offline</button></p>';
@@ -2580,10 +2621,10 @@
 				buf += '<p><strong style="color:red">' + (Tools.escapeHTML(data.warning) || 'You have been warned for breaking the rules.') + '</strong></p>';
 			}
 			buf += '<h2>Pok&eacute;mon Showdown Rules</h2>';
-			buf += '<b>Global</b><br /><br /><b>1.</b> Be nice to people. Respect people. Don\'t be rude to people.<br /><br /><b>2.</b> PS is based in the US. Follow US laws. Don\'t distribute pirated material, and don\'t slander others. PS is available to users younger than 18, so porn is strictly forbidden.<br /><br /><b>3.</b>&nbsp;No cheating. Don\'t exploit bugs to gain an unfair advantage. Don\'t game the system (by intentionally losing against yourself or a friend in a ladder match, by timerstalling, etc).<br /><b></b><br /><b>4.</b>&nbsp;English only.<br /><br /><b>5.</b> The First Amendment does not apply to PS, since PS is not a government organization.<br /><br /><b>6.</b> Moderators have discretion to punish any behaviour they deem inappropriate, whether or not it\'s on this list. If you disagree with a moderator ruling, appeal to a leader (a user with &amp; next to their name) or Discipline Appeals.<br /><br />';
-			buf += '<b>Chat</b><br /><br /><b>1.</b> Do not spam, flame, or troll. This includes advertising, asking questions with one-word answers in the lobby, and flooding the chat such as by copy/pasting lots of text in the lobby.<br /><br /><b>2.</b> Don\'t call unnecessary attention to yourself. Don\'t be obnoxious. ALL CAPS, <i><b>formatting</b></i>, and -&gt; ASCII art &lt;- are acceptable to emphasize things, but should be used sparingly, not all the time.<br /><br /><b>3.</b> No minimodding: don\'t mod if it\'s not your job. Don\'t tell people they\'ll be muted, don\'t ask for people to be muted, and don\'t talk about whether or not people should be muted ("inb4 mute", etc). This applies to bans and other punishments, too.<br /><br /><b>4.</b> We reserve the right to tell you to stop discussing moderator decisions if you become unreasonable or belligerent.<br /><br />(Note: Chat rules don\'t apply to battle rooms, but only if both players in the battle are okay with it.)<br /><br />';
+			buf += '<b>Global</b><br /><br /><b>1.</b> Be nice to people. Respect people. Don\'t be rude or mean to people.<br /><br /><b>2.</b> Follow US laws (PS is based in the US). No porn (minors use PS), don\'t distribute pirated material, and don\'t slander others.<br /><br /><b>3.</b>&nbsp;No sex. Don\'t discuss anything sexually explicit, not even in private messages, not even if you\'re both adults.<br /><b></b><br /><b>4.</b>&nbsp;No cheating. Don\'t exploit bugs to gain an unfair advantage. Don\'t game the system (by intentionally losing against yourself or a friend in a ladder match, by timerstalling, etc). Don\'t impersonate staff if you\'re not.<br /><br /><b>5.</b> Moderators have discretion to punish any behaviour they deem inappropriate, whether or not it\'s on this list. If you disagree with a moderator ruling, appeal to a leader (a user with &amp; next to their name) or <a href="https://pokemonshowdown.com/appeal">Discipline Appeals</a>.<br /><br />(Note: The First Amendment does not apply to PS, since PS is not a government organization.)<br /><br />';
+			buf += '<b>Chat</b><br /><br /><b>1.</b> Do not spam, flame, or troll. This includes advertising, raiding, asking questions with one-word answers in the lobby, and flooding the chat such as by copy/pasting logs in the lobby.<br /><br /><b>2.</b> Don\'t call unnecessary attention to yourself. Don\'t be obnoxious. ALL CAPS and <i>formatting</i> are acceptable to emphasize things, but should be used sparingly, not all the time.<br /><br /><b>3.</b> No minimodding: don\'t mod if it\'s not your job. Don\'t tell people they\'ll be muted, don\'t ask for people to be muted, and don\'t talk about whether or not people should be muted ("inb4 mute", etc). This applies to bans and other punishments, too.<br /><br /><b>4.</b> We reserve the right to tell you to stop discussing moderator decisions if you become unreasonable or belligerent.<br /><br /><b>5.</b> English only, unless specified otherwise.<br /><br />(Note: You can opt out of chat rules in private chat rooms and battle rooms, but only if all ROs or players agree to it.)<br /><br />';
 			if (!warning) {
-				buf += '<b>Usernames</b><br /><br />Your username can be chosen and changed at any time. Keep in mind:<br /><br /><b>1.</b> Usernames may not impersonate a recognized user (a user with %, @, &amp;, or ~ next to their name).<br /><br /><b>2.</b> Usernames may not be derogatory or insulting in nature, to an individual or group (insulting yourself is okay as long as it\'s not too serious).<br /><br /><b>3.</b> Usernames may not directly reference sexual activity, or be excessively disgusting.<br /><br />This policy is less restrictive than that of many places, so you might see some "borderline" nicknames that might not be accepted elsewhere. You might consider it unfair that they are allowed to keep their nickname. The fact remains that their nickname follows the above rules, and if you were asked to choose a new name, yours does not.';
+				buf += '<b>Usernames</b><br /><br />Your username can be chosen and changed at any time. Keep in mind:<br /><br /><b>1.</b> Usernames may not impersonate a recognized user (a user with %, @, &amp;, or ~ next to their name) or a famous person/organization that uses PS or is associated with Pokémon.<br /><br /><b>2.</b> Usernames may not be derogatory or insulting in nature, to an individual or group (insulting yourself is okay as long as it\'s not too serious).<br /><br /><b>3.</b> Usernames may not directly reference sexual activity, or be excessively disgusting.<br /><br />This policy is less restrictive than that of many places, so you might see some "borderline" nicknames that might not be accepted elsewhere. You might consider it unfair that they are allowed to keep their nickname. The fact remains that their nickname follows the above rules, and if you were asked to choose a new name, yours does not.';
 			}
 			if (warning) {
 				buf += '<p class="buttonbar"><button name="close" disabled>Close</button><small class="overlay-warn"> You will be able to close this in 5 seconds</small></p>';

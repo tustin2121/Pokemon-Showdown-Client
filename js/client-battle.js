@@ -11,7 +11,7 @@
 
 			this.isSideRoom = Tools.prefs('rightpanelbattles');
 
-			this.$el.addClass('ps-room-opaque').html('<div class="battle">Battle is here</div><div class="foehint"></div><div class="battle-log" aria-label="Battle Log" role="complementary"></div><div class="battle-log-add">Connecting...</div><div class="battle-controls" role="complementary" aria-label="Battle Controls"></div><button class="battle-chat-toggle button" name="showChat"><i class="fa fa-caret-left"></i> Chat</button>');
+			this.$el.addClass('ps-room-opaque').html('<div class="battle">Battle is here</div><div class="foehint"></div><div class="battle-log" aria-label="Battle Log" role="complementary"></div><div class="battle-log-add">Connecting...</div><ul class="battle-userlist userlist userlist-minimized"></ul><div class="battle-controls" role="complementary" aria-label="Battle Controls"></div><button class="battle-chat-toggle button" name="showChat"><i class="fa fa-caret-left"></i> Chat</button>');
 
 			this.$battle = this.$el.find('.battle');
 			this.$controls = this.$el.find('.battle-controls');
@@ -26,6 +26,13 @@
 
 			this.battle.roomid = this.id;
 			this.users = {};
+			this.userCount = {users: 0};
+			this.$userList = this.$('.userlist');
+			this.userList = new UserList({
+				el: this.$userList,
+				room: this
+			});
+			this.userList.construct();
 
 			this.$chat = this.$chatFrame.find('.inner');
 
@@ -68,7 +75,7 @@
 		},
 		updateLayout: function () {
 			var width = this.$el.width();
-			if (width < 950) {
+			if (width < 950 || this.battle.hardcoreMode) {
 				this.battle.messageShownTime = 500;
 			} else {
 				this.battle.messageShownTime = 1;
@@ -195,7 +202,7 @@
 						break;
 					}
 				} else if (logLine.substr(0, 7) === '|title|') { // eslint-disable-line no-empty
-				} else if (logLine.substr(0, 5) === '|win|') {
+				} else if (logLine.substr(0, 5) === '|win|' || logLine === '|tie') {
 					this.battleEnded = true;
 					this.battle.activityQueue.push(logLine);
 				} else if (logLine.substr(0, 6) === '|chat|' || logLine.substr(0, 3) === '|c|' || logLine.substr(0, 9) === '|chatmsg|' || logLine.substr(0, 10) === '|inactive|') {
@@ -224,6 +231,7 @@
 			this.battle.setHardcoreMode(mode);
 			var id = '#' + this.el.id + ' ';
 			this.$('.hcmode-style').remove();
+			this.updateLayout(); // set animation delay
 			if (mode) this.$el.prepend('<style class="hcmode-style">' + id + '.battle .turn,' + id + '.battle-history{display:none !important;}</style>');
 			if (this.choice && this.choice.waiting) {
 				this.updateControlsForPlayer();
@@ -1271,8 +1279,9 @@
 			var self = this;
 			app.addPopupPrompt("Replacement player's username", "Replace player", function (target) {
 				if (!target) return;
-				room.send('/addplayer ' + target);
+				var side = (room.battle.mySide.id === room.battle.p1.id ? 'p1' : 'p2');
 				room.leaveBattle();
+				room.send('/addplayer ' + target + ', ' + side);
 				self.close();
 			});
 		},
@@ -1360,25 +1369,30 @@
 			this.toggleNicknames(this.battle.yourSide);
 
 			var $log = $('.battle-log .inner');
-			if (!$log.length) return;
+			var $message = $('.battle .message');
 			if (this.battle.ignoreNicks) {
 				$log.addClass('hidenicks');
+				$message.addClass('hidenicks');
 			} else {
 				$log.removeClass('hidenicks');
+				$message.removeClass('hidenicks');
 			}
 		},
 		toggleIgnoreOpponent: function (e) {
 			this.battle.ignoreOpponent = !!e.currentTarget.checked;
 			this.battle.add('Opponent ' + (this.battle.ignoreOpponent ? '' : 'no longer ') + 'ignored.');
 			var $log = $('.battle-log .inner');
+			var $message = $('.battle .message');
 			var $messages = $log.find('.chatmessage-' + this.battle.yourSide.id);
 			if (!$messages.length) return;
 			if (this.battle.ignoreOpponent) {
 				$messages.hide();
 				$log.addClass('hidenicks');
+				$message.addClass('hidenicks');
 			} else {
 				$messages.show();
 				$log.removeClass('hidenicks');
+				$message.removeClass('hidenicks');
 			}
 		},
 		toggleNicknames: function (side) {

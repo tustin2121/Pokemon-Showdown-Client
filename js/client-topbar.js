@@ -81,8 +81,9 @@
 				}
 				if (title) buf += ' title="' + Tools.escapeHTML(title) + '"';
 			}
-			switch (id) {
+			switch (room ? room.type : id) {
 			case '':
+			case 'mainmenu':
 				return buf + '><i class="fa fa-home"></i> <span>Home</span></a></li>';
 			case 'teambuilder':
 				return buf + '><i class="fa fa-pencil-square-o"></i> <span>Teambuilder</span></a><button class="closebutton" name="closeRoom" value="teambuilder"><i class="fa fa-times-circle"></i></button></li>';
@@ -94,25 +95,32 @@
 				return buf + '><i class="fa fa-caret-square-o-right"></i> <span>Battles</span></a><button class="closebutton" name="closeRoom" value="battles"><i class="fa fa-times-circle"></i></button></li>';
 			case 'rooms':
 				return buf + ' aria-label="Join chatroom"><i class="fa fa-plus" style="margin:7px auto -6px auto"></i> <span>&nbsp;</span></a></li>';
-			default:
-				if (id.substr(0, 7) === 'battle-') {
-					var name = Tools.escapeHTML(room.title);
-					var formatid = id.substr(7).split('-')[0];
-					if (!name) {
-						var p1 = (room.battle && room.battle.p1 && room.battle.p1.name) || '';
-						var p2 = (room.battle && room.battle.p2 && room.battle.p2.name) || '';
-						if (p1 && p2) {
-							name = '' + Tools.escapeHTML(p1) + ' v. ' + Tools.escapeHTML(p2);
-						} else if (p1 || p2) {
-							name = '' + Tools.escapeHTML(p1) + Tools.escapeHTML(p2);
-						} else {
-							name = '(empty room)';
-						}
+			case 'battle':
+				var name = Tools.escapeHTML(room.title);
+				var formatid = id.substr(7).split('-')[0];
+				if (!name) {
+					var p1 = (room.battle && room.battle.p1 && room.battle.p1.name) || '';
+					var p2 = (room.battle && room.battle.p2 && room.battle.p2.name) || '';
+					if (p1 && p2) {
+						name = '' + Tools.escapeHTML(p1) + ' v. ' + Tools.escapeHTML(p2);
+					} else if (p1 || p2) {
+						name = '' + Tools.escapeHTML(p1) + Tools.escapeHTML(p2);
+					} else {
+						name = '(empty room)';
 					}
-					return buf + ' draggable="true"><i class="text">' + Tools.escapeFormat(formatid) + '</i><span>' + name + '</span></a><button class="closebutton" name="closeRoom" value="' + id + '" aria-label="Close"><i class="fa fa-times-circle"></i></a></li>';
-				} else {
-					return buf + ' draggable="true"><i class="fa fa-comment-o"></i> <span>' + (Tools.escapeHTML(room.title) || (id === 'lobby' ? 'Lobby' : id)) + '</span></a><button class="closebutton" name="closeRoom" value="' + id + '" aria-label="Close"><i class="fa fa-times-circle"></i></a></li>';
 				}
+				return buf + ' draggable="true"><i class="text">' + Tools.escapeFormat(formatid) + '</i><span>' + name + '</span></a><button class="closebutton" name="closeRoom" value="' + id + '" aria-label="Close"><i class="fa fa-times-circle"></i></a></li>';
+			case 'chat':
+				return buf + ' draggable="true"><i class="fa fa-comment-o"></i> <span>' + (Tools.escapeHTML(room.title) || (id === 'lobby' ? 'Lobby' : id)) + '</span></a><button class="closebutton" name="closeRoom" value="' + id + '" aria-label="Close"><i class="fa fa-times-circle"></i></a></li>';
+			case 'html':
+			default:
+				if (room.title && room.title.charAt(0) === '[') {
+					var closeBracketIndex = room.title.indexOf(']');
+					if (closeBracketIndex > 0) {
+						return buf + ' draggable="true"><i class="text">' + Tools.escapeFormat(room.title.slice(1, closeBracketIndex)) + '</i><span>' + Tools.escapeHTML(room.title.slice(closeBracketIndex + 1)) + '</span></a><button class="closebutton" name="closeRoom" value="' + id + '" aria-label="Close"><i class="fa fa-times-circle"></i></a></li>';
+					}
+				}
+				return buf + ' draggable="true"><i class="fa fa-file-text-o"></i> <span>' + (Tools.escapeHTML(room.title) || id) + '</span></a><button class="closebutton" name="closeRoom" value="' + id + '" aria-label="Close"><i class="fa fa-times-circle"></i></a></li>';
 			}
 		},
 		updateTabbar: function () {
@@ -432,6 +440,7 @@
 		},
 		events: {
 			'change input[name=noanim]': 'setNoanim',
+			'change input[name=nogif]': 'setNogif',
 			'change input[name=bwgfx]': 'setBwgfx',
 			'change input[name=nopastgens]': 'setNopastgens',
 			'change input[name=notournaments]': 'setNotournaments',
@@ -472,6 +481,9 @@
 			buf += '<p><label class="optlabel">Background: <button name="background">Change background</button></label></p>';
 			buf += '<p><label class="optlabel"><input type="checkbox" name="dark"' + (Tools.prefs('dark') ? ' checked' : '') + ' /> Dark mode</label></p>';
 			buf += '<p><label class="optlabel"><input type="checkbox" name="noanim"' + (Tools.prefs('noanim') ? ' checked' : '') + ' /> Disable animations</label></p>';
+			if (navigator.userAgent.includes(' Chrome/64.')) {
+				buf += '<p><label class="optlabel"><input type="checkbox" name="nogif"' + (Tools.prefs('nogif') ? ' checked' : '') + ' /> Disable GIFs for Chrome 64 bug</label></p>';
+			}
 			buf += '<p><label class="optlabel"><input type="checkbox" name="bwgfx"' + (Tools.prefs('bwgfx') ? ' checked' : '') + ' /> Use BW sprites instead of XY models</label></p>';
 			buf += '<p><label class="optlabel"><input type="checkbox" name="nopastgens"' + (Tools.prefs('nopastgens') ? ' checked' : '') + ' /> Use modern sprites for past generations</label></p>';
 
@@ -489,7 +501,7 @@
 			var timestamps = this.timestamps = (Tools.prefs('timestamps') || {});
 			buf += '<p><label class="optlabel">Timestamps in chat rooms: <select name="timestamps-lobby"><option value="off">Off</option><option value="minutes"' + (timestamps.lobby === 'minutes' ? ' selected="selected"' : '') + '>[HH:MM]</option><option value="seconds"' + (timestamps.lobby === 'seconds' ? ' selected="selected"' : '') + '>[HH:MM:SS]</option></select></label></p>';
 			buf += '<p><label class="optlabel">Timestamps in PMs: <select name="timestamps-pms"><option value="off">Off</option><option value="minutes"' + (timestamps.pms === 'minutes' ? ' selected="selected"' : '') + '>[HH:MM]</option><option value="seconds"' + (timestamps.pms === 'seconds' ? ' selected="selected"' : '') + '>[HH:MM:SS]</option></select></label></p>';
-			buf += '<p><label class="optlabel">Chat preferences: <button name="formatting">Edit formatting</button></label></p>';
+			buf += '<p><label class="optlabel">Chat preferences: <button name="formatting">Text formatting</button></label></p>';
 
 			if (window.nodewebkit) {
 				buf += '<hr />';
@@ -523,6 +535,11 @@
 			var noanim = !!e.currentTarget.checked;
 			Tools.prefs('noanim', noanim);
 			Tools.loadSpriteData(noanim || Tools.prefs('bwgfx') ? 'bw' : 'xy');
+		},
+		setNogif: function (e) {
+			var nogif = !!e.currentTarget.checked;
+			Tools.prefs('nogif', nogif);
+			Tools.loadSpriteData(nogif || Tools.prefs('bwgfx') ? 'bw' : 'xy');
 		},
 		setDark: function (e) {
 			var dark = !!e.currentTarget.checked;
@@ -601,17 +618,18 @@
 		},
 		initialize: function () {
 			var cur = this.chatformatting = Tools.prefs('chatformatting') || {};
-			var buf = '<p class="optlabel">You can choose to display formatted text as normal text.</p>';
-			buf += '<p><label class="optlabel"><input type="checkbox" name="bold" ' + (cur.hidebold ? 'checked' : '') + ' /> Suppress **<strong>bold</strong>**</label></p>';
-			buf += '<p><label class="optlabel"><input type="checkbox" name="italics" ' + (cur.hideitalics ? 'checked' : '') + ' /> Suppress __<em>italics</em>__</label></p>';
-			buf += '<p><label class="optlabel"><input type="checkbox" name="monospace" ' + (cur.hidemonospace ? 'checked' : '') + ' /> Suppress ``<code>code formatting</code>``</label></p>';
-			buf += '<p><label class="optlabel"><input type="checkbox" name="strikethrough" ' + (cur.hidestrikethrough ? 'checked' : '') + ' /> Suppress ~~<s>strikethrough</s>~~</label></p>';
-			buf += '<p><label class="optlabel"><input type="checkbox" name="superscript" ' + (cur.hidesuperscript ? 'checked' : '') + ' /> Suppress ^^<sup>superscript</sup>^^</label></p>';
-			buf += '<p><label class="optlabel"><input type="checkbox" name="subscript" ' + (cur.hidesubscript ? 'checked' : '') + ' /> Suppress \\\\<sub>subscript</sub>\\\\</label></p>';
-			buf += '<p><label class="optlabel"><input type="checkbox" name="me" ' + (cur.hideme ? 'checked' : '') + ' /> Suppress <kbd>/me</kbd> <em>action formatting</em></label></p>';
+			var buf = '<p>Usable formatting:</p>';
+			var ctrlPlus = '<kbd>' + (navigator.platform === 'MacIntel' ? 'Cmd' : 'Ctrl') + '</kbd> + ';
+			buf += '<p class="optlabel">**<strong>bold</strong>** (' + ctrlPlus + '<kbd>B</kbd>)</p>';
+			buf += '<p class="optlabel">__<em>italics</em>__ (' + ctrlPlus + '<bkd>I</kbd>)</p>';
+			buf += '<p class="optlabel">``<code>code formatting</code>``</p>';
+			buf += '<p class="optlabel">~~<s>strikethrough</s>~~</p>';
+			buf += '<p class="optlabel">^^<sup>superscript</sup>^^</p>';
+			buf += '<p class="optlabel">\\\\<sub>subscript</sub>\\\\</p>';
 			buf += '<p><label class="optlabel"><input type="checkbox" name="greentext" ' + (cur.hidegreentext ? 'checked' : '') + ' /> Suppress <span class="greentext">&gt;' + ['meme arrows', 'greentext', 'quote formatting'][Math.floor(Math.random() * 3)] + '</span></label></p>';
-			buf += '<p><label class="optlabel"><input type="checkbox" name="spoiler" ' + (cur.hidespoiler ? 'checked' : '') + ' /> Suppress spoiler hiding</label></p>';
-			buf += '<p><label class="optlabel"><input type="checkbox" name="links" ' + (cur.hidelinks ? 'checked' : '') + ' /> Suppress clickable links</label></p>';
+			buf += '<p><label class="optlabel"><input type="checkbox" name="me" ' + (cur.hideme ? 'checked' : '') + ' /> Suppress <kbd>/me</kbd> <em>action formatting</em></label></p>';
+			buf += '<p><label class="optlabel"><input type="checkbox" name="spoiler" ' + (cur.hidespoiler ? 'checked' : '') + ' /> Auto-show spoilers: <span class="spoiler">these things</span></label></p>';
+			buf += '<p><label class="optlabel"><input type="checkbox" name="links" ' + (cur.hidelinks ? 'checked' : '') + ' /> Make [[clickable links]] unclickable</label></p>';
 			buf += '<p><label class="optlabel"><input type="checkbox" name="interstice"' + (cur.hideinterstice ? 'checked' : '') + ' /> Don\'t warn for untrusted links</label></p>';
 			buf += '<p><button name="close">Close</button></p>';
 			this.$el.html(buf);
@@ -941,7 +959,7 @@
 				buf += '<p class="error">The name you chose is registered.</p>';
 			}
 
-			buf += '<p>Log in:</p>';
+			buf += '<p>If this is your account:</p>';
 			buf += '<p><label class="label">Username: <strong>' + Tools.escapeHTML(data.username) + '<input type="hidden" name="username" value="' + Tools.escapeHTML(data.username) + '" /></strong></label></p>';
 			if (data.special === '@gmail') {
 				buf += '<div id="gapi-custom-signin" style="width:240px;margin:0 auto">[loading Google log-in button]</div>';
@@ -952,6 +970,7 @@
 			}
 
 			buf += '<p class="or">or</p>';
+			buf += '<p>If this is someone else\'s account:</p>';
 			buf += '<p class="buttonbar"><button name="login">Choose another name</button></p>';
 
 			buf += '</form>';
