@@ -6362,11 +6362,12 @@ var Battle = (function () {
 				break;
 			
 			case '-tppgym': {
-				if (this.yourSide !== this.p1 && app.user.get('userid') !== this.p1.id) {
+				let side = args[1].slice(0,2);
+				if (this.yourSide !== this[side] && app.user.get('userid') !== this[side].id) {
 					// Always show the leader as "your" side.
 					this.setSidesSwitched(true);
 				}
-				this.p1.title = Tools.escapeHTML(args[2]);
+				this[side].title = Tools.escapeHTML(args[2]);
 			} break;
 
 			default:
