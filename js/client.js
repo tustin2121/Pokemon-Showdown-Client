@@ -1362,7 +1362,7 @@
 			}
 			var roomTable = {
 				'': MainMenuRoom,
-				'adventbuilder': AdventbuilderRoom,
+				'leaguebuilder': LeaguebuilderRoom,
 				'teambuilder': TeambuilderRoom,
 				'rooms': RoomsRoom,
 				'battles': BattlesRoom,
@@ -2546,8 +2546,6 @@
 				if (window.wiiu && document.location.protocol === 'https:') {
 					buf += '<p class="error">The Wii U does not support secure connections.</p>';
 					buf += '<p class="buttonbar"><button name="tryhttp" autofocus><strong>Connect insecurely</button> <button name="close">Work offline</button></p>';
-				} else if (document.location.protocol === 'https:') {
-					buf += '<p class="buttonbar"><button type="submit"><strong>Retry</strong></button> <button name="tryhttp">Retry with HTTP</button> <button name="close">Work offline</button></p>';
 				} else {
 					buf += '<p class="buttonbar"><button type="submit"><strong>Retry</strong></button> <button name="close">Work offline</button></p>';
 				}

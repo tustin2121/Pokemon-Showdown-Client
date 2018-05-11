@@ -129,14 +129,14 @@
 	}
 	
 	/* global app, BattleBackdrops, musicTable */
-	var AdventbuilderRoom = exports.AdventbuilderRoom = exports.Room.extend({
-		type: 'adventbuilder',
+	var LeaguebuilderRoom = exports.LeaguebuilderRoom = exports.Room.extend({
+		type: 'leaguebuilder',
 		title: 'TPPLeague',
 		initialize: function () {
 			this.$el.addClass('ps-room-light scrollable tpp');
 			
-			app.on('response:adventbuilder', this.update, this);
-			app.send('/adventbuilder request options');
+			app.on('response:leaguebuilder', this.update, this);
+			app.send('/leaguebuilder request options');
 			this.update();
 		},
 		events: {
@@ -451,8 +451,8 @@
 				this.renderPreview(data, "e4").appendTo(scrn);
 				
 				$("<div>").addClass("inabox").appendTo(scrn)
-					.append("<label>Supplemental Ban List: <button class='button' name='openHelpPopup' value='banlist'><i class='fa fa-question-circle-o'></i></button></label>")
-					.append("<input style='width:99%' type='text' name='banlist' maxlength='128' value='"+(data.info.banlist||[""]).join(", ")+"' placeholder='Comma separated list of Pokemon, Moves, Abilities, or Items to ban.'/>");
+					.append("<label>Custom Rules (Ban List): <button class='button' name='openHelpPopup' value='banlist'><i class='fa fa-question-circle-o'></i></button></label>")
+					.append("<input style='width:99%' type='text' name='banlist' maxlength='128' value='"+(data.info.banlist||[""]).join(", ")+"' placeholder='Custom rules: -Banned Item, +Allowed Item, Rule Name'/>");
 				
 				scrn.find("input[name=title]").attr('maxlength', 32);
 				scrn.find("select[name=battletype]").val(data.info.battletype);
@@ -484,8 +484,8 @@
 				this.renderPreview(data, "gym").appendTo(scrn);
 				
 				$("<div>").addClass("inabox").appendTo(scrn)
-					.append("<label>Supplemental Ban List: <button class='button' name='openHelpPopup' value='banlist'><i class='fa fa-question-circle-o'></i></button></label>")
-					.append("<input style='width:99%' type='text' name='banlist' maxlength='128' value='"+(data.info.banlist||[""]).join(", ")+"' placeholder='Comma separated list of Pokemon, Moves, Abilities, or Items to ban.'/>");
+					.append("<label>Custom Rules (Ban List): <button class='button' name='openHelpPopup' value='banlist'><i class='fa fa-question-circle-o'></i></button></label>")
+					.append("<input style='width:99%' type='text' name='banlist' maxlength='128' value='"+(data.info.banlist||[""]).join(", ")+"' placeholder='Custom rules: -Banned Item, +Allowed Item, Rule Name'/>");
 				
 				$("<div>").addClass("inabox trialDesc").appendTo(scrn)
 					.append("<label>Trial Description: <button class='button' name='openHelpPopup' value='trials'><i class='fa fa-question-circle-o'></i></button></label>")
@@ -834,13 +834,13 @@
 		},
 		
 		openMainMenu: function(){
-			app.send('/adventbuilder request options');
+			app.send('/leaguebuilder request options');
 		},
 		openView: function(id, element) {
 			if (id.slice(-4) === ":new") {
-				app.send('/adventbuilder new '+id.slice(0, -4));
+				app.send('/leaguebuilder new '+id.slice(0, -4));
 			} else {
-				app.send('/adventbuilder request '+id);
+				app.send('/leaguebuilder request '+id);
 			}
 		},
 		
@@ -926,7 +926,7 @@
 				types: map2array(this.$(".typeList").data('types')),
 				banlist: this.$("input[name=banlist]").val().trim().split(/, ?/i),
 			};
-			app.send('/adventbuilder commit elite '+JSON.stringify(json));
+			app.send('/leaguebuilder commit elite '+JSON.stringify(json));
 		},
 		commitGym: function() {
 			var json = {
@@ -939,7 +939,7 @@
 				trialdesc: this.$("textarea[name=trialdesc]").val().trim().substr(0, 1000),
 				banlist: this.$("input[name=banlist]").val().trim().split(/, ?/i),
 			};
-			app.send('/adventbuilder commit gym '+JSON.stringify(json));
+			app.send('/leaguebuilder commit gym '+JSON.stringify(json));
 		},
 		
 		openBadgeCase: function(){
@@ -1031,31 +1031,31 @@
 				titleRename: this.$("[name=titleRename]").is(":checked"),
 				gymRename: this.$("[name=gymRename]").is(":checked"),
 			};
-			app.send('/adventbuilder commit leagueopts '+JSON.stringify(opts));
+			app.send('/leaguebuilder commit leagueopts '+JSON.stringify(opts));
 		},
 		adminRemoveBadge: function(el) {
 			
 		},
 		adminRemoveChallenger: function(nick){
-			app.send('/adventbuilder commit rmchal '+nick);
+			app.send('/leaguebuilder commit rmchal '+nick);
 		},
 		adminAddGym: function(){
-			app.send('/adventbuilder commit addgym '+ this.$("input[name=addgym]").val())
+			app.send('/leaguebuilder commit addgym '+ this.$("input[name=addgym]").val())
 		},
 		adminRemoveGym: function(nick){
-			app.send('/adventbuilder commit rmgym '+nick);
+			app.send('/leaguebuilder commit rmgym '+nick);
 		},
 		adminAddElite: function() {
-			app.send('/adventbuilder commit addelite '+ this.$("input[name=addelite]").val())
+			app.send('/leaguebuilder commit addelite '+ this.$("input[name=addelite]").val())
 		},
 		adminRemoveElite: function(nick) {
-			app.send('/adventbuilder commit rmelite '+nick);
+			app.send('/leaguebuilder commit rmelite '+nick);
 		},
 		adminPromoteChamp: function(nick) {
-			app.send('/adventbuilder commit promotechamp '+nick);
+			app.send('/leaguebuilder commit promotechamp '+nick);
 		},
 		adminDemoteChamp: function(nick) {
-			app.send('/adventbuilder commit demotechamp '+nick);
+			app.send('/leaguebuilder commit demotechamp '+nick);
 		},
 		
 		openHelpPopup: function(topic) {
@@ -1081,9 +1081,9 @@
 				"You must give challengers badges yourself, using the command <code>/givebadge [name]</code>. Think of it like handing the challenger your badge, and how Clair was a dick for not giving you a badge after you defeat her."
 			],
 			"banlist": [
-				"If you wish, your gym or elite battle setup may ban (or unban) Moves, Pokemon, Items, or Abilities. The text field takes a comma-separated list of items, where items with a '!' in front of it will unban the item.",
-				"For example: \"Earthquake, !Swagger\" will ban the move Earthquake, and unban the move Swagger.",
-				"This list will be checked against by the server-side verifier, when the challenger challenges you, before you receive the challenge.",
+				"If you wish, your gym or elite battle setup may have custom rules, including banning/unbanning Moves, Pokemon, Items, or Abilities. The text field takes a comma-separated list of items, where items with a '-' in front of it will ban the item, and '+' will unban the item. If you don't put anything in front, the verifier will interpret that as a rule or clause.",
+				"For example: \"-Earthquake, +Swagger\" will ban the move Earthquake, and unban the move Swagger.",
+				"This list will be checked against by the server-side verifier, when the challenger challenges you, before you receive the challenge. Funny sayings in the banlist are unfortunately no longer allowed, because the verifier will fail if it can't find a rule.",
 				"Note: The TPPLeague format already has the following clauses:",
 				"Swagger Clause, Mega Rayquaza Clause, Sleep Clause Mod, OHKO Clause, Moody Clause, Evasion Moves Clause, Endless Battle Clause, HP Percentage Mod"
 			],
